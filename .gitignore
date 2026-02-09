@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python environment and caches
+.venv/
+venv/
+.uv-cache/
+.python-version
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build / packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Local env files
+.env
+.env.*
+
+# Helix runtime artifacts
+*.hlx
+*.cid
+*.pack
+*.genes
+**/genome.sqlite
+**/genome.db
+demo/
+
+# IPFS local repos and temp outputs
+.ipfs/
+local-ipfs/
