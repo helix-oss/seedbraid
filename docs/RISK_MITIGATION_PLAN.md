@@ -3,6 +3,9 @@
 ## Scope
 This document turns Helix risk findings into prioritized, executable plans.
 
+Execution tracking:
+- Turn-level delivery and commit sequence are defined in `docs/TURN_EXECUTION_PLAN.md`.
+
 Baseline assumptions:
 - HLX1 + CDC + Genome + IPFS publish/fetch are already implemented.
 - This plan prioritizes lossless restoration and operational reliability first.
