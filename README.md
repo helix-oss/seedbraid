@@ -64,6 +64,12 @@ uv run --no-editable helix verify seed.hlx --genome ./genome --strict
 uv run --no-editable helix prime "./dataset/**/*" --genome ./genome --chunker cdc_buzhash
 ```
 
+### Genome Snapshot / Restore
+```bash
+uv run --no-editable helix genome snapshot --genome ./genome --out genome.hgs
+uv run --no-editable helix genome restore genome.hgs --genome ./genome-dr --replace
+```
+
 ### Publish (IPFS)
 ```bash
 uv run --no-editable helix publish seed.hlx --no-pin

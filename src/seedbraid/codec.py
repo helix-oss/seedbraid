@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import struct
 from dataclasses import dataclass
 from glob import glob
 from pathlib import Path
@@ -12,6 +13,8 @@ from .errors import DecodeError, HelixError
 from .storage import open_genome
 
 GENES_MAGIC = b"GENE1"
+GENOME_SNAPSHOT_MAGIC = b"HGS1"
+GENOME_SNAPSHOT_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -337,6 +340,86 @@ def prime_genome(
         }
     finally:
         genome.close()
+
+
+def snapshot_genome(genome_path: str | Path, out_path: str | Path) -> dict[str, int]:
+    genome = open_genome(genome_path)
+    out_path = Path(out_path)
+    total_chunks = 0
+    total_bytes = 0
+
+    try:
+        chunk_count = genome.count_chunks()
+        try:
+            with out_path.open("wb") as out:
+                out.write(
+                    struct.pack(
+                        ">4sHQ",
+                        GENOME_SNAPSHOT_MAGIC,
+                        GENOME_SNAPSHOT_VERSION,
+                        chunk_count,
+                    )
+                )
+                for chunk_hash, payload in genome.iter_chunks():
+                    out.write(struct.pack(">32sI", chunk_hash, len(payload)))
+                    out.write(payload)
+                    total_chunks += 1
+                    total_bytes += len(payload)
+        except OSError as exc:
+            raise HelixError(f"Failed to write genome snapshot: {out_path}") from exc
+    finally:
+        genome.close()
+
+    return {"chunks": total_chunks, "bytes": total_bytes}
+
+
+def restore_genome(
+    snapshot_path: str | Path,
+    genome_path: str | Path,
+    *,
+    replace: bool,
+) -> dict[str, int]:
+    snapshot_path = Path(snapshot_path)
+    genome = open_genome(genome_path)
+    inserted = 0
+    skipped = 0
+
+    try:
+        with snapshot_path.open("rb") as inp:
+            header = inp.read(14)
+            if len(header) != 14:
+                raise HelixError("Invalid genome snapshot: header is truncated.")
+            magic, version, chunk_count = struct.unpack(">4sHQ", header)
+            if magic != GENOME_SNAPSHOT_MAGIC:
+                raise HelixError("Invalid genome snapshot magic. Expected HGS1.")
+            if version != GENOME_SNAPSHOT_VERSION:
+                raise HelixError(f"Unsupported genome snapshot version: {version}.")
+
+            if replace:
+                genome.clear_chunks()
+
+            for _ in range(chunk_count):
+                entry_header = inp.read(36)
+                if len(entry_header) != 36:
+                    raise HelixError("Invalid genome snapshot: entry header is truncated.")
+                chunk_hash, size = struct.unpack(">32sI", entry_header)
+                payload = inp.read(size)
+                if len(payload) != size:
+                    raise HelixError("Invalid genome snapshot: entry payload is truncated.")
+                if genome.put_chunk(chunk_hash, payload):
+                    inserted += 1
+                else:
+                    skipped += 1
+
+            trailing = inp.read(1)
+            if trailing:
+                raise HelixError("Invalid genome snapshot: trailing bytes found.")
+    except OSError as exc:
+        raise HelixError(f"Failed to read genome snapshot: {snapshot_path}") from exc
+    finally:
+        genome.close()
+
+    return {"inserted": inserted, "skipped": skipped, "entries": int(chunk_count)}
 
 
 def export_genes(

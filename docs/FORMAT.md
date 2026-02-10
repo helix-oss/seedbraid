@@ -98,3 +98,18 @@ For `helix export-genes` / `helix import-genes`, Helix defines a small sidecar b
   - payload: `size` bytes
 
 If `size == 0`, payload is absent (export side could not find this chunk in genome).
+
+## Genome Snapshot Format (HGS1)
+For `helix genome snapshot` / `helix genome restore`, Helix defines a binary snapshot format:
+- magic: 4 bytes, ASCII `HGS1`
+- version: uint16 (`1`)
+- chunk_count: uint64
+- repeated `chunk_count` times:
+  - hash: 32 bytes (sha256)
+  - size: uint32
+  - payload: `size` bytes
+
+Semantics:
+- Snapshot contains full chunk payloads from the selected genome database.
+- Restore may merge into existing genome or replace it (CLI option).
+- Invalid/truncated snapshot must fail with actionable error messages.

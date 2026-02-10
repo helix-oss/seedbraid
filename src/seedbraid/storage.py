@@ -61,6 +61,15 @@ class SQLiteGenome:
         for (chunk_hash,) in cur:
             yield bytes(chunk_hash)
 
+    def iter_chunks(self) -> Iterator[tuple[bytes, bytes]]:
+        cur = self.conn.execute("SELECT hash, data FROM chunks ORDER BY hash")
+        for chunk_hash, data in cur:
+            yield bytes(chunk_hash), bytes(data)
+
+    def clear_chunks(self) -> None:
+        self.conn.execute("DELETE FROM chunks")
+        self.conn.commit()
+
     def close(self) -> None:
         self.conn.close()
 

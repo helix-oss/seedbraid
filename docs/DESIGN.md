@@ -23,7 +23,7 @@ Migration policy:
 - `chunking.py`: deterministic `fixed`, `cdc_buzhash`, `cdc_rabin` chunkers.
 - `storage.py`: pluggable storage interface, SQLite implementation for genome.
 - `container.py`: HLX1 binary TLV serialization/parsing + integrity checks.
-- `codec.py`: encode/decode/verify/prime workflows.
+- `codec.py`: encode/decode/verify/prime workflows and genome snapshot/restore.
 - `ipfs.py`: subprocess wrapper for `ipfs add/cat/pin`.
 - `cli.py`: Typer command surface.
 
@@ -65,3 +65,8 @@ Migration policy:
 - Implemented minimal `export-genes` / `import-genes` for operational recovery.
 - Purpose: move required chunk payloads between genomes without shipping full databases.
 - Trade-off: no compression/encryption in initial format; can be layered later if needed.
+
+## Genome Snapshot/Restore (R-01)
+- Add `helix genome snapshot` to export all stored chunks as `HGS1` binary snapshot.
+- Add `helix genome restore` to import chunk payloads into a target genome.
+- Goal: operational DR workflow so non-portable seeds remain recoverable.

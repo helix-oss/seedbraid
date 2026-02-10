@@ -5,11 +5,22 @@ from pathlib import Path
 import typer
 
 from .chunking import ChunkerConfig
-from .codec import decode_file, encode_file, export_genes, import_genes, prime_genome, verify_seed
+from .codec import (
+    decode_file,
+    encode_file,
+    export_genes,
+    import_genes,
+    prime_genome,
+    restore_genome,
+    snapshot_genome,
+    verify_seed,
+)
 from .errors import ExternalToolError, HelixError
 from .ipfs import fetch_seed, publish_seed
 
 app = typer.Typer(help="Helix v2 CLI")
+genome_app = typer.Typer(help="Genome backup and restore operations")
+app.add_typer(genome_app, name="genome")
 
 
 def _cfg(avg: int, min_size: int, max_size: int, window_size: int = 64) -> ChunkerConfig:
@@ -190,6 +201,40 @@ def import_genes_cmd(
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"imported inserted={stats['inserted']} skipped={stats['skipped']}")
+
+
+@genome_app.command("snapshot")
+def genome_snapshot(
+    genome: Path = typer.Option(..., "--genome"),
+    out: Path = typer.Option(..., "--out"),
+) -> None:
+    """Export all genome chunks into a portable snapshot file."""
+    try:
+        stats = snapshot_genome(genome, out)
+    except HelixError as exc:
+        raise typer.Exit(code=_print_error(exc))
+    typer.echo(f"snapshot chunks={stats['chunks']} bytes={stats['bytes']} out={out}")
+
+
+@genome_app.command("restore")
+def genome_restore(
+    snapshot: Path,
+    genome: Path = typer.Option(..., "--genome"),
+    replace: bool = typer.Option(
+        False,
+        "--replace/--no-replace",
+        help="Replace existing genome chunks before restoring snapshot content.",
+    ),
+) -> None:
+    """Restore genome chunks from snapshot file."""
+    try:
+        stats = restore_genome(snapshot, genome, replace=replace)
+    except HelixError as exc:
+        raise typer.Exit(code=_print_error(exc))
+    typer.echo(
+        f"restored entries={stats['entries']} inserted={stats['inserted']} "
+        f"skipped={stats['skipped']}"
+    )
 
 
 def _print_error(exc: Exception) -> int:
