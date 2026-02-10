@@ -52,7 +52,12 @@ uv run --no-editable helix decode seed.hlx --genome ./genome --out recovered.bin
 ### Verify
 ```bash
 uv run --no-editable helix verify seed.hlx --genome ./genome
+uv run --no-editable helix verify seed.hlx --genome ./genome --strict
 ```
+
+`verify` supports two modes:
+- Quick mode (default): checks seed integrity and required chunk availability.
+- Strict mode (`--strict`): reconstructs all content and enforces source size and SHA-256 match.
 
 ### Prime
 ```bash

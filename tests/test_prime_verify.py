@@ -30,5 +30,5 @@ def test_prime_then_verify(tmp_path: Path) -> None:
         manifest_compression="zlib",
     )
 
-    report = verify_seed(seed, genome)
+    report = verify_seed(seed, genome, strict=True)
     assert report.ok

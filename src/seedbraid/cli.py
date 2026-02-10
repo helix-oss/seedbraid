@@ -77,16 +77,21 @@ def decode(
 def verify(
     seed: Path,
     genome: Path = typer.Option(..., "--genome"),
+    strict: bool = typer.Option(
+        False,
+        "--strict/--no-strict",
+        help="Reconstruct all chunks and enforce source size/SHA-256 match.",
+    ),
 ) -> None:
     """Verify seed integrity and reconstructability."""
     try:
-        report = verify_seed(seed, genome)
+        report = verify_seed(seed, genome, strict=strict)
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
 
     if report.ok:
         typer.echo(
-            "verify ok "
+            f"verify ok mode={'strict' if strict else 'quick'} "
             f"expected_sha256={report.expected_sha256} "
             f"actual_sha256={report.actual_sha256}"
         )

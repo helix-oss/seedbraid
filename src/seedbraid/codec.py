@@ -201,11 +201,17 @@ def decode_file(seed_path: str | Path, genome_path: str | Path, out_path: str | 
     return actual
 
 
-def verify_seed(seed_path: str | Path, genome_path: str | Path) -> VerifyReport:
+def verify_seed(
+    seed_path: str | Path,
+    genome_path: str | Path,
+    *,
+    strict: bool = False,
+) -> VerifyReport:
     seed = read_seed(seed_path)
     genome = open_genome(genome_path)
     missing: list[str] = []
     expected = seed.manifest.get("source_sha256")
+    expected_size = seed.manifest.get("source_size")
 
     try:
         for op in seed.recipe.ops:
@@ -237,10 +243,35 @@ def verify_seed(seed_path: str | Path, genome_path: str | Path) -> VerifyReport:
                 reason="Missing required chunks.",
             )
 
+        if not strict:
+            return VerifyReport(
+                ok=True,
+                missing_hashes=[],
+                missing_count=0,
+                expected_sha256=expected,
+                actual_sha256=None,
+                reason=None,
+            )
+
         h = hashlib.sha256()
+        actual_size = 0
         for op in seed.recipe.ops:
             chunk = _resolve_chunk(op, seed.recipe.hash_table, seed.raw_payloads, genome)
             h.update(chunk)
+            actual_size += len(chunk)
+
+        if isinstance(expected_size, int) and expected_size != actual_size:
+            return VerifyReport(
+                ok=False,
+                missing_hashes=[],
+                missing_count=0,
+                expected_sha256=expected,
+                actual_sha256=None,
+                reason=(
+                    "Reconstructed size mismatch: "
+                    f"expected {expected_size}, got {actual_size}."
+                ),
+            )
 
         actual = h.hexdigest()
         if expected and expected != actual:
