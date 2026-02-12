@@ -51,6 +51,8 @@ Migration policy:
 - Optional encryption uses HLE1 wrapper around HLX1 payload for backward-compatible rollout.
 - Optional `manifest-private` mode reduces metadata leakage at the cost of weaker post-restore provenance metadata.
 - `helix publish` warns on unencrypted seed publication to reduce accidental public leakage.
+- IPFS fetch path includes retry/backoff and optional HTTP gateway fallback for resilience.
+- `helix pin-health` provides operator-visible local pin and block availability checks.
 
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.

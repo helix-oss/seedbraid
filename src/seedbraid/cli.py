@@ -18,7 +18,7 @@ from .codec import (
 )
 from .container import is_encrypted_seed_data, sign_seed_file
 from .errors import ExternalToolError, HelixError
-from .ipfs import fetch_seed, publish_seed
+from .ipfs import fetch_seed, pin_health_status, publish_seed
 
 app = typer.Typer(help="Helix v2 CLI")
 genome_app = typer.Typer(help="Genome backup and restore operations")
@@ -242,13 +242,47 @@ def publish(
 def fetch(
     cid: str,
     out: Path = typer.Option(..., "--out"),
+    retries: int = typer.Option(
+        3,
+        "--retries",
+        min=1,
+        help="Number of ipfs cat attempts before failing or gateway fallback.",
+    ),
+    backoff_ms: int = typer.Option(
+        200,
+        "--backoff-ms",
+        min=0,
+        help="Base backoff in milliseconds (exponential).",
+    ),
+    gateway: str | None = typer.Option(
+        None,
+        "--gateway",
+        help="Optional HTTP gateway base URL, e.g. https://ipfs.io/ipfs",
+    ),
 ) -> None:
     """Fetch seed from IPFS CID."""
     try:
-        fetch_seed(cid, out)
+        fetch_seed(cid, out, retries=retries, backoff_ms=backoff_ms, gateway=gateway)
     except (HelixError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"fetched {cid} -> {out}")
+
+
+@app.command("pin-health")
+def pin_health(cid: str) -> None:
+    """Check local pin status and block availability for CID."""
+    try:
+        report = pin_health_status(cid)
+    except (HelixError, ExternalToolError) as exc:
+        raise typer.Exit(code=_print_error(exc))
+
+    typer.echo(
+        f"pin_health cid={report['cid']} pinned={report['pinned']} "
+        f"pin_type={report['pin_type']} block_available={report['block_available']}"
+    )
+    if report["reason"]:
+        typer.echo(f"reason={report['reason']}", err=not bool(report["ok"]))
+    raise typer.Exit(code=0 if report["ok"] else 1)
 
 
 @app.command()

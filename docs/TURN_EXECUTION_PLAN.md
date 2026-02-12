@@ -49,9 +49,9 @@ Completed turns:
 - [x] Turn 4: `feat: add optional seed signature verification`
 - [x] Turn 5: `feat: add optional seed encryption flow`
 - [x] Turn 6: `feat(security): add private-manifest mode and publish warnings`
+- [x] Turn 7: `feat(ipfs): add retry logic and pin health checks`
 
 Pending turns:
-- [ ] Turn 7
 - [ ] Turn 8
 - [ ] Turn 9
 - [ ] Turn 10

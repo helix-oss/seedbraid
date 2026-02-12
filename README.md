@@ -94,6 +94,15 @@ uv run --no-editable helix publish seed.hlx --pin
 ### Fetch (IPFS)
 ```bash
 uv run --no-editable helix fetch <cid> --out fetched.hlx
+uv run --no-editable helix fetch <cid> --out fetched.hlx --retries 5 --backoff-ms 300
+uv run --no-editable helix fetch <cid> --out fetched.hlx --gateway https://ipfs.io/ipfs
+```
+
+`fetch` retries `ipfs cat` with exponential backoff and can fallback to an HTTP gateway.
+
+### Pin Health (IPFS)
+```bash
+uv run --no-editable helix pin-health <cid>
 ```
 
 ### Sign Seed (optional)
