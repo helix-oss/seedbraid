@@ -158,9 +158,14 @@ If missing, install Kubo (IPFS CLI) and ensure `ipfs` is on your PATH.
 ```bash
 uv run --no-editable ruff check .
 uv run --no-editable pytest
+uv run --no-editable pytest tests/test_compat_fixtures.py
 ```
 
 IPFS tests auto-skip when `ipfs` is not installed.
+Compatibility fixtures are stored in `tests/fixtures/compat/v1/` and are
+validated by `tests/test_compat_fixtures.py`.
+Regenerate intentionally with:
+`uv run --no-editable python scripts/gen_compat_fixtures.py`.
 
 ## 1-byte Insertion Dedup Benchmark
 Run:

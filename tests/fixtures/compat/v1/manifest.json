@@ -1,0 +1,24 @@
+{
+  "fixtures": [
+    {
+      "compression": "zlib",
+      "decoded_sha256": "0bccb10dcae0db5cbfb8537e3f914006cf2f59ae28a49a231c797d8649234a9e",
+      "decoded_size": 45,
+      "filename": "portable_raw_v1.hlx",
+      "seed_sha256": "9ecffce0e2fe41ddd6d50893b3ac3303c7bd691e35f7ad66e6d8605f17db7d7a",
+      "signature_key": null,
+      "signature_key_id": null,
+      "signed": false
+    },
+    {
+      "compression": "none",
+      "decoded_sha256": "3fa245267bd3009674bd0295272e58a4ac6936fd538a17f4e0dcb3e4d8105005",
+      "decoded_size": 52,
+      "filename": "portable_raw_signed_v1.hlx",
+      "seed_sha256": "0659f9d3f01d9d3aaa015019c7b4cbc1e5a822a9dc704a3a54362f9972a9f54e",
+      "signature_key": "fixture-sign-key-v1",
+      "signature_key_id": "compat-v1-sign",
+      "signed": true
+    }
+  ]
+}

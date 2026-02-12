@@ -113,6 +113,19 @@ Signed payload definition:
 - Backward-incompatible changes require `version` increment and docs update.
 - New optional sections may be added via TLV without changing version.
 
+## Compatibility Policy
+- Helix keeps fixture seeds under `tests/fixtures/compat/v1/` as the canonical
+  compatibility corpus for HLX1 v1.
+- CI must parse and strictly verify these fixtures on every change.
+- Any change that breaks fixture parsing/verification is considered breaking and
+  must follow all of:
+  1. bump container version,
+  2. add migration path/command,
+  3. preserve old-version read support or document explicit deprecation window,
+  4. add new version fixtures without deleting old fixtures.
+- Fixture regeneration is allowed only when behavior change is intentional and
+  the compatibility policy above is followed.
+
 ## Encrypted Seed Wrapper (HLE1)
 For optional at-rest encryption, Helix wraps HLX1 bytes in `HLE1` format.
 

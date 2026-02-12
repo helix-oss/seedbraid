@@ -55,6 +55,8 @@ Migration policy:
 - `helix pin-health` provides operator-visible local pin and block availability checks.
 - `helix doctor` provides preflight diagnostics for IPFS, genome path, and compression support.
 - Error output is standardized with stable `HELIX_E_*` codes and next-action hints.
+- Compatibility governance uses committed fixture seeds and regression tests as
+  release gates; format evolution must preserve read compatibility or bump version.
 
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.

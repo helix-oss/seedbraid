@@ -51,9 +51,9 @@ Completed turns:
 - [x] Turn 6: `feat(security): add private-manifest mode and publish warnings`
 - [x] Turn 7: `feat(ipfs): add retry logic and pin health checks`
 - [x] Turn 8: `feat(ops): add doctor command and actionable error codes`
+- [x] Turn 9: `test(format): add compatibility fixture regression coverage`
 
 Pending turns:
-- [ ] Turn 9
 - [ ] Turn 10
 - [ ] Turn 11
 

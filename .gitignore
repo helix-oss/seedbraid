@@ -32,6 +32,7 @@ pip-wheel-metadata/
 
 # Helix runtime artifacts
 *.hlx
+!tests/fixtures/compat/**/*.hlx
 *.cid
 *.pack
 *.genes
