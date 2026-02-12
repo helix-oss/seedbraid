@@ -24,6 +24,7 @@ The DNA-style ACGT representation is debug-only and out of scope for container s
 - `2` Recipe
 - `3` RAW payload table (optional)
 - `4` Integrity
+- `5` Signature (optional)
 
 Unknown section types are ignored by current parser only if integrity is still verifiable.
 
@@ -82,6 +83,17 @@ UTF-8 JSON with:
 - `recipe_sha256`: hex string (sha256 over Recipe section payload)
 - `payload_sha256`: hex string (sha256 over container bytes from start through end of last non-integrity section)
 - `raw_crc32` / `raw_sha256`: optional, present when RAW section exists
+
+## Signature Section (Type 5, optional)
+UTF-8 JSON with:
+- `algorithm`: `"hmac-sha256"`
+- `key_id`: string
+- `signed_payload_sha256`: hex string
+- `signature`: hex string (HMAC-SHA256 over signed payload)
+
+Signed payload definition:
+- bytes from start of file through end of last non-signature/non-integrity section.
+- Signature section must appear before integrity section.
 
 ## Decode/Verify Requirements
 - Parser must validate magic/version and integrity section.

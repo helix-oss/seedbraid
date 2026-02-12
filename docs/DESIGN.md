@@ -46,7 +46,8 @@ Migration policy:
 - SQLite chosen for portability over peak write throughput.
 - Default `zlib` avoids optional dependency friction; `zstd` supported when installed.
 - Portable seeds can be larger because unknown chunks are embedded.
-- Integrity currently uses CRC32 + SHA-256 digests; signatures are handled in a later step.
+- Integrity uses CRC32 + SHA-256 digests.
+- Optional seed signatures use HMAC-SHA256 in this iteration (`helix sign` and `verify --require-signature`).
 
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.

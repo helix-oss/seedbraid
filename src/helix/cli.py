@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import typer
@@ -15,6 +16,7 @@ from .codec import (
     snapshot_genome,
     verify_seed,
 )
+from .container import sign_seed_file
 from .errors import ExternalToolError, HelixError
 from .ipfs import fetch_seed, publish_seed
 
@@ -93,10 +95,26 @@ def verify(
         "--strict/--no-strict",
         help="Reconstruct all chunks and enforce source size/SHA-256 match.",
     ),
+    require_signature: bool = typer.Option(
+        False,
+        "--require-signature/--no-require-signature",
+        help="Fail verify when signature is missing or invalid.",
+    ),
+    signature_key: str | None = typer.Option(
+        None,
+        "--signature-key",
+        help="HMAC key used to validate seed signature.",
+    ),
 ) -> None:
     """Verify seed integrity and reconstructability."""
     try:
-        report = verify_seed(seed, genome, strict=strict)
+        report = verify_seed(
+            seed,
+            genome,
+            strict=strict,
+            require_signature=require_signature,
+            signature_key=signature_key,
+        )
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
 
@@ -172,6 +190,35 @@ def fetch(
     except (HelixError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"fetched {cid} -> {out}")
+
+
+@app.command()
+def sign(
+    seed: Path,
+    out: Path = typer.Option(..., "--out"),
+    key_env: str = typer.Option(
+        "HELIX_SIGNING_KEY",
+        "--key-env",
+        help="Environment variable name that holds signing key.",
+    ),
+    key_id: str = typer.Option("default", "--key-id"),
+) -> None:
+    """Sign an existing seed using HMAC-SHA256 signature section."""
+    key = os.environ.get(key_env)
+    if not key:
+        raise typer.Exit(
+            code=_print_error(
+                HelixError(
+                    f"Signing key env var is not set: {key_env}. "
+                    "Set it before running `helix sign`."
+                )
+            )
+        )
+    try:
+        sign_seed_file(seed, out, signature_key=key, signature_key_id=key_id)
+    except HelixError as exc:
+        raise typer.Exit(code=_print_error(exc))
+    typer.echo(f"signed {seed} -> {out} key_id={key_id}")
 
 
 @app.command("export-genes")

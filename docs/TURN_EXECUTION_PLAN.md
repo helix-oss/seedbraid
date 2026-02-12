@@ -41,6 +41,22 @@ Recommended `type` values:
 | 10 | R-07 / HLX-R07-1 | Performance regression guardrails | benchmark gate scripts and CI guidance | `perf(ci): add benchmark gates for dedup and throughput` |
 | 11 | R-08 / HLX-R08-1 | Packaging and pricing draft | OSS vs paid feature matrix and GTM notes | `docs(product): define packaging and pricing draft` |
 
+## Progress Markers
+Completed turns:
+- [x] Turn 1: `feat: add strict verify mode for full reconstruction checks` (`c4dcfec`)
+- [x] Turn 2: `feat: add genome snapshot and restore commands` (`055aa46`)
+- [x] Turn 3: `feat: add section sha256 integrity checks to HLX1` (`444f13f`)
+- [x] Turn 4: `feat: add optional seed signature verification`
+
+Pending turns:
+- [ ] Turn 5
+- [ ] Turn 6
+- [ ] Turn 7
+- [ ] Turn 8
+- [ ] Turn 9
+- [ ] Turn 10
+- [ ] Turn 11
+
 ## Definition of Done (Per Turn)
 A turn is complete only when all are true:
 1. Scoped implementation is done.

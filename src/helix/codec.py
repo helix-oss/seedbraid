@@ -8,7 +8,7 @@ from glob import glob
 from pathlib import Path
 
 from .chunking import ChunkerConfig, iter_chunks
-from .container import OP_RAW, OP_REF, Recipe, RecipeOp, read_seed, write_seed
+from .container import OP_RAW, OP_REF, Recipe, RecipeOp, read_seed, verify_signature, write_seed
 from .errors import DecodeError, HelixError
 from .storage import open_genome
 
@@ -209,6 +209,8 @@ def verify_seed(
     genome_path: str | Path,
     *,
     strict: bool = False,
+    require_signature: bool = False,
+    signature_key: str | None = None,
 ) -> VerifyReport:
     seed = read_seed(seed_path)
     genome = open_genome(genome_path)
@@ -217,6 +219,38 @@ def verify_seed(
     expected_size = seed.manifest.get("source_size")
 
     try:
+        if require_signature and seed.signature is None:
+            return VerifyReport(
+                ok=False,
+                missing_hashes=[],
+                missing_count=0,
+                expected_sha256=expected,
+                actual_sha256=None,
+                reason="Signature is required but missing.",
+            )
+        if seed.signature is not None:
+            if signature_key is None:
+                if require_signature:
+                    return VerifyReport(
+                        ok=False,
+                        missing_hashes=[],
+                        missing_count=0,
+                        expected_sha256=expected,
+                        actual_sha256=None,
+                        reason="Signature key is required to verify signed seed.",
+                    )
+            else:
+                ok, sig_reason = verify_signature(seed, signature_key)
+                if not ok:
+                    return VerifyReport(
+                        ok=False,
+                        missing_hashes=[],
+                        missing_count=0,
+                        expected_sha256=expected,
+                        actual_sha256=None,
+                        reason=sig_reason,
+                    )
+
         for op in seed.recipe.ops:
             if op.hash_index >= len(seed.recipe.hash_table):
                 return VerifyReport(

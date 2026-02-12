@@ -53,6 +53,7 @@ uv run --no-editable helix decode seed.hlx --genome ./genome --out recovered.bin
 ```bash
 uv run --no-editable helix verify seed.hlx --genome ./genome
 uv run --no-editable helix verify seed.hlx --genome ./genome --strict
+uv run --no-editable helix verify seed.hlx --genome ./genome --require-signature --signature-key "$HELIX_SIGNING_KEY"
 ```
 
 `verify` supports two modes:
@@ -79,6 +80,12 @@ uv run --no-editable helix publish seed.hlx --pin
 ### Fetch (IPFS)
 ```bash
 uv run --no-editable helix fetch <cid> --out fetched.hlx
+```
+
+### Sign Seed (optional)
+```bash
+export HELIX_SIGNING_KEY='your-shared-secret'
+uv run --no-editable helix sign seed.hlx --out seed.signed.hlx --key-env HELIX_SIGNING_KEY --key-id team-a
 ```
 
 ### Export / Import Genes (optional)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import struct
 import zlib
@@ -16,6 +17,7 @@ SECTION_MANIFEST = 1
 SECTION_RECIPE = 2
 SECTION_RAW = 3
 SECTION_INTEGRITY = 4
+SECTION_SIGNATURE = 5
 
 OP_REF = 1
 OP_RAW = 2
@@ -46,6 +48,8 @@ class Seed:
     recipe: Recipe
     raw_payloads: dict[int, bytes]
     manifest_compression: str
+    signature: dict | None
+    signed_payload: bytes | None
 
 
 def _compress(data: bytes, name: str) -> bytes:
@@ -158,11 +162,27 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _hmac_sha256_hex(data: bytes, key: str) -> str:
+    return hmac.new(key.encode("utf-8"), data, hashlib.sha256).hexdigest()
+
+
+def _build_signature_payload(signed_payload: bytes, signature_key: str, key_id: str) -> bytes:
+    signature = {
+        "algorithm": "hmac-sha256",
+        "key_id": key_id,
+        "signed_payload_sha256": _sha256_hex(signed_payload),
+        "signature": _hmac_sha256_hex(signed_payload, signature_key),
+    }
+    return json.dumps(signature, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
 def serialize_seed(
     manifest: dict,
     recipe: Recipe,
     raw_payloads: dict[int, bytes],
     manifest_compression: str = "zlib",
+    signature_key: str | None = None,
+    signature_key_id: str = "default",
 ) -> bytes:
     if manifest_compression not in _COMPRESSION_NAME_TO_ID:
         raise SeedFormatError(f"Unsupported manifest compression: {manifest_compression}")
@@ -181,10 +201,20 @@ def serialize_seed(
         raw_section_payload = encode_raw_payloads(raw_payloads)
         sections.append((SECTION_RAW, raw_section_payload))
 
-    header = struct.pack(">4sHH", MAGIC, VERSION, len(sections) + 1)
-    payload_without_integrity = bytearray(header)
+    extra_sections = 1 if signature_key is None else 2
+    header = struct.pack(">4sHH", MAGIC, VERSION, len(sections) + extra_sections)
+    signed_payload = bytearray(header)
     for stype, payload in sections:
-        payload_without_integrity.extend(_pack_section(stype, payload))
+        signed_payload.extend(_pack_section(stype, payload))
+
+    payload_without_integrity = bytearray(signed_payload)
+    if signature_key is not None:
+        signature_payload = _build_signature_payload(
+            bytes(signed_payload),
+            signature_key=signature_key,
+            key_id=signature_key_id,
+        )
+        payload_without_integrity.extend(_pack_section(SECTION_SIGNATURE, signature_payload))
 
     integrity = {
         "manifest_crc32": zlib.crc32(manifest_payload) & 0xFFFFFFFF,
@@ -216,7 +246,9 @@ def parse_seed(data: bytes) -> Seed:
     manifest_payload = None
     recipe_payload = None
     raw_payload = None
+    signature_payload = None
     integrity_payload = None
+    signature_section_start = None
     integrity_section_start = None
 
     for _ in range(section_count):
@@ -236,6 +268,9 @@ def parse_seed(data: bytes) -> Seed:
             recipe_payload = payload
         elif stype == SECTION_RAW:
             raw_payload = payload
+        elif stype == SECTION_SIGNATURE:
+            signature_payload = payload
+            signature_section_start = section_start
         elif stype == SECTION_INTEGRITY:
             integrity_payload = payload
             integrity_section_start = section_start
@@ -253,6 +288,12 @@ def parse_seed(data: bytes) -> Seed:
 
     if integrity_section_start is None:
         raise SeedFormatError("Integrity section position not found.")
+    if (
+        signature_section_start is not None
+        and integrity_section_start is not None
+        and signature_section_start > integrity_section_start
+    ):
+        raise SeedFormatError("Signature section must appear before integrity section.")
 
     expected_manifest_crc = zlib.crc32(manifest_payload) & 0xFFFFFFFF
     expected_recipe_crc = zlib.crc32(recipe_payload) & 0xFFFFFFFF
@@ -305,12 +346,24 @@ def parse_seed(data: bytes) -> Seed:
 
     recipe = decode_recipe(recipe_payload)
     raw_payloads = decode_raw_payloads(raw_payload) if raw_payload is not None else {}
+    signature = None
+    signed_payload = None
+    if signature_payload is not None:
+        try:
+            signature = json.loads(signature_payload.decode("utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            raise SeedFormatError("Signature section is not valid JSON.") from exc
+        if signature_section_start is None:
+            raise SeedFormatError("Signature section position not found.")
+        signed_payload = data[:signature_section_start]
 
     return Seed(
         manifest=manifest,
         recipe=recipe,
         raw_payloads=raw_payloads,
         manifest_compression=manifest_name,
+        signature=signature,
+        signed_payload=signed_payload,
     )
 
 
@@ -324,11 +377,58 @@ def write_seed(
     recipe: Recipe,
     raw_payloads: dict[int, bytes],
     manifest_compression: str,
+    signature_key: str | None = None,
+    signature_key_id: str = "default",
 ) -> None:
     data = serialize_seed(
         manifest=manifest,
         recipe=recipe,
         raw_payloads=raw_payloads,
         manifest_compression=manifest_compression,
+        signature_key=signature_key,
+        signature_key_id=signature_key_id,
     )
     Path(path).write_bytes(data)
+
+
+def sign_seed_file(
+    in_path: str | Path,
+    out_path: str | Path,
+    *,
+    signature_key: str,
+    signature_key_id: str = "default",
+) -> None:
+    seed = read_seed(in_path)
+    write_seed(
+        path=out_path,
+        manifest=seed.manifest,
+        recipe=seed.recipe,
+        raw_payloads=seed.raw_payloads,
+        manifest_compression=seed.manifest_compression,
+        signature_key=signature_key,
+        signature_key_id=signature_key_id,
+    )
+
+
+def verify_signature(seed: Seed, signature_key: str) -> tuple[bool, str | None]:
+    if seed.signature is None:
+        return False, "Signature is missing."
+    if seed.signed_payload is None:
+        return False, "Signed payload is unavailable."
+
+    algorithm = seed.signature.get("algorithm")
+    if algorithm != "hmac-sha256":
+        return False, f"Unsupported signature algorithm: {algorithm}"
+
+    expected_payload_sha = _sha256_hex(seed.signed_payload)
+    if seed.signature.get("signed_payload_sha256") != expected_payload_sha:
+        return False, "Signature payload hash mismatch."
+
+    expected_signature = _hmac_sha256_hex(seed.signed_payload, signature_key)
+    provided_signature = seed.signature.get("signature")
+    if not isinstance(provided_signature, str):
+        return False, "Signature value is missing."
+    if not hmac.compare_digest(provided_signature, expected_signature):
+        return False, "Signature verification failed."
+
+    return True, None
