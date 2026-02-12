@@ -49,6 +49,15 @@ Manifest JSON fields (v1 baseline):
 - `stats`: `{total_chunks,reused_chunks,new_chunks,raw_chunks}`
 - `created_at`: RFC3339 UTC string
 
+Private manifest mode (`--manifest-private`):
+- `manifest_private`: `true`
+- `source_size`: `null`
+- `source_sha256`: `null`
+- `created_at`: omitted
+- `stats`: omitted
+- `chunker`: may be reduced to `{"name": ...}` only
+- Purpose: reduce metadata leakage when publishing/distributing seeds.
+
 ## Recipe Section (Type 2)
 Binary recipe encodes deterministic reconstruction operations.
 

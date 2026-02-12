@@ -203,6 +203,22 @@ def is_encrypted_seed_data(data: bytes) -> bool:
     return len(data) >= 4 and data[:4] == ENC_MAGIC
 
 
+def validate_encrypted_seed_envelope(blob: bytes) -> tuple[int, int, int, int]:
+    if len(blob) < 4 + 2 + 1 + 1 + 8 + 32:
+        raise SeedFormatError("Encrypted seed is too short.")
+    magic, version, salt_len, nonce_len, ciphertext_len = struct.unpack_from(">4sHBBQ", blob, 0)
+    if magic != ENC_MAGIC:
+        raise SeedFormatError("Encrypted seed magic mismatch. Expected HLE1.")
+    if version != ENC_VERSION:
+        raise SeedFormatError(f"Unsupported encrypted seed version: {version}")
+
+    header_len = 16
+    payload_len = header_len + salt_len + nonce_len + ciphertext_len
+    if len(blob) != payload_len + 32:
+        raise SeedFormatError("Encrypted seed length mismatch or truncation detected.")
+    return header_len, salt_len, nonce_len, ciphertext_len
+
+
 def _build_signature_payload(signed_payload: bytes, signature_key: str, key_id: str) -> bytes:
     signature = {
         "algorithm": "hmac-sha256",
@@ -226,18 +242,7 @@ def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
 
 
 def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
-    if len(blob) < 4 + 2 + 1 + 1 + 8 + 32:
-        raise SeedFormatError("Encrypted seed is too short.")
-    magic, version, salt_len, nonce_len, ciphertext_len = struct.unpack_from(">4sHBBQ", blob, 0)
-    if magic != ENC_MAGIC:
-        raise SeedFormatError("Encrypted seed magic mismatch. Expected HLE1.")
-    if version != ENC_VERSION:
-        raise SeedFormatError(f"Unsupported encrypted seed version: {version}")
-
-    header_len = 16
-    payload_len = header_len + salt_len + nonce_len + ciphertext_len
-    if len(blob) != payload_len + 32:
-        raise SeedFormatError("Encrypted seed length mismatch or truncation detected.")
+    header_len, salt_len, nonce_len, ciphertext_len = validate_encrypted_seed_envelope(blob)
 
     salt_off = header_len
     nonce_off = salt_off + salt_len

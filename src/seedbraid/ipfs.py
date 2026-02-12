@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from .container import read_seed
+from .container import is_encrypted_seed_data, read_seed, validate_encrypted_seed_envelope
 from .errors import ExternalToolError, SeedFormatError
 
 
@@ -65,9 +65,15 @@ def fetch_seed(cid: str, out_path: str | Path) -> None:
         msg = proc.stderr.decode("utf-8", errors="replace").strip() or "ipfs cat failed"
         raise ExternalToolError(f"Failed to fetch CID {cid}: {msg}")
 
-    out_path.write_bytes(proc.stdout)
+    blob = proc.stdout
+    out_path.write_bytes(blob)
 
     try:
+        if is_encrypted_seed_data(blob):
+            # Encrypted seeds cannot be fully parsed without a key at fetch time.
+            # Validate envelope structure and defer full validation to decode/verify.
+            validate_encrypted_seed_envelope(blob)
+            return
         read_seed(out_path)
     except SeedFormatError as exc:
         raise ExternalToolError(

@@ -43,9 +43,12 @@ uv run --no-editable helix encode input.bin --genome ./genome --out seed.hlx \
   --chunker cdc_buzhash --avg 65536 --min 16384 --max 262144 \
   --learn --no-portable --compression zlib
 
+uv run --no-editable helix encode input.bin --genome ./genome --out seed.private.hlx \
+  --manifest-private
+
 export HELIX_ENCRYPTION_KEY='your-secret-passphrase'
 uv run --no-editable helix encode input.bin --genome ./genome --out seed.encrypted.hlx \
-  --encrypt
+  --encrypt --manifest-private
 ```
 
 ### Decode
@@ -84,6 +87,9 @@ uv run --no-editable helix genome restore genome.hgs --genome ./genome-dr --repl
 uv run --no-editable helix publish seed.hlx --no-pin
 uv run --no-editable helix publish seed.hlx --pin
 ```
+
+`publish` emits a warning when seed is unencrypted. For sensitive data, prefer:
+`helix encode --encrypt --manifest-private ...` before publishing.
 
 ### Fetch (IPFS)
 ```bash

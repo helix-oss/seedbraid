@@ -16,7 +16,7 @@ from .codec import (
     snapshot_genome,
     verify_seed,
 )
-from .container import sign_seed_file
+from .container import is_encrypted_seed_data, sign_seed_file
 from .errors import ExternalToolError, HelixError
 from .ipfs import fetch_seed, publish_seed
 
@@ -50,6 +50,11 @@ def encode(
     learn: bool = typer.Option(True, "--learn/--no-learn"),
     portable: bool = typer.Option(False, "--portable/--no-portable"),
     compression: str = typer.Option("zlib", "--compression"),
+    manifest_private: bool = typer.Option(
+        False,
+        "--manifest-private/--no-manifest-private",
+        help="Minimize manifest metadata for lower information leakage.",
+    ),
     encrypt: bool = typer.Option(False, "--encrypt/--no-encrypt"),
     encryption_key: str | None = typer.Option(
         None,
@@ -87,6 +92,7 @@ def encode(
             learn=learn,
             portable=portable,
             manifest_compression=compression,
+            manifest_private=manifest_private,
             encryption_key=effective_encryption_key if encrypt else None,
         )
         typer.echo(
@@ -214,6 +220,17 @@ def publish(
     pin: bool = typer.Option(False, "--pin/--no-pin"),
 ) -> None:
     """Publish seed to IPFS and output CID."""
+    try:
+        with seed.open("rb") as f:
+            if not is_encrypted_seed_data(f.read(4)):
+                typer.echo(
+                    "warning: publishing unencrypted seed. "
+                    "Consider `helix encode --encrypt --manifest-private` for sensitive data.",
+                    err=True,
+                )
+    except OSError:
+        # publish_seed will emit actionable error if the file is missing/unreadable.
+        pass
     try:
         cid = publish_seed(seed, pin=pin)
     except (HelixError, ExternalToolError) as exc:

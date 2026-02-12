@@ -69,6 +69,7 @@ def encode_file(
     portable: bool,
     manifest_compression: str,
     encryption_key: str | None = None,
+    manifest_private: bool = False,
 ) -> EncodeStats:
     in_path = Path(in_path)
     genome = open_genome(genome_path)
@@ -123,29 +124,42 @@ def encode_file(
             raw_chunks=raw_chunks,
             unique_hashes=len(hash_table),
         )
-        manifest = {
-            "format": "HLX1",
-            "version": 1,
-            "source_size": in_path.stat().st_size,
-            "source_sha256": sha256_file(in_path),
-            "chunker": {
-                "name": chunker,
-                "min": cfg.min_size,
-                "avg": cfg.avg_size,
-                "max": cfg.max_size,
-                "window_size": cfg.window_size,
-            },
-            "portable": portable,
-            "learn": learn,
-            "stats": {
-                "total_chunks": stats.total_chunks,
-                "reused_chunks": stats.reused_chunks,
-                "new_chunks": stats.new_chunks,
-                "raw_chunks": stats.raw_chunks,
-                "unique_hashes": stats.unique_hashes,
-            },
-            "created_at": dt.datetime.now(dt.UTC).isoformat(),
-        }
+        if manifest_private:
+            manifest = {
+                "format": "HLX1",
+                "version": 1,
+                "manifest_private": True,
+                "source_size": None,
+                "source_sha256": None,
+                "chunker": {"name": chunker},
+                "portable": portable,
+                "learn": learn,
+            }
+        else:
+            manifest = {
+                "format": "HLX1",
+                "version": 1,
+                "manifest_private": False,
+                "source_size": in_path.stat().st_size,
+                "source_sha256": sha256_file(in_path),
+                "chunker": {
+                    "name": chunker,
+                    "min": cfg.min_size,
+                    "avg": cfg.avg_size,
+                    "max": cfg.max_size,
+                    "window_size": cfg.window_size,
+                },
+                "portable": portable,
+                "learn": learn,
+                "stats": {
+                    "total_chunks": stats.total_chunks,
+                    "reused_chunks": stats.reused_chunks,
+                    "new_chunks": stats.new_chunks,
+                    "raw_chunks": stats.raw_chunks,
+                    "unique_hashes": stats.unique_hashes,
+                },
+                "created_at": dt.datetime.now(dt.UTC).isoformat(),
+            }
         recipe = Recipe(hash_table=hash_table, ops=ops)
         write_seed(
             out_seed_path,

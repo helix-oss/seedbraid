@@ -28,17 +28,36 @@
 - Verify/decode enforce expected output SHA-256.
 - Portable mode is opt-in and defaults off.
 - Optional encrypted wrapper (`HLE1`) protects seed confidentiality at rest/in transit when passphrase is provided.
+- Optional private-manifest mode (`--manifest-private`) reduces exposed metadata fields.
+- `helix publish` warns when uploading unencrypted seeds.
 
 ## Limitations
 - CRC32 detects accidental corruption and simple tampering, not cryptographic forgery.
-- No built-in encryption or access control in v2.
+- Encryption is passphrase-based and optional; key distribution and rotation are operator-managed.
 - IPFS content addressing is public-by-default once CID is shared.
+- Manifest-private mode does not hide recipe structure or chunk hashes.
 
 ## Recommended Operational Controls
 - Prefer non-portable seeds for sensitive data when receiver has trusted genome.
 - Encrypt seed before publication when confidentiality is needed.
 - Avoid publishing sensitive manifests; use wrapper metadata encryption.
 - Pin only from trusted nodes and maintain local audit logs.
+
+## Policy Profiles
+1. Internal-only
+- Use non-portable seeds with trusted private genome.
+- Use `--encrypt` and managed key rotation.
+- Restrict CID distribution to authenticated channels.
+
+2. Partner-share
+- Use `--encrypt --manifest-private`.
+- Distribute decryption keys out-of-band.
+- Prefer time-scoped access and audit logs for CID sharing.
+
+3. Public-distribution
+- Assume published CIDs are globally retrievable.
+- Publish only seeds safe for public exposure (or strongly encrypted).
+- Use signatures and reproducible verify workflow for consumer trust.
 
 ## Encryption Option Policy (Future)
 - Add optional envelope encryption section:

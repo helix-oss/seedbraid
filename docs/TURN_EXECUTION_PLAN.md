@@ -48,9 +48,9 @@ Completed turns:
 - [x] Turn 3: `feat: add section sha256 integrity checks to HLX1` (`444f13f`)
 - [x] Turn 4: `feat: add optional seed signature verification`
 - [x] Turn 5: `feat: add optional seed encryption flow`
+- [x] Turn 6: `feat(security): add private-manifest mode and publish warnings`
 
 Pending turns:
-- [ ] Turn 6
 - [ ] Turn 7
 - [ ] Turn 8
 - [ ] Turn 9
