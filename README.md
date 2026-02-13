@@ -9,6 +9,12 @@ Helix v2 provides reference-based reconstruction with deterministic content-defi
 - HLX1 binary seed container (`manifest + recipe + optional RAW + integrity`).
 - IPFS CLI integration (`publish`, `fetch`).
 
+## Why Helix
+- Seed-first architecture: reconstruction intent is shipped as a compact `HLX1` seed (`manifest + recipe`) instead of shipping full blobs repeatedly.
+- End-to-end integrity posture: strict verify mode, compatibility fixtures, and performance gates are built into the project workflow.
+- Practical Web3 distribution: CID publish/fetch is part of the same CLI surface as encode/decode, reducing operational handoffs.
+- Shift-resilient dedup by default: CDC is first-class and benchmarked against fixed chunking with reproducible scripts.
+
 ## Best-Fit Use Cases
 - Large binary versioning: datasets, ML models, media assets, and VM images.
 - Distribution of many similar files: share a common genome and distribute compact seeds.
@@ -188,6 +194,7 @@ Expected behavior:
 - Threat model: `docs/THREAT_MODEL.md`
 - Error codes: `docs/ERROR_CODES.md`
 - Performance gates: `docs/PERFORMANCE.md`
+- Ecosystem integration tickets: `docs/ECOSYSTEM_TICKETS.md`
 - Product packaging/pricing draft: `docs/PRODUCT_PACKAGING_PRICING.md`
 - OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
 - Plan: `PLANS.md`
