@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+import secrets
 from pathlib import Path
 
 import typer
@@ -24,6 +26,7 @@ from .ipfs import fetch_seed, pin_health_status, publish_seed
 app = typer.Typer(help="Helix v2 CLI")
 genome_app = typer.Typer(help="Genome backup and restore operations")
 app.add_typer(genome_app, name="genome")
+ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _cfg(avg: int, min_size: int, max_size: int, window_size: int = 64) -> ChunkerConfig:
@@ -309,6 +312,48 @@ def doctor(
         f"doctor summary ok={report.ok_count} warn={report.warn_count} fail={report.fail_count}"
     )
     raise typer.Exit(code=0 if report.ok else 1)
+
+
+@app.command("gen-encryption-key")
+def gen_encryption_key(
+    bytes_len: int = typer.Option(
+        32,
+        "--bytes",
+        min=16,
+        max=64,
+        help="Entropy bytes used to generate key material.",
+    ),
+    shell: bool = typer.Option(
+        False,
+        "--shell/--no-shell",
+        help="Output in shell export format.",
+    ),
+    env_var: str = typer.Option(
+        "HELIX_ENCRYPTION_KEY",
+        "--env-var",
+        help="Environment variable name used with --shell output.",
+    ),
+) -> None:
+    """Generate a high-entropy passphrase for seed encryption workflows."""
+    if shell and ENV_VAR_NAME_RE.fullmatch(env_var) is None:
+        raise typer.Exit(
+            code=_print_error(
+                HelixError(
+                    f"Invalid environment variable name: {env_var}",
+                    code="HELIX_E_INVALID_OPTION",
+                    next_action=(
+                        "Use --env-var with letters/digits/underscores only, "
+                        "starting with a letter or underscore."
+                    ),
+                )
+            )
+        )
+
+    key = secrets.token_urlsafe(bytes_len)
+    if shell:
+        typer.echo(f"export {env_var}='{key}'")
+    else:
+        typer.echo(key)
 
 
 @app.command()

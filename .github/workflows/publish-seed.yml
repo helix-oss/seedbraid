@@ -41,6 +41,11 @@ on:
         required: true
         type: boolean
         default: false
+      kubo_version:
+        description: "Kubo version to install when dry_run=false"
+        required: true
+        type: string
+        default: "0.32.1"
       pin:
         description: "Pin after publish"
         required: true
@@ -150,6 +155,25 @@ jobs:
           name: generated-seed
           path: ${{ steps.prep.outputs.seed_path }}
           if-no-files-found: warn
+      - name: Install IPFS CLI (Kubo)
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          kubo_version="${{ inputs.kubo_version }}"
+          archive="kubo_v${kubo_version}_linux-amd64.tar.gz"
+          url="https://dist.ipfs.tech/kubo/v${kubo_version}/${archive}"
+
+          if ! curl -fsSL "${url}" -o /tmp/kubo.tgz; then
+            echo "::error::failed to download Kubo from ${url}"
+            echo "next_action: set kubo_version to an available release and retry."
+            exit 1
+          fi
+
+          tar -xzf /tmp/kubo.tgz -C /tmp
+          mkdir -p "${HOME}/.local/bin"
+          install -m 0755 /tmp/kubo/ipfs "${HOME}/.local/bin/ipfs"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+          "${HOME}/.local/bin/ipfs" --version
       - name: Dry-run publish command
         if: ${{ inputs.dry_run }}
         run: |
@@ -167,8 +191,8 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           if ! command -v ipfs >/dev/null 2>&1; then
-            echo "::error::ipfs CLI not found on runner."
-            echo "next_action: install Kubo on the runner, or rerun with dry_run=true."
+            echo "::error::ipfs CLI not found after Kubo install step."
+            echo "next_action: check install logs, or rerun with dry_run=true."
             exit 1
           fi
 
