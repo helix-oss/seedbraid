@@ -264,6 +264,6 @@ Expected behavior:
 - Plan: `PLANS.md`
 
 ## Open Source Governance
-- License: `MIT` (`/Users/kytk/Documents/New project/LICENSE`)
-- Security policy: `/Users/kytk/Documents/New project/SECURITY.md`
-- Contributing guide: `/Users/kytk/Documents/New project/CONTRIBUTING.md`
+- License: `MIT` (`LICENSE`)
+- Security policy: `SECURITY.md`
+- Contributing guide: `CONTRIBUTING.md`
