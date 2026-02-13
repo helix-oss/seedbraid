@@ -37,8 +37,8 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-editable python -m pytest
 uv run --no-editable python -m pytest tests/test_compat_fixtures.py
 ```
 - If HLX behavior changed intentionally:
-  - update `/Users/kytk/Documents/New project/docs/FORMAT.md`
-  - update `/Users/kytk/Documents/New project/docs/DESIGN.md`
+  - update `docs/FORMAT.md`
+  - update `docs/DESIGN.md`
   - regenerate fixtures intentionally and document why
 
 ## 6. Release Metadata (Recommended)
