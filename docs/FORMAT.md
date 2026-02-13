@@ -117,6 +117,9 @@ Signed payload definition:
 - Helix keeps fixture seeds under `tests/fixtures/compat/v1/` as the canonical
   compatibility corpus for HLX1 v1.
 - CI must parse and strictly verify these fixtures on every change.
+- Repository CI baseline is defined in `.github/workflows/ci.yml` and includes
+  lint (`ruff check .`), full tests (`pytest`), fixture compatibility tests
+  (`pytest tests/test_compat_fixtures.py`), and benchmark gates.
 - Any change that breaks fixture parsing/verification is considered breaking and
   must follow all of:
   1. bump container version,

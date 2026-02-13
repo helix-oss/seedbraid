@@ -1,0 +1,77 @@
+name: Publish Seed (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed_path:
+        description: "Repository path to a .hlx seed file"
+        required: true
+        type: string
+      pin:
+        description: "Pin after publish"
+        required: true
+        type: boolean
+        default: false
+      dry_run:
+        description: "Dry-run only (safe default)"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      - name: Validate seed path
+        run: |
+          if [ ! -f "${{ inputs.seed_path }}" ]; then
+            echo "::error::seed file not found: ${{ inputs.seed_path }}"
+            echo "next_action: provide a valid repository path to an existing .hlx file."
+            exit 1
+          fi
+      - name: Install dependencies
+        run: uv sync --no-editable --extra dev
+      - name: Dry-run publish command
+        if: ${{ inputs.dry_run }}
+        run: |
+          pin_flag="--no-pin"
+          if [ "${{ inputs.pin }}" = "true" ]; then
+            pin_flag="--pin"
+          fi
+          echo "dry_run=true"
+          echo "Would run:"
+          echo "uv run --no-sync --no-editable helix publish \"${{ inputs.seed_path }}\" ${pin_flag}"
+      - name: Publish to IPFS
+        id: publish
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if ! command -v ipfs >/dev/null 2>&1; then
+            echo "::error::ipfs CLI not found on runner."
+            echo "next_action: install Kubo on the runner, or rerun with dry_run=true."
+            exit 1
+          fi
+
+          pin_flag="--no-pin"
+          if [ "${{ inputs.pin }}" = "true" ]; then
+            pin_flag="--pin"
+          fi
+
+          cid="$(uv run --no-sync --no-editable helix publish "${{ inputs.seed_path }}" ${pin_flag})"
+          echo "cid=${cid}" >> "$GITHUB_OUTPUT"
+      - name: Publish result
+        if: ${{ !inputs.dry_run }}
+        run: echo "Published CID: ${{ steps.publish.outputs.cid }}"

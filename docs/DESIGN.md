@@ -60,6 +60,16 @@ Migration policy:
 - Performance governance adds benchmark gates for CDC reuse gain, seed-size ratio,
   and encode throughput (`scripts/bench_gate.py`).
 
+## CI Integration Pack (HLX-ECO-001)
+- Primary workflow lives at `.github/workflows/ci.yml`.
+- CI jobs are separated into lint (`ruff check .`), full tests (`pytest`),
+  compatibility fixtures (`pytest tests/test_compat_fixtures.py`), and benchmark
+  gates (`scripts/bench_gate.py`).
+- Benchmark gate is PR-blocking: non-zero exit from `bench_gate.py` fails the
+  workflow and surfaces explicit gate violation lines in logs.
+- Optional publish workflow lives at `.github/workflows/publish-seed.yml` and
+  is manual (`workflow_dispatch`) with `dry_run=true` as the safe default.
+
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
 - Genome path points to writable location.

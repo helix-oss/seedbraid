@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --no-editable --extra dev
+      - name: Ruff lint
+        run: uv run --no-sync --no-editable ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --no-editable --extra dev
+      - name: Pytest
+        run: PYTHONPATH=src uv run --no-sync --no-editable pytest
+
+  compat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --no-editable --extra dev
+      - name: Compatibility fixtures
+        run: PYTHONPATH=src uv run --no-sync --no-editable pytest tests/test_compat_fixtures.py
+
+  bench-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --no-editable --extra dev
+      - name: Benchmark gate (fails PR on regression)
+        run: |
+          uv run --no-sync --no-editable python scripts/bench_gate.py \
+            --min-reuse-improvement-bps 1 \
+            --max-seed-size-ratio 1.20 \
+            --min-cdc-throughput-mib-s 0.10 \
+            --json-out .artifacts/bench-report.json
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: .artifacts/bench-report.json

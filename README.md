@@ -1,5 +1,7 @@
 # Helix v2
 
+[![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+
 Helix v2 provides reference-based reconstruction with deterministic content-defined chunking (CDC), a binary HLX1 seed format, and IPFS publish/fetch transport.
 
 ## Features
@@ -159,6 +161,28 @@ If missing, install Kubo (IPFS CLI) and ensure `ipfs` is on your PATH.
 | IPFS CLI missing | `HELIX_E_IPFS_NOT_FOUND` | Install Kubo and confirm `ipfs --version`. |
 | IPFS fetch/publish failure | `HELIX_E_IPFS_FETCH` / `HELIX_E_IPFS_PUBLISH` | Check daemon/network, retry, use gateway fallback if needed. |
 | Seed parse/integrity failure | `HELIX_E_SEED_FORMAT` | Re-fetch/rebuild seed and verify source integrity. |
+
+## CI (HLX-ECO-001)
+GitHub Actions workflows:
+- `.github/workflows/ci.yml`
+  - Lint: `ruff check .`
+  - Test: `pytest`
+  - Compatibility fixtures: `pytest tests/test_compat_fixtures.py`
+  - Benchmark gate: `python scripts/bench_gate.py ...`
+- `.github/workflows/publish-seed.yml` (manual only, `dry_run=true` default)
+
+Local parity commands:
+```bash
+uv sync --no-editable --extra dev
+uv run --no-sync --no-editable ruff check .
+PYTHONPATH=src uv run --no-sync --no-editable pytest
+PYTHONPATH=src uv run --no-sync --no-editable pytest tests/test_compat_fixtures.py
+uv run --no-sync --no-editable python scripts/bench_gate.py \
+  --min-reuse-improvement-bps 1 \
+  --max-seed-size-ratio 1.20 \
+  --min-cdc-throughput-mib-s 0.10 \
+  --json-out .artifacts/bench-report.json
+```
 
 ## Tests and CI-Equivalent Local Commands
 ```bash
