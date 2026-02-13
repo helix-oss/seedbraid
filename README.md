@@ -189,4 +189,10 @@ Expected behavior:
 - Error codes: `docs/ERROR_CODES.md`
 - Performance gates: `docs/PERFORMANCE.md`
 - Product packaging/pricing draft: `docs/PRODUCT_PACKAGING_PRICING.md`
+- OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
 - Plan: `PLANS.md`
+
+## Open Source Governance
+- License: `MIT` (`/Users/kytk/Documents/New project/LICENSE`)
+- Security policy: `/Users/kytk/Documents/New project/SECURITY.md`
+- Contributing guide: `/Users/kytk/Documents/New project/CONTRIBUTING.md`
