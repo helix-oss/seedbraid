@@ -109,6 +109,14 @@ Signed payload definition:
 - For lossless mode, decode output SHA-256 must equal `manifest.source_sha256`.
 - Verify must report missing required chunk hashes when genome/raw are insufficient.
 
+## IPFS Remote Pinning (Operational, No Wire-Format Change)
+- HLX-ECO-002 adds remote pin operations for published CIDs via provider adapters.
+- Remote pin integration is operational metadata only and does not modify HLX1/HLE1
+  bytes, section layout, or integrity/signature semantics.
+- `helix publish` may optionally trigger remote pin registration after CID creation.
+- `helix pin remote-add` (or equivalent) may register an existing CID with a remote
+  pinning provider.
+
 ## Versioning
 - Backward-incompatible changes require `version` increment and docs update.
 - New optional sections may be added via TLV without changing version.

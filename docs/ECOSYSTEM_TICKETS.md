@@ -66,7 +66,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 
 ## 4. Ticket Backlog
 
-## HLX-ECO-001 (P0) GitHub Actions Integration Pack
+## [x] HLX-ECO-001 (P0) GitHub Actions Integration Pack
 - Goal: provide CI-ready workflows for lint/test/compat/perf and optional publish.
 - Scope:
   - Add `.github/workflows/ci.yml` for `ruff`, `python -m pytest`, compat tests.
@@ -81,7 +81,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - None.
 
-## HLX-ECO-002 (P0) IPFS Pinning Service Adapter
+## [x] HLX-ECO-002 (P0) IPFS Pinning Service Adapter
 - Goal: improve CID durability beyond local node by integrating pinning API providers.
 - Scope:
   - Add provider-agnostic pin adapter interface.
@@ -97,7 +97,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - HLX-ECO-001 recommended (CI for network-mocked tests).
 
-## HLX-ECO-003 (P1) DVC Workflow Bridge
+## [ ] HLX-ECO-003 (P1) DVC Workflow Bridge
 - Goal: make Helix usable inside existing data/ML pipelines.
 - Scope:
   - Provide integration recipe/scripts for DVC stages using Helix seeds.
@@ -112,7 +112,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - None.
 
-## HLX-ECO-004 (P1) OCI/ORAS Artifact Distribution
+## [ ] HLX-ECO-004 (P1) OCI/ORAS Artifact Distribution
 - Goal: distribute HLX seeds through container registries.
 - Scope:
   - Add script(s) for ORAS push/pull of `*.hlx` (media type defined).
@@ -127,7 +127,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - HLX-ECO-001 recommended (workflow smoke job).
 
-## HLX-ECO-005 (P2) ML Tooling Hooks (MLflow / Hugging Face)
+## [ ] HLX-ECO-005 (P2) ML Tooling Hooks (MLflow / Hugging Face)
 - Goal: improve discoverability in ML artifact workflows.
 - Scope:
   - Add optional script to register seed metadata into MLflow.
@@ -152,10 +152,10 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Rollout notes: migration/backward compatibility concerns
 
 ## 6. Suggested Execution Order
-1. `HLX-ECO-001`
-2. `HLX-ECO-002`
-3. `HLX-ECO-003`
-4. `HLX-ECO-004`
-5. `HLX-ECO-005`
+1. `[x] HLX-ECO-001`
+2. `[x] HLX-ECO-002`
+3. `[ ] HLX-ECO-003`
+4. `[ ] HLX-ECO-004`
+5. `[ ] HLX-ECO-005`
 
 This order maximizes early reliability and gives later integrations a stable CI + ops foundation.

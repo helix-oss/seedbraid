@@ -26,6 +26,16 @@ This document defines operator-facing error codes emitted by the Helix CLI.
   - `ipfs cat`/gateway fetch failed after retries.
 - `HELIX_E_IPFS_PIN_STATUS`
   - Pin status query failed unexpectedly.
+- `HELIX_E_REMOTE_PIN_CONFIG`
+  - Remote pin request is missing required provider config (endpoint/token).
+- `HELIX_E_REMOTE_PIN_AUTH`
+  - Remote pin provider rejected authentication/authorization.
+- `HELIX_E_REMOTE_PIN_REQUEST`
+  - Remote pin provider rejected request as invalid (client-side request issue).
+- `HELIX_E_REMOTE_PIN_TIMEOUT`
+  - Remote pin request timed out after configured retries.
+- `HELIX_E_REMOTE_PIN`
+  - Remote pin request failed unexpectedly (server/network/protocol error).
 - `HELIX_E_SEED_NOT_FOUND`
   - Seed path passed to publish does not exist.
 - `HELIX_E_INVALID_OPTION`

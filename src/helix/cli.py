@@ -21,11 +21,13 @@ from .codec import (
 from .container import is_encrypted_seed_data, sign_seed_file
 from .diagnostics import run_doctor
 from .errors import ExternalToolError, HelixError
-from .ipfs import fetch_seed, pin_health_status, publish_seed
+from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
 
 app = typer.Typer(help="Helix v2 CLI")
 genome_app = typer.Typer(help="Genome backup and restore operations")
+pin_app = typer.Typer(help="IPFS pin operations")
 app.add_typer(genome_app, name="genome")
+app.add_typer(pin_app, name="pin")
 ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -226,6 +228,49 @@ def prime(
 def publish(
     seed: Path,
     pin: bool = typer.Option(False, "--pin/--no-pin"),
+    remote_pin: bool = typer.Option(
+        False,
+        "--remote-pin/--no-remote-pin",
+        help="Register published CID with remote pinning provider.",
+    ),
+    remote_provider: str = typer.Option(
+        "psa",
+        "--remote-provider",
+        help="Remote pin provider key (currently: psa).",
+    ),
+    remote_endpoint: str | None = typer.Option(
+        None,
+        "--remote-endpoint",
+        help="Remote pin API endpoint. Defaults to HELIX_PINNING_ENDPOINT.",
+    ),
+    remote_token: str | None = typer.Option(
+        None,
+        "--remote-token",
+        help="Remote pin API bearer token. Defaults to HELIX_PINNING_TOKEN.",
+    ),
+    remote_name: str | None = typer.Option(
+        None,
+        "--remote-name",
+        help="Optional remote pin name. Defaults to seed filename when omitted.",
+    ),
+    remote_timeout_ms: int = typer.Option(
+        10_000,
+        "--remote-timeout-ms",
+        min=1,
+        help="Remote pin request timeout in milliseconds.",
+    ),
+    remote_retries: int = typer.Option(
+        3,
+        "--remote-retries",
+        min=1,
+        help="Remote pin retry attempts.",
+    ),
+    remote_backoff_ms: int = typer.Option(
+        200,
+        "--remote-backoff-ms",
+        min=0,
+        help="Remote pin exponential backoff base in milliseconds.",
+    ),
 ) -> None:
     """Publish seed to IPFS and output CID."""
     try:
@@ -243,6 +288,27 @@ def publish(
         cid = publish_seed(seed, pin=pin)
     except (HelixError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
+
+    if remote_pin:
+        try:
+            report = remote_pin_cid(
+                cid,
+                provider=remote_provider,
+                endpoint=remote_endpoint,
+                token=remote_token,
+                name=remote_name or seed.name,
+                timeout_ms=remote_timeout_ms,
+                retries=remote_retries,
+                backoff_ms=remote_backoff_ms,
+            )
+        except (HelixError, ExternalToolError) as exc:
+            raise typer.Exit(code=_print_error(exc))
+        typer.echo(
+            "remote_pin "
+            f"provider={report.provider} cid={report.cid} status={report.status} "
+            f"request_id={report.request_id or 'none'}"
+        )
+
     typer.echo(cid)
 
 
@@ -291,6 +357,70 @@ def pin_health(cid: str) -> None:
     if report["reason"]:
         typer.echo(f"reason={report['reason']}", err=not bool(report["ok"]))
     raise typer.Exit(code=0 if report["ok"] else 1)
+
+
+@pin_app.command("remote-add")
+def pin_remote_add(
+    cid: str,
+    provider: str = typer.Option(
+        "psa",
+        "--provider",
+        help="Remote pin provider key (currently: psa).",
+    ),
+    endpoint: str | None = typer.Option(
+        None,
+        "--endpoint",
+        help="Remote pin API endpoint. Defaults to HELIX_PINNING_ENDPOINT.",
+    ),
+    token: str | None = typer.Option(
+        None,
+        "--token",
+        help="Remote pin API bearer token. Defaults to HELIX_PINNING_TOKEN.",
+    ),
+    name: str | None = typer.Option(
+        None,
+        "--name",
+        help="Optional display name for remote pin request.",
+    ),
+    timeout_ms: int = typer.Option(
+        10_000,
+        "--timeout-ms",
+        min=1,
+        help="Remote pin request timeout in milliseconds.",
+    ),
+    retries: int = typer.Option(
+        3,
+        "--retries",
+        min=1,
+        help="Remote pin retry attempts.",
+    ),
+    backoff_ms: int = typer.Option(
+        200,
+        "--backoff-ms",
+        min=0,
+        help="Remote pin exponential backoff base in milliseconds.",
+    ),
+) -> None:
+    """Register existing CID with remote pinning provider."""
+    try:
+        report = remote_pin_cid(
+            cid,
+            provider=provider,
+            endpoint=endpoint,
+            token=token,
+            name=name,
+            timeout_ms=timeout_ms,
+            retries=retries,
+            backoff_ms=backoff_ms,
+        )
+    except (HelixError, ExternalToolError) as exc:
+        raise typer.Exit(code=_print_error(exc))
+
+    typer.echo(
+        "remote_pin "
+        f"provider={report.provider} cid={report.cid} status={report.status} "
+        f"request_id={report.request_id or 'none'}"
+    )
 
 
 @app.command()

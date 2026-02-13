@@ -78,6 +78,14 @@ Migration policy:
 - CLI includes `helix gen-encryption-key` for operator-safe generation of
   `HELIX_ENCRYPTION_KEY` secrets from command line workflows.
 
+## Remote Pinning Adapter (HLX-ECO-002)
+- Add provider-agnostic remote pin adapter interface for CID durability workflows.
+- First provider implementation targets Pinning Services API-compatible endpoints.
+- `helix publish` can optionally trigger remote pin after local CID creation.
+- CLI adds explicit remote-pin options for provider, endpoint/token, timeout, and retries.
+- `helix pin remote-add` allows pinning an existing CID without re-publishing seed bytes.
+- Remote pin failures use dedicated `HELIX_E_*` operator codes with actionable hints.
+
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
 - Genome path points to writable location.

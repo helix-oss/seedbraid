@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import time
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from .container import is_encrypted_seed_data, read_seed, validate_encrypted_seed_envelope
 from .errors import ExternalToolError, SeedFormatError
+from .pinning import RemotePinResult, build_remote_pin_provider
 
 
 def _require_ipfs() -> str:
@@ -229,3 +231,47 @@ def pin_health_status(cid: str) -> dict[str, str | bool | None]:
         "ok": pinned and block_available,
         "reason": reason,
     }
+
+
+def remote_pin_cid(
+    cid: str,
+    *,
+    provider: str = "psa",
+    endpoint: str | None = None,
+    token: str | None = None,
+    name: str | None = None,
+    timeout_ms: int = 10_000,
+    retries: int = 3,
+    backoff_ms: int = 200,
+) -> RemotePinResult:
+    resolved_endpoint = endpoint or os.environ.get("HELIX_PINNING_ENDPOINT")
+    resolved_token = token or os.environ.get("HELIX_PINNING_TOKEN")
+
+    missing: list[str] = []
+    if not resolved_endpoint:
+        missing.append("endpoint")
+    if not resolved_token:
+        missing.append("token")
+    if missing:
+        missing_csv = ", ".join(missing)
+        raise ExternalToolError(
+            f"Remote pin configuration is incomplete (missing {missing_csv}).",
+            code="HELIX_E_REMOTE_PIN_CONFIG",
+            next_action=(
+                "Set HELIX_PINNING_ENDPOINT and HELIX_PINNING_TOKEN, "
+                "or pass --endpoint/--token explicitly."
+            ),
+        )
+
+    adapter = build_remote_pin_provider(
+        provider,
+        endpoint=str(resolved_endpoint),
+        token=str(resolved_token),
+    )
+    return adapter.remote_add(
+        cid,
+        name=name,
+        timeout_ms=timeout_ms,
+        retries=retries,
+        backoff_ms=backoff_ms,
+    )

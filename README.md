@@ -10,6 +10,7 @@ Helix v2 provides reference-based reconstruction with deterministic content-defi
 - Genome storage (SQLite) for deduplicated chunk reuse.
 - HLX1 binary seed container (`manifest + recipe + optional RAW + integrity`).
 - IPFS CLI integration (`publish`, `fetch`).
+- Optional remote pin integration (`pin remote-add`, publish-time remote pin).
 
 ## Why Helix
 - Seed-first architecture: reconstruction intent is shipped as a compact `HLX1` seed (`manifest + recipe`) instead of shipping full blobs repeatedly.
@@ -110,10 +111,14 @@ uv run --no-editable helix genome restore genome.hgs --genome ./genome-dr --repl
 ```bash
 uv run --no-editable helix publish seed.hlx --no-pin
 uv run --no-editable helix publish seed.hlx --pin
+uv run --no-editable helix publish seed.hlx --remote-pin \
+  --remote-endpoint https://pin.example/api/v1 --remote-token "$HELIX_PINNING_TOKEN"
 ```
 
 `publish` emits a warning when seed is unencrypted. For sensitive data, prefer:
 `helix encode --encrypt --manifest-private ...` before publishing.
+When `--remote-pin` is enabled, Helix also registers CID with configured remote
+pin provider (Pinning Services API-compatible).
 
 ### Fetch (IPFS)
 ```bash
@@ -127,6 +132,13 @@ uv run --no-editable helix fetch <cid> --out fetched.hlx --gateway https://ipfs.
 ### Pin Health (IPFS)
 ```bash
 uv run --no-editable helix pin-health <cid>
+```
+
+### Remote Pin Add (IPFS)
+```bash
+export HELIX_PINNING_ENDPOINT='https://pin.example/api/v1'
+export HELIX_PINNING_TOKEN='your-api-token'
+uv run --no-editable helix pin remote-add <cid>
 ```
 
 ### Doctor
@@ -176,6 +188,10 @@ If missing, install Kubo (IPFS CLI) and ensure `ipfs` is on your PATH.
 | Signing requested but key missing | `HELIX_E_SIGNING_KEY_MISSING` | Export signing key env var and retry `helix sign`. |
 | IPFS CLI missing | `HELIX_E_IPFS_NOT_FOUND` | Install Kubo and confirm `ipfs --version`. |
 | IPFS fetch/publish failure | `HELIX_E_IPFS_FETCH` / `HELIX_E_IPFS_PUBLISH` | Check daemon/network, retry, use gateway fallback if needed. |
+| Remote pin configuration missing | `HELIX_E_REMOTE_PIN_CONFIG` | Set endpoint/token env vars or pass options. |
+| Remote pin auth failed | `HELIX_E_REMOTE_PIN_AUTH` | Verify provider token permissions and retry. |
+| Remote pin request invalid | `HELIX_E_REMOTE_PIN_REQUEST` | Check CID/provider options and retry. |
+| Remote pin timeout/failure | `HELIX_E_REMOTE_PIN_TIMEOUT` / `HELIX_E_REMOTE_PIN` | Increase retries/timeout or check provider health. |
 | Seed parse/integrity failure | `HELIX_E_SEED_FORMAT` | Re-fetch/rebuild seed and verify source integrity. |
 
 ## CI (HLX-ECO-001)
