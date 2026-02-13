@@ -44,6 +44,22 @@ Refresh lockfile after dependency changes:
 uv lock
 ```
 
+## Generate Encryption Key
+Generate a high-entropy key for `HELIX_ENCRYPTION_KEY`:
+```bash
+uv run --no-editable helix gen-encryption-key
+```
+
+Print shell export format:
+```bash
+uv run --no-editable helix gen-encryption-key --shell
+```
+
+Set current shell variable directly:
+```bash
+eval "$(uv run --no-editable helix gen-encryption-key --shell)"
+```
+
 ## CLI
 ### Encode
 ```bash
@@ -173,6 +189,7 @@ GitHub Actions workflows:
   - Generates seed from `source_path` via `helix encode`
   - Runs strict integrity check via `helix verify --strict`
   - Publishes to IPFS only when `dry_run=false`
+  - Installs Kubo (`ipfs` CLI) on runner when `dry_run=false` (version configurable via `kubo_version`)
   - Supports `pin`, `portable`, `manifest_private`, and optional `encrypt`
     (`HELIX_ENCRYPTION_KEY` secret required when `encrypt=true`)
 

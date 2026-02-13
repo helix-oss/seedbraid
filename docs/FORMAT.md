@@ -150,6 +150,9 @@ Semantics:
 - Plain HLX1 payload is encrypted with a key derived from passphrase + salt.
 - MAC is validated before decryption output is accepted.
 - On MAC failure, parser must fail with explicit tamper/wrong-key error.
+- Helix CLI provides `helix gen-encryption-key` to generate a high-entropy
+  passphrase for `HELIX_ENCRYPTION_KEY` usage; this helper does not change
+  HLE1 wire format.
 - Existing unencrypted HLX1 files remain valid and unchanged.
 
 ## Genes Pack (Optional Utility Format)

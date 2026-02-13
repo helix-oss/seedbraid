@@ -70,6 +70,10 @@ Migration policy:
 - Optional publish workflow lives at `.github/workflows/publish-seed.yml`, is
   manual (`workflow_dispatch`), and performs `encode -> verify --strict ->
   publish` with `dry_run=true` as the safe default.
+- In real publish mode (`dry_run=false`), workflow installs Kubo (`ipfs` CLI)
+  on runner before publish so hosted runners can execute IPFS operations.
+- CLI includes `helix gen-encryption-key` for operator-safe generation of
+  `HELIX_ENCRYPTION_KEY` secrets from command line workflows.
 
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
