@@ -170,6 +170,11 @@ GitHub Actions workflows:
   - Compatibility fixtures: `pytest tests/test_compat_fixtures.py`
   - Benchmark gate: `python scripts/bench_gate.py ...`
 - `.github/workflows/publish-seed.yml` (manual only, `dry_run=true` default)
+  - Generates seed from `source_path` via `helix encode`
+  - Runs strict integrity check via `helix verify --strict`
+  - Publishes to IPFS only when `dry_run=false`
+  - Supports `pin`, `portable`, `manifest_private`, and optional `encrypt`
+    (`HELIX_ENCRYPTION_KEY` secret required when `encrypt=true`)
 
 Local parity commands:
 ```bash

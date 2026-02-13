@@ -120,6 +120,9 @@ Signed payload definition:
 - Repository CI baseline is defined in `.github/workflows/ci.yml` and includes
   lint (`ruff check .`), full tests (`pytest`), fixture compatibility tests
   (`pytest tests/test_compat_fixtures.py`), and benchmark gates.
+- Optional publish workflow (`.github/workflows/publish-seed.yml`) is manual and
+  runs `helix encode` + strict `helix verify` before optional IPFS publish
+  (`dry_run=true` by default) to prevent publishing unverified seeds.
 - Any change that breaks fixture parsing/verification is considered breaking and
   must follow all of:
   1. bump container version,

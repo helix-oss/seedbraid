@@ -67,8 +67,9 @@ Migration policy:
   gates (`scripts/bench_gate.py`).
 - Benchmark gate is PR-blocking: non-zero exit from `bench_gate.py` fails the
   workflow and surfaces explicit gate violation lines in logs.
-- Optional publish workflow lives at `.github/workflows/publish-seed.yml` and
-  is manual (`workflow_dispatch`) with `dry_run=true` as the safe default.
+- Optional publish workflow lives at `.github/workflows/publish-seed.yml`, is
+  manual (`workflow_dispatch`), and performs `encode -> verify --strict ->
+  publish` with `dry_run=true` as the safe default.
 
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.

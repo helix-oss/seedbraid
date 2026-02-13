@@ -3,10 +3,44 @@ name: Publish Seed (Manual)
 on:
   workflow_dispatch:
     inputs:
-      seed_path:
-        description: "Repository path to a .hlx seed file"
+      source_path:
+        description: "Repository path to source file to encode"
         required: true
         type: string
+      seed_path:
+        description: "Output path for generated seed"
+        required: true
+        type: string
+        default: ".artifacts/publish/seed.hlx"
+      genome_path:
+        description: "Genome path used during encode/verify"
+        required: true
+        type: string
+        default: ".artifacts/publish/genome.db"
+      chunker:
+        description: "Chunker for encode"
+        required: true
+        type: choice
+        options:
+          - cdc_buzhash
+          - cdc_rabin
+          - fixed
+        default: cdc_buzhash
+      portable:
+        description: "Generate portable seed"
+        required: true
+        type: boolean
+        default: true
+      manifest_private:
+        description: "Enable --manifest-private"
+        required: true
+        type: boolean
+        default: true
+      encrypt:
+        description: "Enable --encrypt (requires HELIX_ENCRYPTION_KEY secret)"
+        required: true
+        type: boolean
+        default: false
       pin:
         description: "Pin after publish"
         required: true
@@ -36,15 +70,86 @@ jobs:
           python-version: "3.12"
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Validate seed path
+      - name: Validate source path
         run: |
-          if [ ! -f "${{ inputs.seed_path }}" ]; then
-            echo "::error::seed file not found: ${{ inputs.seed_path }}"
-            echo "next_action: provide a valid repository path to an existing .hlx file."
+          if [ ! -f "${{ inputs.source_path }}" ]; then
+            echo "::error::source file not found: ${{ inputs.source_path }}"
+            echo "next_action: provide a valid repository path to an existing input file."
             exit 1
           fi
       - name: Install dependencies
         run: uv sync --no-editable --extra dev
+      - name: Validate encryption key
+        if: ${{ inputs.encrypt }}
+        env:
+          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+        run: |
+          if [ -z "${HELIX_ENCRYPTION_KEY}" ]; then
+            echo "::error::encrypt=true but secret HELIX_ENCRYPTION_KEY is missing."
+            echo "next_action: configure HELIX_ENCRYPTION_KEY secret, or rerun with encrypt=false."
+            exit 1
+          fi
+      - name: Prepare output paths
+        id: prep
+        run: |
+          seed_dir="$(dirname "${{ inputs.seed_path }}")"
+          genome_dir="$(dirname "${{ inputs.genome_path }}")"
+          mkdir -p "${seed_dir}" "${genome_dir}"
+          echo "seed_path=${{ inputs.seed_path }}" >> "$GITHUB_OUTPUT"
+          echo "genome_path=${{ inputs.genome_path }}" >> "$GITHUB_OUTPUT"
+      - name: Encode seed
+        env:
+          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+        run: |
+          portable_flag="--portable"
+          if [ "${{ inputs.portable }}" != "true" ]; then
+            portable_flag="--no-portable"
+          fi
+
+          cmd=(
+            uv run --no-sync --no-editable helix encode "${{ inputs.source_path }}"
+            --genome "${{ steps.prep.outputs.genome_path }}"
+            --out "${{ steps.prep.outputs.seed_path }}"
+            --chunker "${{ inputs.chunker }}"
+            --avg 65536 --min 16384 --max 262144
+            --learn "${portable_flag}"
+            --compression zlib
+          )
+          if [ "${{ inputs.manifest_private }}" = "true" ]; then
+            cmd+=(--manifest-private)
+          fi
+          if [ "${{ inputs.encrypt }}" = "true" ]; then
+            cmd+=(--encrypt)
+          fi
+
+          printf 'encode_command='
+          printf '%q ' "${cmd[@]}"
+          echo
+          "${cmd[@]}"
+      - name: Verify generated seed (strict)
+        env:
+          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+        run: |
+          cmd=(
+            uv run --no-sync --no-editable helix verify "${{ steps.prep.outputs.seed_path }}"
+            --genome "${{ steps.prep.outputs.genome_path }}"
+            --strict
+          )
+          if [ "${{ inputs.encrypt }}" = "true" ]; then
+            cmd+=(--encryption-key "${HELIX_ENCRYPTION_KEY}")
+          fi
+
+          printf 'verify_command='
+          printf '%q ' "${cmd[@]}"
+          echo
+          "${cmd[@]}"
+      - name: Upload generated seed artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-seed
+          path: ${{ steps.prep.outputs.seed_path }}
+          if-no-files-found: warn
       - name: Dry-run publish command
         if: ${{ inputs.dry_run }}
         run: |
@@ -52,9 +157,11 @@ jobs:
           if [ "${{ inputs.pin }}" = "true" ]; then
             pin_flag="--pin"
           fi
+
           echo "dry_run=true"
+          echo "encode_and_verify=completed"
           echo "Would run:"
-          echo "uv run --no-sync --no-editable helix publish \"${{ inputs.seed_path }}\" ${pin_flag}"
+          echo "uv run --no-sync --no-editable helix publish \"${{ steps.prep.outputs.seed_path }}\" ${pin_flag}"
       - name: Publish to IPFS
         id: publish
         if: ${{ !inputs.dry_run }}
@@ -70,7 +177,7 @@ jobs:
             pin_flag="--pin"
           fi
 
-          cid="$(uv run --no-sync --no-editable helix publish "${{ inputs.seed_path }}" ${pin_flag})"
+          cid="$(uv run --no-sync --no-editable helix publish "${{ steps.prep.outputs.seed_path }}" ${pin_flag})"
           echo "cid=${cid}" >> "$GITHUB_OUTPUT"
       - name: Publish result
         if: ${{ !inputs.dry_run }}
