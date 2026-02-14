@@ -224,6 +224,12 @@ uv run --no-sync --no-editable python scripts/bench_gate.py \
   --json-out .artifacts/bench-report.json
 ```
 
+## DVC Integration (HLX-ECO-003)
+- Minimal DVC bridge lives in `examples/dvc/`.
+- Pipeline stages are `encode -> verify --strict -> fetch`.
+- `verify` stage is strict and must fail pipeline reproduction on integrity mismatch.
+- Integration recipe and artifact layout are documented in `examples/dvc/README.md`.
+
 ## Tests and CI-Equivalent Local Commands
 ```bash
 uv run --no-editable ruff check .
@@ -259,6 +265,7 @@ Expected behavior:
 - Error codes: `docs/ERROR_CODES.md`
 - Performance gates: `docs/PERFORMANCE.md`
 - Ecosystem integration tickets: `docs/ECOSYSTEM_TICKETS.md`
+- DVC workflow bridge example: `examples/dvc/README.md`
 - Product packaging/pricing draft: `docs/PRODUCT_PACKAGING_PRICING.md`
 - OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
 - Plan: `PLANS.md`

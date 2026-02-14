@@ -86,6 +86,20 @@ Migration policy:
 - `helix pin remote-add` allows pinning an existing CID without re-publishing seed bytes.
 - Remote pin failures use dedicated `HELIX_E_*` operator codes with actionable hints.
 
+## DVC Workflow Bridge (HLX-ECO-003)
+- Add `examples/dvc/` as a minimal, script-driven DVC pipeline for
+  `encode -> verify --strict -> fetch` Helix seed workflows.
+- DVC bridge is operational glue only. It does not change chunking, genome storage,
+  HLX1/HLE1 serialization, or integrity semantics.
+- Recommended pipeline artifact layout:
+  - `artifacts/seed/current.hlx`: encoded seed tracked by DVC.
+  - `artifacts/genome/snapshot.hgs`: reproducible genome snapshot for handoff/backup.
+  - `artifacts/metadata/*`: sidecar metadata (`seed.cid`, `verify.ok`, digest files).
+  - `artifacts/fetched/current.hlx`: fetched seed for downstream stages.
+- Verify stage must call `helix verify --strict` so integrity mismatch (or missing
+  chunks) fails DVC reproduction early.
+- Out of scope remains custom DVC plugin/registry integration.
+
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
 - Genome path points to writable location.

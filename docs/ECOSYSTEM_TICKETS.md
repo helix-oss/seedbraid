@@ -97,7 +97,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - HLX-ECO-001 recommended (CI for network-mocked tests).
 
-## [ ] HLX-ECO-003 (P1) DVC Workflow Bridge
+## [x] HLX-ECO-003 (P1) DVC Workflow Bridge
 - Goal: make Helix usable inside existing data/ML pipelines.
 - Scope:
   - Provide integration recipe/scripts for DVC stages using Helix seeds.
@@ -154,7 +154,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 ## 6. Suggested Execution Order
 1. `[x] HLX-ECO-001`
 2. `[x] HLX-ECO-002`
-3. `[ ] HLX-ECO-003`
+3. `[x] HLX-ECO-003`
 4. `[ ] HLX-ECO-004`
 5. `[ ] HLX-ECO-005`
 

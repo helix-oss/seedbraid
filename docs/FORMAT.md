@@ -117,6 +117,17 @@ Signed payload definition:
 - `helix pin remote-add` (or equivalent) may register an existing CID with a remote
   pinning provider.
 
+## DVC Workflow Bridge (Operational, No Wire-Format Change)
+- HLX-ECO-003 adds DVC integration recipes/scripts under `examples/dvc/` for
+  `encode -> verify -> fetch` workflows.
+- The bridge reuses existing artifact formats only:
+  - seed: `*.hlx` (`HLX1`/`HLE1`)
+  - genome snapshot: `*.hgs` (`HGS1`)
+  - metadata sidecars: UTF-8 text/JSON files (for example CID and verify marker)
+- DVC tracking metadata does not modify seed/genome bytes.
+- Integrity enforcement remains `helix verify --strict`; verification failure is
+  expected to fail the corresponding pipeline stage.
+
 ## Versioning
 - Backward-incompatible changes require `version` increment and docs update.
 - New optional sections may be added via TLV without changing version.
