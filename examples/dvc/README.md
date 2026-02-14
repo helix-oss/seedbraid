@@ -12,10 +12,24 @@ This example shows a minimal DVC pipeline that uses Helix seeds in three stages:
 - `dvc` available on `PATH`
 - `ipfs` CLI available on `PATH` and daemon reachable
 
-Check IPFS CLI and daemon before running the fetch stage:
+## IPFS Setup (for fetch stage)
+
+Run this once on a new machine:
 
 ```bash
 ipfs --version
+ipfs init
+```
+
+Start daemon in a dedicated terminal:
+
+```bash
+ipfs daemon
+```
+
+In another terminal, confirm connectivity:
+
+```bash
 ipfs id
 ```
 
