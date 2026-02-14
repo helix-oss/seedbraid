@@ -144,6 +144,20 @@ Signed payload definition:
 - `oras push`/`oras pull` must preserve seed bytes exactly; post-pull integrity is
   enforced by running `helix verify` against the pulled seed.
 
+## ML Tooling Hooks (Operational, No Wire-Format Change)
+- HLX-ECO-005 adds optional scripts for logging Helix seed metadata to MLflow and
+  uploading seed + metadata sidecars to Hugging Face Hub.
+- Added metadata is sidecar JSON only and does not mutate HLX1/HLE1 bytes.
+- Sidecar metadata is derived from seed manifest + seed file digest and may include
+  optional transport pointers (for example IPFS CID or OCI reference).
+- Reproducible restore still depends on `helix verify --strict` using:
+  - retrieved seed bytes
+  - matching genome path (or portable RAW coverage)
+  - optional encryption key for HLE1 seeds
+- Security requirement: metadata can expose provenance fields (`source_sha256`,
+  chunker profile, transport references); public uploads should use
+  `--manifest-private` and encrypted seeds when needed.
+
 ## Versioning
 - Backward-incompatible changes require `version` increment and docs update.
 - New optional sections may be added via TLV without changing version.

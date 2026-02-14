@@ -242,6 +242,12 @@ uv run --no-sync --no-editable python scripts/bench_gate.py \
 - After pull, run strict verification:
   - `helix verify <out.hlx> --genome <genome-path> --strict`
 
+## ML Tooling Hooks (HLX-ECO-005)
+- Scripts for MLflow metadata logging and Hugging Face upload live in `examples/ml/`.
+- MLflow hook logs seed metadata fields (seed digest, manifest provenance, optional transport refs).
+- Hugging Face hook uploads `seed.hlx` + metadata sidecar with env-provided token credentials.
+- Restore workflow from logged metadata is documented in `examples/ml/README.md`.
+
 ## Tests and CI-Equivalent Local Commands
 ```bash
 uv run --no-editable ruff check .
@@ -279,6 +285,7 @@ Expected behavior:
 - Ecosystem integration tickets: `docs/ECOSYSTEM_TICKETS.md`
 - DVC workflow bridge example: `examples/dvc/README.md`
 - OCI/ORAS distribution example: `examples/oci/README.md`
+- ML tooling hooks example: `examples/ml/README.md`
 - Product packaging/pricing draft: `docs/PRODUCT_PACKAGING_PRICING.md`
 - OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
 - Plan: `PLANS.md`

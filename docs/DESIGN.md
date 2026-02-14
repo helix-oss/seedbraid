@@ -114,6 +114,22 @@ Migration policy:
 - Provider usage docs cover GHCR/ECR/GAR authentication entry points only.
 - Out of scope remains provider-specific IAM automation.
 
+## ML Tooling Hooks (HLX-ECO-005)
+- Add optional MLflow logging script for registering Helix seed metadata per run.
+- Add optional Hugging Face upload script for seed file + metadata sidecar.
+- Metadata model is intentionally minimal and reproducible:
+  - seed filename + seed SHA-256
+  - manifest-derived fields (source SHA, chunker, manifest-private flag)
+  - optional transport pointers (CID / OCI reference)
+- Restore workflow is documented from logged metadata:
+  1. fetch referenced seed artifact,
+  2. ensure required genome availability (or portable seed),
+  3. run strict `helix verify`,
+  4. decode with encryption key only when seed is HLE1.
+- Security caveat is explicit: avoid public leakage of provenance metadata unless
+  seed is prepared with `--manifest-private` and access controls are appropriate.
+- Out of scope remains managed production inference/deployment automation.
+
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
 - Genome path points to writable location.

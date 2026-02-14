@@ -127,7 +127,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - HLX-ECO-001 recommended (workflow smoke job).
 
-## [ ] HLX-ECO-005 (P2) ML Tooling Hooks (MLflow / Hugging Face)
+## [x] HLX-ECO-005 (P2) ML Tooling Hooks (MLflow / Hugging Face)
 - Goal: improve discoverability in ML artifact workflows.
 - Scope:
   - Add optional script to register seed metadata into MLflow.
@@ -156,6 +156,6 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 2. `[x] HLX-ECO-002`
 3. `[x] HLX-ECO-003`
 4. `[x] HLX-ECO-004`
-5. `[ ] HLX-ECO-005`
+5. `[x] HLX-ECO-005`
 
 This order maximizes early reliability and gives later integrations a stable CI + ops foundation.

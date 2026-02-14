@@ -46,6 +46,14 @@ This document defines operator-facing error codes emitted by the Helix CLI.
   - Signing requested without signing key env var.
 - `HELIX_E_DOCTOR_CHECK`
   - Doctor check encountered an unexpected exception.
+- `HELIX_E_MLFLOW_CONFIG`
+  - MLflow metadata logging is missing required configuration.
+- `HELIX_E_MLFLOW_REQUEST`
+  - MLflow API request for metadata logging failed.
+- `HELIX_E_HF_CONFIG`
+  - Hugging Face upload config is invalid or missing credentials.
+- `HELIX_E_HF_REQUEST`
+  - Hugging Face upload request/CLI invocation failed.
 
 ## Guidance
 - Add new code entries when introducing a new operator-facing error class.
