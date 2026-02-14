@@ -230,6 +230,18 @@ uv run --no-sync --no-editable python scripts/bench_gate.py \
 - `verify` stage is strict and must fail pipeline reproduction on integrity mismatch.
 - Integration recipe and artifact layout are documented in `examples/dvc/README.md`.
 
+## OCI Integration (HLX-ECO-004)
+- ORAS bridge scripts and usage docs live in `examples/oci/`.
+- Default OCI metadata convention:
+  - artifact type: `application/vnd.helix.seed.v1`
+  - layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+  - annotations: source SHA-256, chunker, manifest-private flag, seed title
+- Push/pull scripts:
+  - `examples/oci/scripts/push_seed.sh <seed.hlx> <registry/repository:tag>`
+  - `examples/oci/scripts/pull_seed.sh <registry/repository:tag> <out.hlx>`
+- After pull, run strict verification:
+  - `helix verify <out.hlx> --genome <genome-path> --strict`
+
 ## Tests and CI-Equivalent Local Commands
 ```bash
 uv run --no-editable ruff check .
@@ -266,6 +278,7 @@ Expected behavior:
 - Performance gates: `docs/PERFORMANCE.md`
 - Ecosystem integration tickets: `docs/ECOSYSTEM_TICKETS.md`
 - DVC workflow bridge example: `examples/dvc/README.md`
+- OCI/ORAS distribution example: `examples/oci/README.md`
 - Product packaging/pricing draft: `docs/PRODUCT_PACKAGING_PRICING.md`
 - OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
 - Plan: `PLANS.md`

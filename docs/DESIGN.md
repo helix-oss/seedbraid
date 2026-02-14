@@ -100,6 +100,20 @@ Migration policy:
   chunks) fails DVC reproduction early.
 - Out of scope remains custom DVC plugin/registry integration.
 
+## OCI/ORAS Artifact Distribution (HLX-ECO-004)
+- Add ORAS bridge scripts for pushing/pulling Helix seed artifacts via OCI
+  registry references (`registry/repository:tag`).
+- Define and document Helix media/annotation conventions so registry metadata is
+  machine-readable across providers:
+  - artifact type: `application/vnd.helix.seed.v1`
+  - layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+  - annotations: source SHA-256, chunker name, manifest-private flag.
+- Push flow extracts manifest metadata from seed and writes OCI annotations.
+- Pull flow restores the seed file from registry artifact payload without changing
+  seed bytes; verification remains `helix verify --strict`.
+- Provider usage docs cover GHCR/ECR/GAR authentication entry points only.
+- Out of scope remains provider-specific IAM automation.
+
 ## Assumptions
 - `ipfs` CLI installed/configured when publish/fetch is used.
 - Genome path points to writable location.

@@ -128,6 +128,22 @@ Signed payload definition:
 - Integrity enforcement remains `helix verify --strict`; verification failure is
   expected to fail the corresponding pipeline stage.
 
+## OCI/ORAS Artifact Distribution (Operational, No Wire-Format Change)
+- HLX-ECO-004 adds ORAS push/pull scripts for distributing `*.hlx` seeds through
+  OCI registries.
+- Distribution uses OCI transport metadata only; HLX1/HLE1 bytes are unchanged.
+- Defined media/metadata conventions:
+  - OCI artifact type: `application/vnd.helix.seed.v1`
+  - seed layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+  - annotations:
+    - `io.helix.seed.source-sha256`
+    - `io.helix.seed.chunker`
+    - `io.helix.seed.manifest-private`
+    - `org.opencontainers.image.title`
+- Annotation values come from seed manifest fields and are serialized as strings.
+- `oras push`/`oras pull` must preserve seed bytes exactly; post-pull integrity is
+  enforced by running `helix verify` against the pulled seed.
+
 ## Versioning
 - Backward-incompatible changes require `version` increment and docs update.
 - New optional sections may be added via TLV without changing version.

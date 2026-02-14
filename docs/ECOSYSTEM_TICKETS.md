@@ -112,7 +112,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Dependencies:
   - None.
 
-## [ ] HLX-ECO-004 (P1) OCI/ORAS Artifact Distribution
+## [x] HLX-ECO-004 (P1) OCI/ORAS Artifact Distribution
 - Goal: distribute HLX seeds through container registries.
 - Scope:
   - Add script(s) for ORAS push/pull of `*.hlx` (media type defined).
@@ -155,7 +155,7 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 1. `[x] HLX-ECO-001`
 2. `[x] HLX-ECO-002`
 3. `[x] HLX-ECO-003`
-4. `[ ] HLX-ECO-004`
+4. `[x] HLX-ECO-004`
 5. `[ ] HLX-ECO-005`
 
 This order maximizes early reliability and gives later integrations a stable CI + ops foundation.
