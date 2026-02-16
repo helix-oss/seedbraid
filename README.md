@@ -4,6 +4,50 @@
 
 Helix provides reference-based reconstruction with deterministic content-defined chunking (CDC), a binary HLX1 seed format, and IPFS publish/fetch transport.
 
+## Alpha Status (Read First)
+- Helix is currently in alpha stage.
+- Before production use, run strict validation in your own runtime/storage/network environment.
+- Treat successful `verify --strict` and bit-perfect restore checks as release gates for your team.
+
+## Strict Validation Workflow (Required Before Production)
+Run the following smoke workflow before relying on Helix in CI/CD or production pipelines:
+
+```bash
+uv sync --no-editable --extra dev
+
+workdir="$(mktemp -d)"
+python3 - <<'PY' "$workdir/input.bin"
+from pathlib import Path
+import sys
+
+out = Path(sys.argv[1])
+payload = (b"helix-alpha-smoke" * 20000) + bytes(range(256)) * 200
+out.write_bytes(payload)
+print(f"wrote {out} bytes={len(payload)}")
+PY
+
+uv run --no-sync --no-editable helix encode "$workdir/input.bin" \
+  --genome "$workdir/genome" \
+  --out "$workdir/seed.hlx" \
+  --chunker cdc_buzhash \
+  --avg 65536 --min 16384 --max 262144 \
+  --learn --portable --compression zlib
+
+uv run --no-sync --no-editable helix verify "$workdir/seed.hlx" \
+  --genome "$workdir/genome" \
+  --strict
+
+uv run --no-sync --no-editable helix decode "$workdir/seed.hlx" \
+  --genome "$workdir/genome" \
+  --out "$workdir/decoded.bin"
+
+cmp -s "$workdir/input.bin" "$workdir/decoded.bin" \
+  && echo "bit-perfect roundtrip: OK"
+
+UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable ruff check .
+PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m pytest
+```
+
 ## Features
 - Lossless encode/decode with SHA-256 verification.
 - Chunkers: `fixed`, `cdc_buzhash`, `cdc_rabin`.
