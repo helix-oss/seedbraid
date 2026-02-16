@@ -1,4 +1,4 @@
-# Helix v2 Threat Model
+# Helix Threat Model
 
 ## Assets
 - Source file content represented by chunk references and optional RAW payloads.

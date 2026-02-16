@@ -1,7 +1,7 @@
 # HLX1 Seed Container Format
 
 ## Overview
-HLX1 is a binary seed container used by Helix v2. It stores:
+HLX1 is a binary seed container used by Helix. It stores:
 - manifest metadata (JSON)
 - binary reconstruction recipe
 - optional RAW payloads (portable mode)

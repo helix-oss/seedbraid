@@ -1,8 +1,8 @@
-# Helix v2
+# Helix
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
-Helix v2 provides reference-based reconstruction with deterministic content-defined chunking (CDC), a binary HLX1 seed format, and IPFS publish/fetch transport.
+Helix provides reference-based reconstruction with deterministic content-defined chunking (CDC), a binary HLX1 seed format, and IPFS publish/fetch transport.
 
 ## Features
 - Lossless encode/decode with SHA-256 verification.

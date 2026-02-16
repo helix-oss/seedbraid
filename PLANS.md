@@ -1,11 +1,11 @@
-# Helix v2 Implementation Plan
+# Helix Implementation Plan
 
 ## Goal
 Implement reference-based reconstruction + shift-robust dedup with lossless reconstruction and IPFS seed transport.
 
 ## Current Repository State (Step 0)
 - Existing code: none (repository initialized but empty).
-- Migration policy: no legacy code to preserve; implement fresh v2 layout under `src/helix`.
+- Migration policy: no legacy code to preserve; implement fresh layout under `src/helix`.
 
 ## Task Breakdown
 1. Spec-first docs
@@ -42,7 +42,7 @@ Implement reference-based reconstruction + shift-robust dedup with lossless reco
 ## Assumptions
 - Python 3.12+ runtime.
 - `ipfs` CLI may be absent; publish/fetch must fail clearly and tests should skip.
-- No encryption in v2; security posture documented in threat model.
+- No encryption in initial baseline; security posture documented in threat model.
 
 ## Change Log
 - 2026-02-08: Initial plan created from empty repository.

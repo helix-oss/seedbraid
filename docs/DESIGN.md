@@ -1,4 +1,4 @@
-# Helix v2 Design
+# Helix Design
 
 ## Step 0 Findings and Migration Policy
 Repository scan on 2026-02-08 found no application source files. Only Git metadata existed.
@@ -6,7 +6,7 @@ Repository scan on 2026-02-08 found no application source files. Only Git metada
 Migration policy:
 - Keep: none (no legacy implementation present).
 - Replace: n/a.
-- New baseline: implement Helix v2 from scratch under `src/helix` with spec-first docs.
+- New baseline: implement Helix from scratch under `src/helix` with spec-first docs.
 
 ## Goals
 - Bit-perfect reconstruction (`encode -> decode` SHA-256 match).

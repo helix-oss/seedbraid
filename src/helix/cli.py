@@ -23,7 +23,7 @@ from .diagnostics import run_doctor
 from .errors import ExternalToolError, HelixError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
 
-app = typer.Typer(help="Helix v2 CLI")
+app = typer.Typer(help="Helix CLI")
 genome_app = typer.Typer(help="Genome backup and restore operations")
 pin_app = typer.Typer(help="IPFS pin operations")
 app.add_typer(genome_app, name="genome")

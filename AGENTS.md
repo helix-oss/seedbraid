@@ -1,7 +1,7 @@
 # Helix Project Guardrails
 
 ## Scope and Priorities
-- Keep this repository focused on Helix v2 deliverables only.
+- Keep this repository focused on Helix deliverables only.
 - Prioritize lossless (bit-perfect) encode/decode before optimization.
 - Treat Web3 scope as IPFS publish/fetch first; registry layers are design-only unless explicitly requested.
 

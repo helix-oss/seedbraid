@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helix"
-version = "2.0.0"
-description = "Helix v2 reference-based reconstruction with CDC and IPFS seed transport"
+version = "1.0.0"
+description = "Helix reference-based reconstruction with CDC and IPFS seed transport"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
