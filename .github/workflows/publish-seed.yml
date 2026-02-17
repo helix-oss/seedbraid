@@ -310,4 +310,5 @@ jobs:
           echo "cid=${cid}" >> "$GITHUB_OUTPUT"
       - name: Publish result
         if: ${{ !inputs.dry_run }}
-        run: echo "Published CID: ${{ steps.publish.outputs.cid }}"
+        run: |
+          echo "Published CID: ${{ steps.publish.outputs.cid }}"
