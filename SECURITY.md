@@ -5,8 +5,8 @@ Security fixes are currently provided for:
 
 | Version | Supported |
 |---|---|
-| 2.x | Yes |
-| <2.0 | No |
+| 1.0.0a1 | Yes |
+| <1.0.0a1 | No |
 
 ## Reporting a Vulnerability
 If you find a security issue, do not open a public issue first.
