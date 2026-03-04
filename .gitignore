@@ -29,6 +29,10 @@ pip-wheel-metadata/
 # Local env files
 .env
 .env.*
+.envrc
+
+# Local docs
+.docs/
 
 # Helix runtime artifacts
 *.hlx
