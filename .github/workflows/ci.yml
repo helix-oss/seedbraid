@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --no-editable --extra dev
       - name: Pytest with coverage gate
-        run: PYTHONPATH=src uv run --no-sync --no-editable python -m pytest --cov-fail-under=75
+        run: PYTHONPATH=src uv run --no-sync --no-editable python -m pytest --cov-fail-under=80
 
   compat:
     runs-on: ubuntu-latest
