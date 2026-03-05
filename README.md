@@ -342,3 +342,4 @@ Expected behavior:
 - License: `MIT` (`LICENSE`)
 - Security policy: `SECURITY.md`
 - Contributing guide: `CONTRIBUTING.md`
+- Code of Conduct: `CODE_OF_CONDUCT.md`

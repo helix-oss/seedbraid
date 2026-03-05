@@ -1,5 +1,7 @@
 # Contributing to Helix
 
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
+
 Thanks for contributing.
 
 ## Prerequisites

@@ -1,0 +1,76 @@
+name: Bug Report
+description: Report a bug in Helix. For security issues, see SECURITY.md instead.
+title: "[BUG] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please provide details to help us reproduce the issue.
+        **Security vulnerabilities** should be reported via [SECURITY.md](../../SECURITY.md), not here.
+
+  - type: input
+    id: version
+    attributes:
+      label: Helix Version
+      description: Output of `helix --version`
+      placeholder: "1.0.0a1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, IPFS CLI version (if applicable)
+      placeholder: |
+        - OS: macOS 14.2 / Ubuntu 24.04
+        - Python: 3.12.1
+        - IPFS CLI: v0.28.0 (if used)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction Steps
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run `helix encode input.bin --genome ./genome`
+        2. Run `helix verify seed.hlx`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Output / Logs
+      description: Full error traceback or relevant log output
+      render: shell
+
+  - type: textarea
+    id: seed-info
+    attributes:
+      label: Seed / Genome Info
+      description: Relevant seed format, chunker settings, compression config, etc.
+      placeholder: |
+        - Chunker: buzhash (default)
+        - Compression: zstd
+        - Seed format: HLX1

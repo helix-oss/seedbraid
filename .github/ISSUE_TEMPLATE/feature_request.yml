@@ -1,0 +1,33 @@
+name: Feature Request
+description: Suggest a new feature or improvement for Helix
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / Problem
+      description: What problem or use case does this feature address?
+      placeholder: I want to be able to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like the feature to work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any other solutions or features you've considered?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or references
