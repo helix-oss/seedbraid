@@ -3,6 +3,7 @@ name: code-reviewer
 description: "Code quality, security, performance, and convention compliance review."
 tools:
   - Read
+  - Write
   - Grep
   - Glob
 model: sonnet
