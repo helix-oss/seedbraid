@@ -72,7 +72,6 @@ def encode_file(
     manifest_private: bool = False,
 ) -> EncodeStats:
     in_path = Path(in_path)
-    genome = open_genome(genome_path)
 
     hash_to_index: dict[bytes, int] = {}
     hash_table: list[bytes] = []
@@ -84,7 +83,7 @@ def encode_file(
     new_chunks = 0
     raw_chunks = 0
 
-    try:
+    with open_genome(genome_path) as genome:
         for chunk in _chunk_stream_from_file(in_path, chunker, cfg):
             total_chunks += 1
             digest = _sha256_bytes(chunk)
@@ -170,8 +169,6 @@ def encode_file(
             encryption_key=encryption_key,
         )
         return stats
-    finally:
-        genome.close()
 
 
 def _resolve_chunk(
@@ -210,18 +207,15 @@ def decode_file(
     encryption_key: str | None = None,
 ) -> str:
     seed = read_seed(seed_path, encryption_key=encryption_key)
-    genome = open_genome(genome_path)
     out_path = Path(out_path)
     h = hashlib.sha256()
 
-    try:
+    with open_genome(genome_path) as genome:
         with out_path.open("wb") as out:
             for op in seed.recipe.ops:
                 chunk = _resolve_chunk(op, seed.recipe.hash_table, seed.raw_payloads, genome)
                 out.write(chunk)
                 h.update(chunk)
-    finally:
-        genome.close()
 
     actual = h.hexdigest()
     expected = seed.manifest.get("source_sha256")
@@ -242,12 +236,11 @@ def verify_seed(
     encryption_key: str | None = None,
 ) -> VerifyReport:
     seed = read_seed(seed_path, encryption_key=encryption_key)
-    genome = open_genome(genome_path)
     missing: list[str] = []
     expected = seed.manifest.get("source_sha256")
     expected_size = seed.manifest.get("source_size")
 
-    try:
+    with open_genome(genome_path) as genome:
         if require_signature and seed.signature is None:
             return VerifyReport(
                 ok=False,
@@ -358,8 +351,6 @@ def verify_seed(
             actual_sha256=actual,
             reason=None,
         )
-    finally:
-        genome.close()
 
 
 def _expand_input_paths(dir_or_glob: str | Path) -> list[Path]:
@@ -377,11 +368,10 @@ def prime_genome(
     chunker: str,
     cfg: ChunkerConfig,
 ) -> dict[str, int]:
-    genome = open_genome(genome_path)
     total_chunks = 0
     new_chunks = 0
 
-    try:
+    with open_genome(genome_path) as genome:
         files = _expand_input_paths(dir_or_glob)
         for file_path in files:
             for chunk in _chunk_stream_from_file(file_path, chunker, cfg):
@@ -401,17 +391,14 @@ def prime_genome(
             "reused_chunks": total_chunks - new_chunks,
             "dedup_ratio_bps": dedup_ratio,
         }
-    finally:
-        genome.close()
 
 
 def snapshot_genome(genome_path: str | Path, out_path: str | Path) -> dict[str, int]:
-    genome = open_genome(genome_path)
     out_path = Path(out_path)
     total_chunks = 0
     total_bytes = 0
 
-    try:
+    with open_genome(genome_path) as genome:
         chunk_count = genome.count_chunks()
         try:
             with out_path.open("wb") as out:
@@ -430,8 +417,6 @@ def snapshot_genome(genome_path: str | Path, out_path: str | Path) -> dict[str, 
                     total_bytes += len(payload)
         except OSError as exc:
             raise HelixError(f"Failed to write genome snapshot: {out_path}") from exc
-    finally:
-        genome.close()
 
     return {"chunks": total_chunks, "bytes": total_bytes}
 
@@ -443,44 +428,43 @@ def restore_genome(
     replace: bool,
 ) -> dict[str, int]:
     snapshot_path = Path(snapshot_path)
-    genome = open_genome(genome_path)
     inserted = 0
     skipped = 0
+    chunk_count = 0
 
-    try:
-        with snapshot_path.open("rb") as inp:
-            header = inp.read(14)
-            if len(header) != 14:
-                raise HelixError("Invalid genome snapshot: header is truncated.")
-            magic, version, chunk_count = struct.unpack(">4sHQ", header)
-            if magic != GENOME_SNAPSHOT_MAGIC:
-                raise HelixError("Invalid genome snapshot magic. Expected HGS1.")
-            if version != GENOME_SNAPSHOT_VERSION:
-                raise HelixError(f"Unsupported genome snapshot version: {version}.")
+    with open_genome(genome_path) as genome:
+        try:
+            with snapshot_path.open("rb") as inp:
+                header = inp.read(14)
+                if len(header) != 14:
+                    raise HelixError("Invalid genome snapshot: header is truncated.")
+                magic, version, chunk_count = struct.unpack(">4sHQ", header)
+                if magic != GENOME_SNAPSHOT_MAGIC:
+                    raise HelixError("Invalid genome snapshot magic. Expected HGS1.")
+                if version != GENOME_SNAPSHOT_VERSION:
+                    raise HelixError(f"Unsupported genome snapshot version: {version}.")
 
-            if replace:
-                genome.clear_chunks()
+                if replace:
+                    genome.clear_chunks()
 
-            for _ in range(chunk_count):
-                entry_header = inp.read(36)
-                if len(entry_header) != 36:
-                    raise HelixError("Invalid genome snapshot: entry header is truncated.")
-                chunk_hash, size = struct.unpack(">32sI", entry_header)
-                payload = inp.read(size)
-                if len(payload) != size:
-                    raise HelixError("Invalid genome snapshot: entry payload is truncated.")
-                if genome.put_chunk(chunk_hash, payload):
-                    inserted += 1
-                else:
-                    skipped += 1
+                for _ in range(chunk_count):
+                    entry_header = inp.read(36)
+                    if len(entry_header) != 36:
+                        raise HelixError("Invalid genome snapshot: entry header is truncated.")
+                    chunk_hash, size = struct.unpack(">32sI", entry_header)
+                    payload = inp.read(size)
+                    if len(payload) != size:
+                        raise HelixError("Invalid genome snapshot: entry payload is truncated.")
+                    if genome.put_chunk(chunk_hash, payload):
+                        inserted += 1
+                    else:
+                        skipped += 1
 
-            trailing = inp.read(1)
-            if trailing:
-                raise HelixError("Invalid genome snapshot: trailing bytes found.")
-    except OSError as exc:
-        raise HelixError(f"Failed to read genome snapshot: {snapshot_path}") from exc
-    finally:
-        genome.close()
+                trailing = inp.read(1)
+                if trailing:
+                    raise HelixError("Invalid genome snapshot: trailing bytes found.")
+        except OSError as exc:
+            raise HelixError(f"Failed to read genome snapshot: {snapshot_path}") from exc
 
     return {"inserted": inserted, "skipped": skipped, "entries": int(chunk_count)}
 
@@ -491,12 +475,11 @@ def export_genes(
     out_path: str | Path,
 ) -> dict[str, int]:
     seed = read_seed(seed_path)
-    genome = open_genome(genome_path)
     out_path = Path(out_path)
     exported = 0
     missing = 0
 
-    try:
+    with open_genome(genome_path) as genome:
         with out_path.open("wb") as out:
             out.write(GENES_MAGIC)
             out.write(len(seed.recipe.hash_table).to_bytes(4, "big"))
@@ -511,19 +494,16 @@ def export_genes(
                 out.write(digest)
                 out.write(len(chunk).to_bytes(4, "big"))
                 out.write(chunk)
-    finally:
-        genome.close()
 
     return {"total": len(seed.recipe.hash_table), "exported": exported, "missing": missing}
 
 
 def import_genes(pack_path: str | Path, genome_path: str | Path) -> dict[str, int]:
     pack_path = Path(pack_path)
-    genome = open_genome(genome_path)
     inserted = 0
     skipped = 0
 
-    try:
+    with open_genome(genome_path) as genome:
         with pack_path.open("rb") as inp:
             magic = inp.read(len(GENES_MAGIC))
             if magic != GENES_MAGIC:
@@ -544,7 +524,5 @@ def import_genes(pack_path: str | Path, genome_path: str | Path) -> dict[str, in
                     inserted += 1
                 else:
                     skipped += 1
-    finally:
-        genome.close()
 
     return {"inserted": inserted, "skipped": skipped}

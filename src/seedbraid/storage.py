@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import sqlite3
+import types
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, Self
 
 
 class GenomeStorage(Protocol):
@@ -16,6 +17,15 @@ class GenomeStorage(Protocol):
     def count_chunks(self) -> int: ...
 
     def close(self) -> None: ...
+
+    def __enter__(self) -> Self: ...
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None: ...
 
 
 class SQLiteGenome:
@@ -72,6 +82,17 @@ class SQLiteGenome:
 
     def close(self) -> None:
         self.conn.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        self.close()
 
 
 def resolve_genome_db_path(genome_path: str | Path) -> Path:

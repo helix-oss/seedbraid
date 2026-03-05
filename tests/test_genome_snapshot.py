@@ -76,16 +76,10 @@ def test_genome_restore_replace_overwrites_existing_content(tmp_path: Path) -> N
         manifest_compression="zlib",
     )
 
-    source = open_genome(genome_a)
-    try:
+    with open_genome(genome_a) as source:
         expected_count = source.count_chunks()
-    finally:
-        source.close()
     snapshot_genome(genome_a, snapshot)
     restore_genome(snapshot, genome_b, replace=True)
 
-    restored = open_genome(genome_b)
-    try:
+    with open_genome(genome_b) as restored:
         assert restored.count_chunks() == expected_count
-    finally:
-        restored.close()
