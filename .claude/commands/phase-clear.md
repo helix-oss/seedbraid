@@ -12,6 +12,9 @@ Current state:
 
 ## Instructions
 
+## Instructions
+0. If $ARGUMENTS is empty, list available phases and ask user to choose:
+   investigate / plan / implement / test / review / commit
 1. Summarize current work state briefly
 2. Guide the user based on next phase:
    - **investigate** → Use `/investigate <topic>` to start fresh exploration

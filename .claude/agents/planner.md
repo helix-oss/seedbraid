@@ -3,6 +3,7 @@ name: planner
 description: "Create detailed implementation plans for features and refactoring."
 tools:
   - Read
+  - Write
   - Grep
   - Glob
 model: opus
