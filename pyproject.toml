@@ -16,6 +16,7 @@ dependencies = [
 zstd = ["zstandard>=0.23"]
 dev = [
   "pytest>=8.0",
+  "pytest-cov>=5.0",
   "ruff>=0.6",
 ]
 
@@ -32,7 +33,7 @@ where = ["src"]
 version = {attr = "helix.__version__"}
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --cov=helix --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]

@@ -42,8 +42,8 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: uv sync --no-editable --extra dev
-      - name: Pytest
-        run: PYTHONPATH=src uv run --no-sync --no-editable python -m pytest
+      - name: Pytest with coverage gate
+        run: PYTHONPATH=src uv run --no-sync --no-editable python -m pytest --cov-fail-under=75
 
   compat:
     runs-on: ubuntu-latest
