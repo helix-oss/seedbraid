@@ -5,14 +5,14 @@
 # When a PR modifies files matching a pattern below, the specified owners are
 # automatically requested for review.
 #
-# NOTE: Replace placeholder team/user names with actual GitHub teams or usernames
-# before merging. Teams must exist in the GitHub organization and have repository
-# access for CODEOWNERS to function.
+# NOTE: When the project gains multiple contributors, replace individual
+# usernames with GitHub teams (e.g., @helix-oss/maintainers,
+# @helix-oss/security-reviewers, @helix-oss/devops, @helix-oss/qa).
 
 # ============================================================================
-# Default: all files require maintainers review
+# Default: all files require maintainer review
 # ============================================================================
-*                                @helix-oss/maintainers
+*                                @helix-oss
 
 # ============================================================================
 # Security-Critical Paths
@@ -20,42 +20,41 @@
 # data integrity verification, and network transport. Changes require
 # security-focused review.
 # ============================================================================
-src/helix/container.py           @helix-oss/security-reviewers
-src/helix/codec.py               @helix-oss/security-reviewers
-src/helix/ipfs.py                @helix-oss/security-reviewers
-src/helix/storage.py             @helix-oss/security-reviewers
-src/helix/pinning.py             @helix-oss/security-reviewers
-src/helix/errors.py              @helix-oss/security-reviewers
+src/helix/container.py           @helix-oss
+src/helix/codec.py               @helix-oss
+src/helix/ipfs.py                @helix-oss
+src/helix/storage.py             @helix-oss
+src/helix/pinning.py             @helix-oss
+src/helix/errors.py              @helix-oss
 
 # ============================================================================
 # Specification & Security Documentation
 # Format/design changes require both architecture and security sign-off.
 # ============================================================================
-docs/FORMAT.md                   @helix-oss/maintainers @helix-oss/security-reviewers
-docs/THREAT_MODEL.md             @helix-oss/security-reviewers
-SECURITY.md                      @helix-oss/security-reviewers
+docs/FORMAT.md                   @helix-oss
+docs/THREAT_MODEL.md             @helix-oss
+SECURITY.md                      @helix-oss
 
 # ============================================================================
 # CI / DevOps
 # Workflow, build, and infrastructure changes require DevOps review.
 # ============================================================================
-.github/                         @helix-oss/devops
-scripts/                         @helix-oss/devops
-pyproject.toml                   @helix-oss/devops
+.github/                         @helix-oss
+scripts/                         @helix-oss
+pyproject.toml                   @helix-oss
 
 # ============================================================================
 # Test Suite
-# Security-critical tests require security reviewer in addition to QA.
-# General test changes are reviewed by QA.
+# Security-critical tests require security reviewer.
 # ============================================================================
-tests/test_signature.py          @helix-oss/security-reviewers
-tests/test_encryption.py         @helix-oss/security-reviewers
-tests/test_container.py          @helix-oss/security-reviewers
-tests/                           @helix-oss/qa
+tests/test_signature.py          @helix-oss
+tests/test_encryption.py         @helix-oss
+tests/test_container.py          @helix-oss
+tests/                           @helix-oss
 
 # ============================================================================
 # Governance Documentation
 # ============================================================================
-CONTRIBUTING.md                  @helix-oss/maintainers
-CODE_OF_CONDUCT.md               @helix-oss/maintainers
-README.md                        @helix-oss/maintainers
+CONTRIBUTING.md                  @helix-oss
+CODE_OF_CONDUCT.md               @helix-oss
+README.md                        @helix-oss
