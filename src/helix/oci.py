@@ -71,7 +71,9 @@ def push_seed_oras(
         )
 
     oras = _require_oras_cli()
-    annotations = build_oras_annotations(seed_path, encryption_key=encryption_key)
+    annotations = build_oras_annotations(
+        seed_path, encryption_key=encryption_key,
+    )
 
     cmd = [
         oras,
@@ -112,12 +114,18 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
         cmd = [oras, "pull", reference, "-o", tmp]
         proc = subprocess.run(cmd, check=False, text=True, capture_output=True)
         if proc.returncode != 0:
-            msg = proc.stderr.strip() or proc.stdout.strip() or "oras pull failed"
+            msg = (
+                proc.stderr.strip()
+                or proc.stdout.strip()
+                or "oras pull failed"
+            )
             raise ExternalToolError(
                 f"Failed to pull seed from OCI registry: {msg}",
                 next_action=(
-                    "Run `oras login <registry>`, verify read permissions, and "
-                    "confirm the artifact reference exists."
+                    "Run `oras login <registry>`,"
+                    " verify read permissions,"
+                    " and confirm the artifact"
+                    " reference exists."
                 ),
             )
 
@@ -128,9 +136,17 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
             if p.is_file() and p.suffix.lower() == ".hlx"
         )
         if len(hlx_files) != 1:
-            found = ", ".join(str(p.relative_to(tmp_path)) for p in hlx_files) or "none"
+            found = (
+                ", ".join(
+                    str(p.relative_to(tmp_path))
+                    for p in hlx_files
+                )
+                or "none"
+            )
             raise ExternalToolError(
-                "Pulled OCI artifact does not contain exactly one `.hlx` payload "
+                "Pulled OCI artifact does not"
+                " contain exactly one"
+                " `.hlx` payload "
                 f"(found: {found}).",
                 next_action=(
                     "Push a single Helix seed payload with media type "

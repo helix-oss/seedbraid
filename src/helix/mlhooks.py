@@ -88,10 +88,14 @@ def build_seed_metadata(
     return metadata
 
 
-def write_seed_metadata(metadata: dict[str, object], out_path: str | Path) -> Path:
+def write_seed_metadata(
+    metadata: dict[str, object],
+    out_path: str | Path,
+) -> Path:
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    text = json.dumps(metadata, sort_keys=True, indent=2)
+    out_path.write_text(text + "\n", encoding="utf-8")
     return out_path
 
 
@@ -104,36 +108,54 @@ def _request_json(
     timeout_s: float,
     not_found_ok: bool = False,
 ) -> dict[str, object] | None:
-    body = None if payload is None else json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    body = (
+        None
+        if payload is None
+        else json.dumps(
+            payload, separators=(",", ":")
+        ).encode("utf-8")
+    )
     headers = {"Accept": "application/json"}
     if body is not None:
         headers["Content-Type"] = "application/json"
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    req = urllib.request.Request(
+        url, data=body, headers=headers, method=method,
+    )
 
     try:
         with urllib.request.urlopen(req, timeout=timeout_s) as response:
             raw = response.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace").strip()
-        not_found = exc.code in {400, 404} and "RESOURCE_DOES_NOT_EXIST" in detail
+        not_found = (
+            exc.code in {400, 404}
+            and "RESOURCE_DOES_NOT_EXIST" in detail
+        )
         if not_found_ok and not_found:
             return None
         raise ExternalToolError(
-            f"MLflow API request failed ({method} {url}): HTTP {exc.code}. {detail}",
+            "MLflow API request failed"
+            f" ({method} {url}):"
+            f" HTTP {exc.code}. {detail}",
             code="HELIX_E_MLFLOW_REQUEST",
             next_action=(
-                "Verify MLFLOW_TRACKING_URI/token, confirm server reachability, "
-                "and retry the metadata logging command."
+                "Verify MLFLOW_TRACKING_URI/token,"
+                " confirm server reachability,"
+                " and retry the metadata"
+                " logging command."
             ),
         ) from exc
     except urllib.error.URLError as exc:
         raise ExternalToolError(
             f"MLflow API request failed ({method} {url}): {exc}",
             code="HELIX_E_MLFLOW_REQUEST",
-            next_action="Check network access to MLFLOW_TRACKING_URI and retry.",
+            next_action=(
+                "Check network access to"
+                " MLFLOW_TRACKING_URI and retry."
+            ),
         ) from exc
 
     if not raw:
@@ -185,7 +207,8 @@ def log_seed_metadata_to_mlflow(
     encoded_name = urllib.parse.quote(experiment_name, safe="")
     exp_resp = _request_json(
         "GET",
-        f"{base_url}/api/2.0/mlflow/experiments/get-by-name?experiment_name={encoded_name}",
+        f"{base_url}/api/2.0/mlflow/experiments"
+        f"/get-by-name?experiment_name={encoded_name}",
         payload=None,
         token=token,
         timeout_s=timeout_s,
@@ -207,9 +230,14 @@ def log_seed_metadata_to_mlflow(
             token=token,
             timeout_s=timeout_s,
         )
-        if create_exp_resp is None or create_exp_resp.get("experiment_id") is None:
+        if (
+            create_exp_resp is None
+            or create_exp_resp.get("experiment_id") is None
+        ):
             raise ExternalToolError(
-                "MLflow did not return experiment_id when creating experiment.",
+                "MLflow did not return"
+                " experiment_id when creating"
+                " experiment.",
                 code="HELIX_E_MLFLOW_REQUEST",
                 next_action="Check MLflow server logs and retry.",
             )
@@ -225,7 +253,10 @@ def log_seed_metadata_to_mlflow(
     run_id: str | None = None
     if run_resp is not None and isinstance(run_resp.get("run"), dict):
         run = run_resp["run"]
-        if isinstance(run.get("info"), dict) and run["info"].get("run_id") is not None:
+        if (
+            isinstance(run.get("info"), dict)
+            and run["info"].get("run_id") is not None
+        ):
             run_id = str(run["info"]["run_id"])
     if run_id is None:
         raise ExternalToolError(
@@ -263,7 +294,10 @@ def _resolve_hf_cli() -> list[str]:
         "Hugging Face CLI not found. Install `huggingface_hub` CLI and "
         "ensure `huggingface-cli` or `hf` is on PATH.",
         code="HELIX_E_HF_CONFIG",
-        next_action="Install Hugging Face CLI and verify with `huggingface-cli --help`.",
+        next_action=(
+            "Install Hugging Face CLI and verify"
+            " with `huggingface-cli --help`."
+        ),
     )
 
 
@@ -315,13 +349,21 @@ def upload_seed_and_metadata_to_hf(
     base_cmd = _resolve_hf_cli()
     prefix = remote_prefix.strip("/")
     seed_remote = f"{prefix}/{seed_path.name}" if prefix else seed_path.name
-    metadata_remote = f"{prefix}/{metadata_path.name}" if prefix else metadata_path.name
+    metadata_remote = (
+        f"{prefix}/{metadata_path.name}"
+        if prefix
+        else metadata_path.name
+    )
 
     env = os.environ.copy()
     env["HF_TOKEN"] = resolved_token
     env.setdefault("HUGGINGFACE_HUB_TOKEN", resolved_token)
 
-    for local_path, remote_path in ((seed_path, seed_remote), (metadata_path, metadata_remote)):
+    uploads = (
+        (seed_path, seed_remote),
+        (metadata_path, metadata_remote),
+    )
+    for local_path, remote_path in uploads:
         cmd = [
             *base_cmd,
             repo_id,
@@ -332,14 +374,26 @@ def upload_seed_and_metadata_to_hf(
             "--revision",
             revision,
         ]
-        proc = subprocess.run(cmd, check=False, text=True, capture_output=True, env=env)
+        proc = subprocess.run(
+            cmd,
+            check=False,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
         if proc.returncode != 0:
-            detail = proc.stderr.strip() or proc.stdout.strip() or "hf upload failed"
+            detail = (
+                proc.stderr.strip()
+                or proc.stdout.strip()
+                or "hf upload failed"
+            )
             raise ExternalToolError(
                 f"Hugging Face upload failed for {local_path.name}: {detail}",
                 code="HELIX_E_HF_REQUEST",
                 next_action=(
-                    "Verify repo permissions/token scope and repository path, then retry upload."
+                    "Verify repo permissions/token"
+                    " scope and repository path,"
+                    " then retry upload."
                 ),
             )
 

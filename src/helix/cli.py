@@ -31,7 +31,12 @@ app.add_typer(pin_app, name="pin")
 ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
-def _cfg(avg: int, min_size: int, max_size: int, window_size: int = 64) -> ChunkerConfig:
+def _cfg(
+    avg: int,
+    min_size: int,
+    max_size: int,
+    window_size: int = 64,
+) -> ChunkerConfig:
     if min_size <= 0 or avg <= 0 or max_size <= 0:
         raise typer.BadParameter("Chunk sizes must be > 0")
     if not (min_size <= avg <= max_size):
@@ -76,11 +81,17 @@ def encode(
                     "Encryption key is required when --encrypt is enabled. "
                     "Use --encryption-key or HELIX_ENCRYPTION_KEY.",
                     code="HELIX_E_ENCRYPTION_KEY_MISSING",
-                    next_action="Pass `--encryption-key <secret>` or set HELIX_ENCRYPTION_KEY.",
+                    next_action=(
+                        "Pass `--encryption-key <secret>`"
+                        " or set HELIX_ENCRYPTION_KEY."
+                    ),
                 )
             )
         )
-    effective_encryption_key = encryption_key or os.environ.get("HELIX_ENCRYPTION_KEY")
+    effective_encryption_key = (
+        encryption_key
+        or os.environ.get("HELIX_ENCRYPTION_KEY")
+    )
     if encrypt and not effective_encryption_key:
         raise typer.Exit(
             code=_print_error(
@@ -88,7 +99,11 @@ def encode(
                     "HELIX_ENCRYPTION_KEY is not set. "
                     "Provide --encryption-key or set HELIX_ENCRYPTION_KEY.",
                     code="HELIX_E_ENCRYPTION_KEY_MISSING",
-                    next_action="Export HELIX_ENCRYPTION_KEY or pass `--encryption-key` directly.",
+                    next_action=(
+                        "Export HELIX_ENCRYPTION_KEY"
+                        " or pass `--encryption-key`"
+                        " directly."
+                    ),
                 )
             )
         )
@@ -108,7 +123,9 @@ def encode(
         typer.echo(
             "encoded "
             f"chunks={stats.total_chunks} reused={stats.reused_chunks} "
-            f"new={stats.new_chunks} raw={stats.raw_chunks} unique={stats.unique_hashes}"
+            f"new={stats.new_chunks} "
+            f"raw={stats.raw_chunks} "
+            f"unique={stats.unique_hashes}"
         )
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
@@ -131,7 +148,10 @@ def decode(
             seed,
             genome,
             out,
-            encryption_key=encryption_key or os.environ.get("HELIX_ENCRYPTION_KEY"),
+            encryption_key=(
+                encryption_key
+                or os.environ.get("HELIX_ENCRYPTION_KEY")
+            ),
         )
         typer.echo(f"decoded sha256={digest}")
     except HelixError as exc:
@@ -171,7 +191,10 @@ def verify(
             strict=strict,
             require_signature=require_signature,
             signature_key=signature_key,
-            encryption_key=encryption_key or os.environ.get("HELIX_ENCRYPTION_KEY"),
+            encryption_key=(
+                encryption_key
+                or os.environ.get("HELIX_ENCRYPTION_KEY")
+            ),
         )
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
@@ -191,7 +214,8 @@ def verify(
             typer.echo(f"missing_chunk={h}", err=True)
     if report.expected_sha256 or report.actual_sha256:
         typer.echo(
-            f"expected_sha256={report.expected_sha256} actual_sha256={report.actual_sha256}",
+            f"expected_sha256={report.expected_sha256} "
+            f"actual_sha256={report.actual_sha256}",
             err=True,
         )
     raise typer.Exit(code=1)
@@ -217,8 +241,10 @@ def prime(
         typer.echo(
             "prime "
             f"files={stats['files']} total_chunks={stats['total_chunks']} "
-            f"new_chunks={stats['new_chunks']} reused_chunks={stats['reused_chunks']} "
-            f"dedup_ratio={stats['dedup_ratio_bps']/100:.2f}%"
+            f"new_chunks={stats['new_chunks']} "
+            f"reused_chunks={stats['reused_chunks']} "
+            f"dedup_ratio="
+            f"{stats['dedup_ratio_bps']/100:.2f}%"
         )
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
@@ -251,7 +277,10 @@ def publish(
     remote_name: str | None = typer.Option(
         None,
         "--remote-name",
-        help="Optional remote pin name. Defaults to seed filename when omitted.",
+        help=(
+            "Optional remote pin name."
+            " Defaults to seed filename when omitted."
+        ),
     ),
     remote_timeout_ms: int = typer.Option(
         10_000,
@@ -278,11 +307,14 @@ def publish(
             if not is_encrypted_seed_data(f.read(4)):
                 typer.echo(
                     "warning: publishing unencrypted seed. "
-                    "Consider `helix encode --encrypt --manifest-private` for sensitive data.",
+                    "Consider `helix encode --encrypt"
+                    " --manifest-private`"
+                    " for sensitive data.",
                     err=True,
                 )
     except OSError:
-        # publish_seed will emit actionable error if the file is missing/unreadable.
+        # publish_seed will emit actionable error
+        # if the file is missing/unreadable.
         pass
     try:
         cid = publish_seed(seed, pin=pin)
@@ -305,8 +337,11 @@ def publish(
             raise typer.Exit(code=_print_error(exc))
         typer.echo(
             "remote_pin "
-            f"provider={report.provider} cid={report.cid} status={report.status} "
-            f"request_id={report.request_id or 'none'}"
+            f"provider={report.provider} "
+            f"cid={report.cid} "
+            f"status={report.status} "
+            f"request_id="
+            f"{report.request_id or 'none'}"
         )
 
     typer.echo(cid)
@@ -336,7 +371,12 @@ def fetch(
 ) -> None:
     """Fetch seed from IPFS CID."""
     try:
-        fetch_seed(cid, out, retries=retries, backoff_ms=backoff_ms, gateway=gateway)
+        fetch_seed(
+            cid, out,
+            retries=retries,
+            backoff_ms=backoff_ms,
+            gateway=gateway,
+        )
     except (HelixError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"fetched {cid} -> {out}")
@@ -351,11 +391,17 @@ def pin_health(cid: str) -> None:
         raise typer.Exit(code=_print_error(exc))
 
     typer.echo(
-        f"pin_health cid={report['cid']} pinned={report['pinned']} "
-        f"pin_type={report['pin_type']} block_available={report['block_available']}"
+        f"pin_health cid={report['cid']} "
+        f"pinned={report['pinned']} "
+        f"pin_type={report['pin_type']} "
+        f"block_available="
+        f"{report['block_available']}"
     )
     if report["reason"]:
-        typer.echo(f"reason={report['reason']}", err=not bool(report["ok"]))
+        typer.echo(
+            f"reason={report['reason']}",
+            err=not bool(report["ok"]),
+        )
     raise typer.Exit(code=0 if report["ok"] else 1)
 
 
@@ -418,8 +464,11 @@ def pin_remote_add(
 
     typer.echo(
         "remote_pin "
-        f"provider={report.provider} cid={report.cid} status={report.status} "
-        f"request_id={report.request_id or 'none'}"
+        f"provider={report.provider} "
+        f"cid={report.cid} "
+        f"status={report.status} "
+        f"request_id="
+        f"{report.request_id or 'none'}"
     )
 
 
@@ -439,7 +488,10 @@ def doctor(
             typer.echo(f"next_action: {check.next_action}")
 
     typer.echo(
-        f"doctor summary ok={report.ok_count} warn={report.warn_count} fail={report.fail_count}"
+        "doctor summary "
+        f"ok={report.ok_count} "
+        f"warn={report.warn_count} "
+        f"fail={report.fail_count}"
     )
     raise typer.Exit(code=0 if report.ok else 1)
 
@@ -472,8 +524,10 @@ def gen_encryption_key(
                     f"Invalid environment variable name: {env_var}",
                     code="HELIX_E_INVALID_OPTION",
                     next_action=(
-                        "Use --env-var with letters/digits/underscores only, "
-                        "starting with a letter or underscore."
+                        "Use --env-var with"
+                        " letters/digits/underscores"
+                        " only, starting with a"
+                        " letter or underscore."
                     ),
                 )
             )
@@ -506,7 +560,10 @@ def sign(
                     f"Signing key env var is not set: {key_env}. "
                     "Set it before running `helix sign`.",
                     code="HELIX_E_SIGNING_KEY_MISSING",
-                    next_action=f"Export `{key_env}` with your HMAC signing key and retry.",
+                    next_action=(
+                        f"Export `{key_env}` with your"
+                        " HMAC signing key and retry."
+                    ),
                 )
             )
         )
@@ -529,7 +586,9 @@ def export_genes_cmd(
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(
-        f"exported total={stats['total']} exported={stats['exported']} missing={stats['missing']}"
+        f"exported total={stats['total']} "
+        f"exported={stats['exported']} "
+        f"missing={stats['missing']}"
     )
 
 
@@ -543,7 +602,10 @@ def import_genes_cmd(
         stats = import_genes(pack, genome)
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
-    typer.echo(f"imported inserted={stats['inserted']} skipped={stats['skipped']}")
+    typer.echo(
+        f"imported inserted={stats['inserted']} "
+        f"skipped={stats['skipped']}"
+    )
 
 
 @genome_app.command("snapshot")
@@ -556,7 +618,10 @@ def genome_snapshot(
         stats = snapshot_genome(genome, out)
     except HelixError as exc:
         raise typer.Exit(code=_print_error(exc))
-    typer.echo(f"snapshot chunks={stats['chunks']} bytes={stats['bytes']} out={out}")
+    typer.echo(
+        f"snapshot chunks={stats['chunks']} "
+        f"bytes={stats['bytes']} out={out}"
+    )
 
 
 @genome_app.command("restore")
@@ -566,7 +631,10 @@ def genome_restore(
     replace: bool = typer.Option(
         False,
         "--replace/--no-replace",
-        help="Replace existing genome chunks before restoring snapshot content.",
+        help=(
+            "Replace existing genome chunks"
+            " before restoring snapshot content."
+        ),
     ),
 ) -> None:
     """Restore genome chunks from snapshot file."""

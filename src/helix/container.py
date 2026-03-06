@@ -29,8 +29,14 @@ COMPRESS_NONE = 0
 COMPRESS_ZLIB = 1
 COMPRESS_ZSTD = 2
 
-_COMPRESSION_NAME_TO_ID = {"none": COMPRESS_NONE, "zlib": COMPRESS_ZLIB, "zstd": COMPRESS_ZSTD}
-_COMPRESSION_ID_TO_NAME = {v: k for k, v in _COMPRESSION_NAME_TO_ID.items()}
+_COMPRESSION_NAME_TO_ID = {
+    "none": COMPRESS_NONE,
+    "zlib": COMPRESS_ZLIB,
+    "zstd": COMPRESS_ZSTD,
+}
+_COMPRESSION_ID_TO_NAME = {
+    v: k for k, v in _COMPRESSION_NAME_TO_ID.items()
+}
 
 
 @dataclass(frozen=True)
@@ -92,7 +98,10 @@ def encode_recipe(recipe: Recipe) -> bytes:
     out.extend(struct.pack(">II", len(recipe.ops), len(recipe.hash_table)))
     for digest in recipe.hash_table:
         if len(digest) != 32:
-            raise SeedFormatError("Recipe hash table must contain 32-byte SHA-256 digests.")
+            raise SeedFormatError(
+                "Recipe hash table must contain"
+                " 32-byte SHA-256 digests."
+            )
         out.extend(digest)
     for op in recipe.ops:
         out.extend(struct.pack(">BI", op.opcode, op.hash_index))
@@ -169,7 +178,9 @@ def _hmac_sha256_hex(data: bytes, key: str) -> str:
     return hmac.new(key.encode("utf-8"), data, hashlib.sha256).hexdigest()
 
 
-def _derive_encryption_keys(passphrase: str, salt: bytes) -> tuple[bytes, bytes]:
+def _derive_encryption_keys(
+    passphrase: str, salt: bytes,
+) -> tuple[bytes, bytes]:
     base_key = hashlib.scrypt(
         passphrase.encode("utf-8"),
         salt=salt,
@@ -188,7 +199,9 @@ def _keystream(enc_key: bytes, nonce: bytes, length: int) -> bytes:
     produced = 0
     counter = 0
     while produced < length:
-        block = hashlib.sha256(enc_key + nonce + counter.to_bytes(8, "big")).digest()
+        block = hashlib.sha256(
+            enc_key + nonce + counter.to_bytes(8, "big")
+        ).digest()
         blocks.append(block)
         produced += len(block)
         counter += 1
@@ -206,7 +219,9 @@ def is_encrypted_seed_data(data: bytes) -> bool:
 def validate_encrypted_seed_envelope(blob: bytes) -> tuple[int, int, int, int]:
     if len(blob) < 4 + 2 + 1 + 1 + 8 + 32:
         raise SeedFormatError("Encrypted seed is too short.")
-    magic, version, salt_len, nonce_len, ciphertext_len = struct.unpack_from(">4sHBBQ", blob, 0)
+    (
+        magic, version, salt_len, nonce_len, ciphertext_len,
+    ) = struct.unpack_from(">4sHBBQ", blob, 0)
     if magic != ENC_MAGIC:
         raise SeedFormatError("Encrypted seed magic mismatch. Expected HLE1.")
     if version != ENC_VERSION:
@@ -215,34 +230,52 @@ def validate_encrypted_seed_envelope(blob: bytes) -> tuple[int, int, int, int]:
     header_len = 16
     payload_len = header_len + salt_len + nonce_len + ciphertext_len
     if len(blob) != payload_len + 32:
-        raise SeedFormatError("Encrypted seed length mismatch or truncation detected.")
+        raise SeedFormatError(
+            "Encrypted seed length mismatch"
+            " or truncation detected."
+        )
     return header_len, salt_len, nonce_len, ciphertext_len
 
 
-def _build_signature_payload(signed_payload: bytes, signature_key: str, key_id: str) -> bytes:
+def _build_signature_payload(
+    signed_payload: bytes,
+    signature_key: str,
+    key_id: str,
+) -> bytes:
     signature = {
         "algorithm": "hmac-sha256",
         "key_id": key_id,
         "signed_payload_sha256": _sha256_hex(signed_payload),
         "signature": _hmac_sha256_hex(signed_payload, signature_key),
     }
-    return json.dumps(signature, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(
+        signature, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
 
 
 def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
     salt = os.urandom(16)
     nonce = os.urandom(16)
     enc_key, mac_key = _derive_encryption_keys(passphrase, salt)
-    ciphertext = _xor_bytes(seed_bytes, _keystream(enc_key, nonce, len(seed_bytes)))
+    ciphertext = _xor_bytes(
+        seed_bytes,
+        _keystream(enc_key, nonce, len(seed_bytes)),
+    )
 
-    header = struct.pack(">4sHBBQ", ENC_MAGIC, ENC_VERSION, len(salt), len(nonce), len(ciphertext))
+    header = struct.pack(
+        ">4sHBBQ",
+        ENC_MAGIC, ENC_VERSION,
+        len(salt), len(nonce), len(ciphertext),
+    )
     payload = header + salt + nonce + ciphertext
     mac = hmac.new(mac_key, payload, hashlib.sha256).digest()
     return payload + mac
 
 
 def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
-    header_len, salt_len, nonce_len, ciphertext_len = validate_encrypted_seed_envelope(blob)
+    (
+        header_len, salt_len, nonce_len, ciphertext_len,
+    ) = validate_encrypted_seed_envelope(blob)
 
     salt_off = header_len
     nonce_off = salt_off + salt_len
@@ -256,7 +289,10 @@ def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
     payload = blob[:-32]
     expected_mac = hmac.new(mac_key, payload, hashlib.sha256).digest()
     if not hmac.compare_digest(mac, expected_mac):
-        raise SeedFormatError("Encrypted seed authentication failed (wrong key or tampering).")
+        raise SeedFormatError(
+            "Encrypted seed authentication failed"
+            " (wrong key or tampering)."
+        )
     return _xor_bytes(ciphertext, _keystream(enc_key, nonce, len(ciphertext)))
 
 
@@ -269,11 +305,19 @@ def serialize_seed(
     signature_key_id: str = "default",
 ) -> bytes:
     if manifest_compression not in _COMPRESSION_NAME_TO_ID:
-        raise SeedFormatError(f"Unsupported manifest compression: {manifest_compression}")
+        raise SeedFormatError(
+            "Unsupported manifest compression:"
+            f" {manifest_compression}"
+        )
 
-    manifest_json = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    manifest_json = json.dumps(
+        manifest, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
     c_id = _COMPRESSION_NAME_TO_ID[manifest_compression]
-    manifest_payload = bytes([c_id]) + _compress(manifest_json, manifest_compression)
+    manifest_payload = (
+        bytes([c_id])
+        + _compress(manifest_json, manifest_compression)
+    )
     recipe_payload = encode_recipe(recipe)
 
     sections: list[tuple[int, bytes]] = [
@@ -286,7 +330,10 @@ def serialize_seed(
         sections.append((SECTION_RAW, raw_section_payload))
 
     extra_sections = 1 if signature_key is None else 2
-    header = struct.pack(">4sHH", MAGIC, VERSION, len(sections) + extra_sections)
+    header = struct.pack(
+        ">4sHH", MAGIC, VERSION,
+        len(sections) + extra_sections,
+    )
     signed_payload = bytearray(header)
     for stype, payload in sections:
         signed_payload.extend(_pack_section(stype, payload))
@@ -298,7 +345,9 @@ def serialize_seed(
             signature_key=signature_key,
             key_id=signature_key_id,
         )
-        payload_without_integrity.extend(_pack_section(SECTION_SIGNATURE, signature_payload))
+        payload_without_integrity.extend(
+            _pack_section(SECTION_SIGNATURE, signature_payload)
+        )
 
     integrity = {
         "manifest_crc32": zlib.crc32(manifest_payload) & 0xFFFFFFFF,
@@ -311,9 +360,14 @@ def serialize_seed(
     if raw_section_payload is not None:
         integrity["raw_crc32"] = zlib.crc32(raw_section_payload) & 0xFFFFFFFF
         integrity["raw_sha256"] = _sha256_hex(raw_section_payload)
-    integrity_payload = json.dumps(integrity, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    integrity_payload = json.dumps(
+        integrity, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
 
-    return bytes(payload_without_integrity + _pack_section(SECTION_INTEGRITY, integrity_payload))
+    return bytes(
+        payload_without_integrity
+        + _pack_section(SECTION_INTEGRITY, integrity_payload)
+    )
 
 
 def parse_seed(data: bytes) -> Seed:
@@ -362,7 +416,11 @@ def parse_seed(data: bytes) -> Seed:
     if offset != len(data):
         raise SeedFormatError("Seed has trailing bytes outside sections.")
 
-    if manifest_payload is None or recipe_payload is None or integrity_payload is None:
+    if (
+        manifest_payload is None
+        or recipe_payload is None
+        or integrity_payload is None
+    ):
         raise SeedFormatError("Seed missing required section(s).")
 
     try:
@@ -374,53 +432,96 @@ def parse_seed(data: bytes) -> Seed:
         raise SeedFormatError("Integrity section position not found.")
     if (
         signature_section_start is not None
-        and integrity_section_start is not None
         and signature_section_start > integrity_section_start
     ):
-        raise SeedFormatError("Signature section must appear before integrity section.")
+        raise SeedFormatError(
+            "Signature section must appear"
+            " before integrity section."
+        )
 
     expected_manifest_crc = zlib.crc32(manifest_payload) & 0xFFFFFFFF
     expected_recipe_crc = zlib.crc32(recipe_payload) & 0xFFFFFFFF
-    expected_payload_crc = zlib.crc32(data[:integrity_section_start]) & 0xFFFFFFFF
+    expected_payload_crc = (
+        zlib.crc32(data[:integrity_section_start]) & 0xFFFFFFFF
+    )
     expected_manifest_sha256 = _sha256_hex(manifest_payload)
     expected_recipe_sha256 = _sha256_hex(recipe_payload)
-    expected_payload_sha256 = _sha256_hex(data[:integrity_section_start])
+    expected_payload_sha256 = _sha256_hex(
+        data[:integrity_section_start]
+    )
 
     if integrity.get("manifest_crc32") != expected_manifest_crc:
-        raise SeedFormatError("Manifest CRC32 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Manifest CRC32 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if integrity.get("recipe_crc32") != expected_recipe_crc:
-        raise SeedFormatError("Recipe CRC32 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Recipe CRC32 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if integrity.get("payload_crc32") != expected_payload_crc:
-        raise SeedFormatError("Seed payload CRC32 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Seed payload CRC32 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if (
         "manifest_sha256" in integrity
-        and integrity.get("manifest_sha256") != expected_manifest_sha256
+        and integrity["manifest_sha256"]
+        != expected_manifest_sha256
     ):
-        raise SeedFormatError("Manifest SHA-256 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Manifest SHA-256 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if (
         "recipe_sha256" in integrity
-        and integrity.get("recipe_sha256") != expected_recipe_sha256
+        and integrity["recipe_sha256"]
+        != expected_recipe_sha256
     ):
-        raise SeedFormatError("Recipe SHA-256 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Recipe SHA-256 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if (
         "payload_sha256" in integrity
-        and integrity.get("payload_sha256") != expected_payload_sha256
+        and integrity["payload_sha256"]
+        != expected_payload_sha256
     ):
-        raise SeedFormatError("Seed payload SHA-256 mismatch; seed may be corrupted or tampered.")
+        raise SeedFormatError(
+            "Seed payload SHA-256 mismatch;"
+            " seed may be corrupted or tampered."
+        )
     if raw_payload is not None:
         expected_raw_crc = zlib.crc32(raw_payload) & 0xFFFFFFFF
         expected_raw_sha256 = _sha256_hex(raw_payload)
-        if "raw_crc32" in integrity and integrity.get("raw_crc32") != expected_raw_crc:
-            raise SeedFormatError("RAW CRC32 mismatch; seed may be corrupted or tampered.")
-        if "raw_sha256" in integrity and integrity.get("raw_sha256") != expected_raw_sha256:
-            raise SeedFormatError("RAW SHA-256 mismatch; seed may be corrupted or tampered.")
+        if (
+            "raw_crc32" in integrity
+            and integrity["raw_crc32"] != expected_raw_crc
+        ):
+            raise SeedFormatError(
+                "RAW CRC32 mismatch;"
+                " seed may be corrupted or tampered."
+            )
+        if (
+            "raw_sha256" in integrity
+            and integrity["raw_sha256"]
+            != expected_raw_sha256
+        ):
+            raise SeedFormatError(
+                "RAW SHA-256 mismatch;"
+                " seed may be corrupted or tampered."
+            )
 
     if not manifest_payload:
         raise SeedFormatError("Manifest section empty.")
     compression_id = manifest_payload[0]
     manifest_name = _COMPRESSION_ID_TO_NAME.get(compression_id)
     if manifest_name is None:
-        raise SeedFormatError(f"Unknown manifest compression id: {compression_id}")
+        raise SeedFormatError(
+            "Unknown manifest compression"
+            f" id: {compression_id}"
+        )
 
     manifest_bytes = _decompress(manifest_payload[1:], compression_id)
     try:
@@ -429,14 +530,20 @@ def parse_seed(data: bytes) -> Seed:
         raise SeedFormatError("Manifest JSON decode failed.") from exc
 
     recipe = decode_recipe(recipe_payload)
-    raw_payloads = decode_raw_payloads(raw_payload) if raw_payload is not None else {}
+    raw_payloads = (
+        decode_raw_payloads(raw_payload)
+        if raw_payload is not None
+        else {}
+    )
     signature = None
     signed_payload = None
     if signature_payload is not None:
         try:
             signature = json.loads(signature_payload.decode("utf-8"))
         except Exception as exc:  # noqa: BLE001
-            raise SeedFormatError("Signature section is not valid JSON.") from exc
+            raise SeedFormatError(
+                "Signature section is not valid JSON."
+            ) from exc
         if signature_section_start is None:
             raise SeedFormatError("Signature section position not found.")
         signed_payload = data[:signature_section_start]
@@ -505,7 +612,9 @@ def sign_seed_file(
     )
 
 
-def verify_signature(seed: Seed, signature_key: str) -> tuple[bool, str | None]:
+def verify_signature(
+    seed: Seed, signature_key: str,
+) -> tuple[bool, str | None]:
     if seed.signature is None:
         return False, "Signature is missing."
     if seed.signed_payload is None:

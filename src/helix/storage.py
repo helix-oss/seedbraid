@@ -46,11 +46,17 @@ class SQLiteGenome:
         self.conn.commit()
 
     def has_chunk(self, chunk_hash: bytes) -> bool:
-        cur = self.conn.execute("SELECT 1 FROM chunks WHERE hash = ?", (chunk_hash,))
+        cur = self.conn.execute(
+            "SELECT 1 FROM chunks WHERE hash = ?",
+            (chunk_hash,),
+        )
         return cur.fetchone() is not None
 
     def get_chunk(self, chunk_hash: bytes) -> bytes | None:
-        cur = self.conn.execute("SELECT data FROM chunks WHERE hash = ?", (chunk_hash,))
+        cur = self.conn.execute(
+            "SELECT data FROM chunks WHERE hash = ?",
+            (chunk_hash,),
+        )
         row = cur.fetchone()
         return None if row is None else bytes(row[0])
 
@@ -97,7 +103,7 @@ class SQLiteGenome:
 
 def resolve_genome_db_path(genome_path: str | Path) -> Path:
     p = Path(genome_path)
-    if p.suffix == ".sqlite" or p.suffix == ".db":
+    if p.suffix in {".sqlite", ".db"}:
         return p
     return p / "genome.sqlite"
 

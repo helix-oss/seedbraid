@@ -4,6 +4,7 @@ import importlib.util
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,8 +43,8 @@ class DoctorReport:
 
 
 def _check_python_version() -> DoctorCheck:
-    major = os.sys.version_info.major
-    minor = os.sys.version_info.minor
+    major = sys.version_info.major
+    minor = sys.version_info.minor
     detail = f"python={major}.{minor}"
     if (major, minor) >= (3, 12):
         return DoctorCheck(check="python", status="ok", detail=detail)
@@ -51,7 +52,10 @@ def _check_python_version() -> DoctorCheck:
         check="python",
         status="fail",
         detail=f"{detail} (requires >=3.12)",
-        next_action="Install Python 3.12+ and recreate the project virtual environment.",
+        next_action=(
+            "Install Python 3.12+ and recreate"
+            " the project virtual environment."
+        ),
     )
 
 
@@ -64,14 +68,27 @@ def _check_ipfs_cli() -> DoctorCheck:
             detail="ipfs binary not found on PATH",
             next_action="Install Kubo and verify with `ipfs --version`.",
         )
-    proc = subprocess.run([ipfs, "--version"], check=False, capture_output=True, text=True)
+    proc = subprocess.run(
+        [ipfs, "--version"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     if proc.returncode != 0:
-        msg = proc.stderr.strip() or proc.stdout.strip() or "version check failed"
+        msg = (
+            proc.stderr.strip()
+            or proc.stdout.strip()
+            or "version check failed"
+        )
         return DoctorCheck(
             check="ipfs_cli",
             status="fail",
             detail=f"ipfs command failed: {msg}",
-            next_action="Ensure ipfs is executable and PATH points to the correct binary.",
+            next_action=(
+                "Ensure ipfs is executable and"
+                " PATH points to the correct"
+                " binary."
+            ),
         )
     version = proc.stdout.strip() or proc.stderr.strip() or "unknown"
     return DoctorCheck(check="ipfs_cli", status="ok", detail=version)
@@ -92,7 +109,11 @@ def _check_ipfs_path() -> DoctorCheck:
             check="ipfs_repo",
             status="warn",
             detail=f"IPFS_PATH does not exist: {p}",
-            next_action="Run `ipfs init` for this IPFS_PATH before publish/fetch operations.",
+            next_action=(
+                "Run `ipfs init` for this"
+                " IPFS_PATH before"
+                " publish/fetch operations."
+            ),
         )
     if not p.is_dir():
         return DoctorCheck(
@@ -122,11 +143,19 @@ def _check_genome_path(genome_path: Path) -> DoctorCheck:
             check="genome_path",
             status="fail",
             detail=f"directory is not writable: {parent}",
-            next_action="Adjust directory permissions or select another --genome path.",
+            next_action=(
+                "Adjust directory permissions"
+                " or select another"
+                " --genome path."
+            ),
         )
 
     try:
-        with tempfile.NamedTemporaryFile(dir=parent, prefix=".helix-doctor-", delete=True):
+        with tempfile.NamedTemporaryFile(
+            dir=parent,
+            prefix=".helix-doctor-",
+            delete=True,
+        ):
             pass
     except OSError as exc:
         return DoctorCheck(
@@ -136,12 +165,20 @@ def _check_genome_path(genome_path: Path) -> DoctorCheck:
             next_action="Fix filesystem permissions for genome storage.",
         )
 
-    return DoctorCheck(check="genome_path", status="ok", detail=f"db_path={db_path}")
+    return DoctorCheck(
+        check="genome_path",
+        status="ok",
+        detail=f"db_path={db_path}",
+    )
 
 
 def _check_compression() -> list[DoctorCheck]:
     checks: list[DoctorCheck] = [
-        DoctorCheck(check="compression_zlib", status="ok", detail="zlib available (stdlib)")
+        DoctorCheck(
+            check="compression_zlib",
+            status="ok",
+            detail="zlib available (stdlib)",
+        )
     ]
     if importlib.util.find_spec("zstandard") is None:
         checks.append(
@@ -149,7 +186,10 @@ def _check_compression() -> list[DoctorCheck]:
                 check="compression_zstd",
                 status="warn",
                 detail="optional dependency 'zstandard' is not installed",
-                next_action="Run `uv sync --extra zstd` to enable --compression zstd.",
+                next_action=(
+                    "Run `uv sync --extra zstd`"
+                    " to enable --compression zstd."
+                ),
             )
         )
     else:
@@ -178,6 +218,9 @@ def run_doctor(genome_path: str | Path) -> DoctorReport:
         raise ExternalToolError(
             f"doctor failed unexpectedly: {exc}",
             code="HELIX_E_DOCTOR_CHECK",
-            next_action="Re-run `helix doctor --genome <path>` and inspect environment setup.",
+            next_action=(
+                "Re-run `helix doctor --genome <path>`"
+                " and inspect environment setup."
+            ),
         ) from exc
     return DoctorReport(checks=checks)

@@ -8,9 +8,16 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .container import is_encrypted_seed_data, read_seed, validate_encrypted_seed_envelope
+from .container import (
+    is_encrypted_seed_data,
+    read_seed,
+    validate_encrypted_seed_envelope,
+)
 from .errors import ExternalToolError, SeedFormatError
-from .pinning import RemotePinResult, build_remote_pin_provider
+from .pinning import (
+    RemotePinResult,
+    build_remote_pin_provider,
+)
 
 
 def _require_ipfs() -> str:
@@ -32,7 +39,10 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
         raise ExternalToolError(
             f"Seed file not found: {seed_path}",
             code="HELIX_E_SEED_NOT_FOUND",
-            next_action="Provide an existing seed file path to `helix publish`.",
+            next_action=(
+                "Provide an existing seed file"
+                " path to `helix publish`."
+            ),
         )
 
     proc = subprocess.run(
@@ -65,11 +75,20 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
             capture_output=True,
         )
         if pin_proc.returncode != 0:
-            msg = pin_proc.stderr.strip() or pin_proc.stdout.strip() or "ipfs pin add failed"
+            msg = (
+                pin_proc.stderr.strip()
+                or pin_proc.stdout.strip()
+                or "ipfs pin add failed"
+            )
             raise ExternalToolError(
-                f"Published CID {cid}, but pin failed: {msg}",
+                f"Published CID {cid},"
+                f" but pin failed: {msg}",
                 code="HELIX_E_IPFS_PUBLISH",
-                next_action="Run `ipfs pin add <cid>` manually and verify node health.",
+                next_action=(
+                    "Run `ipfs pin add <cid>`"
+                    " manually and verify"
+                    " node health."
+                ),
             )
 
     return cid
@@ -80,16 +99,23 @@ def _validate_fetched_seed_blob(cid: str, out_path: Path, blob: bytes) -> None:
 
     try:
         if is_encrypted_seed_data(blob):
-            # Encrypted seeds cannot be fully parsed without a key at fetch time.
-            # Validate envelope structure and defer full validation to decode/verify.
+            # Encrypted seeds cannot be fully parsed
+            # without a key at fetch time.  Validate
+            # envelope structure and defer full
+            # validation to decode/verify.
             validate_encrypted_seed_envelope(blob)
             return
         read_seed(out_path)
     except SeedFormatError as exc:
         raise ExternalToolError(
-            f"Fetched bytes for CID {cid}, but integrity/manifest validation failed: {exc}",
+            f"Fetched bytes for CID {cid}, but"
+            " integrity/manifest validation"
+            f" failed: {exc}",
             code="HELIX_E_SEED_FORMAT",
-            next_action="Refetch the CID or verify publisher integrity before decode.",
+            next_action=(
+                "Refetch the CID or verify publisher"
+                " integrity before decode."
+            ),
         ) from exc
 
 
@@ -102,7 +128,11 @@ def _fetch_from_gateway(cid: str, gateway: str) -> bytes:
         raise ExternalToolError(
             f"Gateway fetch failed ({url}): {exc}",
             code="HELIX_E_IPFS_FETCH",
-            next_action="Try another gateway or confirm network access from this environment.",
+            next_action=(
+                "Try another gateway or confirm"
+                " network access from this"
+                " environment."
+            ),
         ) from exc
 
 
@@ -139,7 +169,10 @@ def fetch_seed(
         if proc.returncode == 0:
             _validate_fetched_seed_blob(cid, out_path, proc.stdout)
             return
-        last_err = proc.stderr.decode("utf-8", errors="replace").strip() or "ipfs cat failed"
+        last_err = (
+            proc.stderr.decode("utf-8", errors="replace")
+            .strip() or "ipfs cat failed"
+        )
         if attempt < retries and backoff_ms > 0:
             time.sleep((backoff_ms * (2 ** (attempt - 1))) / 1000)
 
@@ -159,8 +192,10 @@ def fetch_seed(
     if gateway and gateway_err:
         detail += f" Gateway fallback also failed: {gateway_err}."
     detail += (
-        " Next action: verify local IPFS daemon connectivity, confirm CID availability, "
-        "or provide --gateway https://<gateway>/ipfs."
+        " Next action: verify local IPFS daemon"
+        " connectivity, confirm CID availability,"
+        " or provide --gateway"
+        " https://<gateway>/ipfs."
     )
     raise ExternalToolError(
         detail,
@@ -191,7 +226,11 @@ def pin_health_status(cid: str) -> dict[str, str | bool | None]:
                 pin_type = parts[-1]
         pin_reason = None
     else:
-        pin_msg = pin_proc.stderr.strip() or pin_proc.stdout.strip() or "pin status check failed"
+        pin_msg = (
+            pin_proc.stderr.strip()
+            or pin_proc.stdout.strip()
+            or "pin status check failed"
+        )
         lowered = pin_msg.lower()
         if "not pinned" in lowered or "is not pinned" in lowered:
             pinned = False
@@ -199,9 +238,14 @@ def pin_health_status(cid: str) -> dict[str, str | bool | None]:
             pin_reason = pin_msg
         else:
             raise ExternalToolError(
-                f"Failed to query pin status for CID {cid}: {pin_msg}",
+                "Failed to query pin status"
+                f" for CID {cid}: {pin_msg}",
                 code="HELIX_E_IPFS_PIN_STATUS",
-                next_action="Verify IPFS daemon is running and retry `helix pin-health <cid>`.",
+                next_action=(
+                    "Verify IPFS daemon is running"
+                    " and retry"
+                    " `helix pin-health <cid>`."
+                ),
             )
 
     block_proc = subprocess.run(

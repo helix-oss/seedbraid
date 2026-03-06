@@ -131,12 +131,25 @@ def run_shifted_dedup_benchmark(
         shifted = workspace / "shifted.bin"
 
         rng = random.Random(random_seed)
-        original = bytes(rng.randrange(0, 256) for _ in range(total_size_bytes))
+        original = bytes(
+            rng.randrange(0, 256)
+            for _ in range(total_size_bytes)
+        )
         base.write_bytes(original)
-        shifted.write_bytes(original[:insert_offset] + inserted + original[insert_offset:])
+        shifted.write_bytes(
+            original[:insert_offset]
+            + inserted
+            + original[insert_offset:]
+        )
 
-        fixed = _run_case("fixed", cfg, base, shifted, workspace, compression=compression)
-        cdc = _run_case("cdc_buzhash", cfg, base, shifted, workspace, compression=compression)
+        fixed = _run_case(
+            "fixed", cfg, base, shifted, workspace,
+            compression=compression,
+        )
+        cdc = _run_case(
+            "cdc_buzhash", cfg, base, shifted, workspace,
+            compression=compression,
+        )
 
         return ShiftedDedupBenchmark(
             source_size_bytes=total_size_bytes,
@@ -158,7 +171,8 @@ def evaluate_benchmark_gates(
     if report.reuse_improvement_bps < min_reuse_improvement_bps:
         violations.append(
             "cdc reuse improvement below threshold: "
-            f"{report.reuse_improvement_bps}bps < {min_reuse_improvement_bps}bps"
+            f"{report.reuse_improvement_bps}bps "
+            f"< {min_reuse_improvement_bps}bps"
         )
     if report.seed_size_ratio > max_seed_size_ratio:
         violations.append(
@@ -168,6 +182,7 @@ def evaluate_benchmark_gates(
     if report.cdc.encode_throughput_mib_s < min_cdc_throughput_mib_s:
         violations.append(
             "cdc throughput below threshold: "
-            f"{report.cdc.encode_throughput_mib_s:.4f}MiB/s < {min_cdc_throughput_mib_s:.4f}MiB/s"
+            f"{report.cdc.encode_throughput_mib_s:.4f}MiB/s "
+            f"< {min_cdc_throughput_mib_s:.4f}MiB/s"
         )
     return violations

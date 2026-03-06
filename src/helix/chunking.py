@@ -47,10 +47,14 @@ def iter_fixed_chunks(stream: BinaryIO, chunk_size: int) -> Iterator[bytes]:
 def _buzhash_table() -> list[int]:
     # Deterministic constants generated once and inlined.
     return [
-        0x4A3B2C1D0E0F1234, 0x9E3779B97F4A7C15, 0xD1B54A32D192ED03, 0x94D049BB133111EB,
-        0x8538ECB5BD456EA3, 0xCA5A826395121157, 0xA4093822299F31D0, 0x13198A2E03707344,
-        0x243F6A8885A308D3, 0x3BD39E10CB0EF593, 0xC0AC29B7C97C50DD, 0xBE5466CF34E90C6C,
-        0x452821E638D01377, 0x7EF84F78FD955CB1, 0x1A2B3C4D5E6F7081, 0xABC98388FB8FAC03,
+        0x4A3B2C1D0E0F1234, 0x9E3779B97F4A7C15,
+        0xD1B54A32D192ED03, 0x94D049BB133111EB,
+        0x8538ECB5BD456EA3, 0xCA5A826395121157,
+        0xA4093822299F31D0, 0x13198A2E03707344,
+        0x243F6A8885A308D3, 0x3BD39E10CB0EF593,
+        0xC0AC29B7C97C50DD, 0xBE5466CF34E90C6C,
+        0x452821E638D01377, 0x7EF84F78FD955CB1,
+        0x1A2B3C4D5E6F7081, 0xABC98388FB8FAC03,
     ] * 16
 
 
@@ -120,7 +124,9 @@ def iter_cdc_rabin(stream: BinaryIO, cfg: ChunkerConfig) -> Iterator[bytes]:
         yield bytes(out)
 
 
-def iter_chunks(stream: BinaryIO, chunker: str, cfg: ChunkerConfig) -> Iterator[bytes]:
+def iter_chunks(
+    stream: BinaryIO, chunker: str, cfg: ChunkerConfig,
+) -> Iterator[bytes]:
     if chunker == "fixed":
         yield from iter_fixed_chunks(stream, cfg.avg_size)
         return

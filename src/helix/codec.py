@@ -8,7 +8,15 @@ from glob import glob
 from pathlib import Path
 
 from .chunking import ChunkerConfig, iter_chunks
-from .container import OP_RAW, OP_REF, Recipe, RecipeOp, read_seed, verify_signature, write_seed
+from .container import (
+    OP_RAW,
+    OP_REF,
+    Recipe,
+    RecipeOp,
+    read_seed,
+    verify_signature,
+    write_seed,
+)
 from .errors import DecodeError, HelixError
 from .storage import open_genome
 
@@ -53,7 +61,9 @@ def sha256_file(path: str | Path) -> str:
     return h.hexdigest()
 
 
-def _chunk_stream_from_file(path: str | Path, chunker: str, cfg: ChunkerConfig):
+def _chunk_stream_from_file(
+    path: str | Path, chunker: str, cfg: ChunkerConfig,
+):
     with Path(path).open("rb") as f:
         yield from iter_chunks(f, chunker, cfg)
 
@@ -112,8 +122,10 @@ def encode_file(
                 ops.append(RecipeOp(opcode=OP_REF, hash_index=index))
             else:
                 raise HelixError(
-                    "Encountered unknown chunk while --no-learn and --no-portable are active. "
-                    "Enable --learn or --portable."
+                    "Encountered unknown chunk while"
+                    " --no-learn and --no-portable"
+                    " are active."
+                    " Enable --learn or --portable."
                 )
 
         stats = EncodeStats(
@@ -157,7 +169,9 @@ def encode_file(
                     "raw_chunks": stats.raw_chunks,
                     "unique_hashes": stats.unique_hashes,
                 },
-                "created_at": dt.datetime.now(dt.UTC).isoformat(),
+                "created_at": (
+                    dt.datetime.now(dt.UTC).isoformat()
+                ),
             }
         recipe = Recipe(hash_table=hash_table, ops=ops)
         write_seed(
@@ -206,14 +220,21 @@ def decode_file(
     *,
     encryption_key: str | None = None,
 ) -> str:
-    seed = read_seed(seed_path, encryption_key=encryption_key)
+    seed = read_seed(
+        seed_path, encryption_key=encryption_key,
+    )
     out_path = Path(out_path)
     h = hashlib.sha256()
 
     with open_genome(genome_path) as genome:
         with out_path.open("wb") as out:
             for op in seed.recipe.ops:
-                chunk = _resolve_chunk(op, seed.recipe.hash_table, seed.raw_payloads, genome)
+                chunk = _resolve_chunk(
+                    op,
+                    seed.recipe.hash_table,
+                    seed.raw_payloads,
+                    genome,
+                )
                 out.write(chunk)
                 h.update(chunk)
 
@@ -221,7 +242,8 @@ def decode_file(
     expected = seed.manifest.get("source_sha256")
     if expected and expected != actual:
         raise DecodeError(
-            f"Decoded SHA-256 mismatch: expected {expected}, got {actual}."
+            "Decoded SHA-256 mismatch: "
+        f"expected {expected}, got {actual}."
         )
     return actual
 
@@ -235,7 +257,9 @@ def verify_seed(
     signature_key: str | None = None,
     encryption_key: str | None = None,
 ) -> VerifyReport:
-    seed = read_seed(seed_path, encryption_key=encryption_key)
+    seed = read_seed(
+        seed_path, encryption_key=encryption_key,
+    )
     missing: list[str] = []
     expected = seed.manifest.get("source_sha256")
     expected_size = seed.manifest.get("source_size")
@@ -259,7 +283,10 @@ def verify_seed(
                         missing_count=0,
                         expected_sha256=expected,
                         actual_sha256=None,
-                        reason="Signature key is required to verify signed seed.",
+                        reason=(
+                            "Signature key is required"
+                            " to verify signed seed."
+                        ),
                     )
             else:
                 ok, sig_reason = verify_signature(seed, signature_key)
@@ -315,11 +342,20 @@ def verify_seed(
         h = hashlib.sha256()
         actual_size = 0
         for op in seed.recipe.ops:
-            chunk = _resolve_chunk(op, seed.recipe.hash_table, seed.raw_payloads, genome)
+            chunk = _resolve_chunk(
+                op,
+                seed.recipe.hash_table,
+                seed.raw_payloads,
+                genome,
+            )
             h.update(chunk)
             actual_size += len(chunk)
 
-        if isinstance(expected_size, int) and expected_size != actual_size:
+        size_mismatch = (
+            isinstance(expected_size, int)
+            and expected_size != actual_size
+        )
+        if size_mismatch:
             return VerifyReport(
                 ok=False,
                 missing_hashes=[],
@@ -353,11 +389,19 @@ def verify_seed(
         )
 
 
-def _expand_input_paths(dir_or_glob: str | Path) -> list[Path]:
+def _expand_input_paths(
+    dir_or_glob: str | Path,
+) -> list[Path]:
     p = Path(dir_or_glob)
     if p.is_dir():
-        return [x for x in sorted(p.rglob("*")) if x.is_file()]
-    matches = [Path(x) for x in sorted(glob(str(dir_or_glob), recursive=True))]
+        return [
+            x for x in sorted(p.rglob("*"))
+            if x.is_file()
+        ]
+    matches = [
+        Path(x)
+        for x in sorted(glob(str(dir_or_glob), recursive=True))
+    ]
     return [x for x in matches if x.is_file()]
 
 
@@ -374,7 +418,9 @@ def prime_genome(
     with open_genome(genome_path) as genome:
         files = _expand_input_paths(dir_or_glob)
         for file_path in files:
-            for chunk in _chunk_stream_from_file(file_path, chunker, cfg):
+            for chunk in _chunk_stream_from_file(
+                file_path, chunker, cfg,
+            ):
                 total_chunks += 1
                 digest = _sha256_bytes(chunk)
                 if genome.put_chunk(digest, chunk):
@@ -383,7 +429,10 @@ def prime_genome(
         if total_chunks == 0:
             dedup_ratio = 0
         else:
-            dedup_ratio = int(((total_chunks - new_chunks) / total_chunks) * 10_000)
+            reused = total_chunks - new_chunks
+            dedup_ratio = int(
+                (reused / total_chunks) * 10_000
+            )
         return {
             "files": len(files),
             "total_chunks": total_chunks,
@@ -393,7 +442,10 @@ def prime_genome(
         }
 
 
-def snapshot_genome(genome_path: str | Path, out_path: str | Path) -> dict[str, int]:
+def snapshot_genome(
+    genome_path: str | Path,
+    out_path: str | Path,
+) -> dict[str, int]:
     out_path = Path(out_path)
     total_chunks = 0
     total_bytes = 0
@@ -416,7 +468,10 @@ def snapshot_genome(genome_path: str | Path, out_path: str | Path) -> dict[str, 
                     total_chunks += 1
                     total_bytes += len(payload)
         except OSError as exc:
-            raise HelixError(f"Failed to write genome snapshot: {out_path}") from exc
+            raise HelixError(
+                "Failed to write genome snapshot:"
+                f" {out_path}"
+            ) from exc
 
     return {"chunks": total_chunks, "bytes": total_bytes}
 
@@ -437,12 +492,21 @@ def restore_genome(
             with snapshot_path.open("rb") as inp:
                 header = inp.read(14)
                 if len(header) != 14:
-                    raise HelixError("Invalid genome snapshot: header is truncated.")
+                    raise HelixError(
+                        "Invalid genome snapshot:"
+                        " header is truncated."
+                    )
                 magic, version, chunk_count = struct.unpack(">4sHQ", header)
                 if magic != GENOME_SNAPSHOT_MAGIC:
-                    raise HelixError("Invalid genome snapshot magic. Expected HGS1.")
+                    raise HelixError(
+                        "Invalid genome snapshot"
+                        " magic. Expected HGS1."
+                    )
                 if version != GENOME_SNAPSHOT_VERSION:
-                    raise HelixError(f"Unsupported genome snapshot version: {version}.")
+                    raise HelixError(
+                        "Unsupported genome snapshot"
+                        f" version: {version}."
+                    )
 
                 if replace:
                     genome.clear_chunks()
@@ -450,11 +514,19 @@ def restore_genome(
                 for _ in range(chunk_count):
                     entry_header = inp.read(36)
                     if len(entry_header) != 36:
-                        raise HelixError("Invalid genome snapshot: entry header is truncated.")
+                        raise HelixError(
+                            "Invalid genome snapshot:"
+                            " entry header is"
+                            " truncated."
+                        )
                     chunk_hash, size = struct.unpack(">32sI", entry_header)
                     payload = inp.read(size)
                     if len(payload) != size:
-                        raise HelixError("Invalid genome snapshot: entry payload is truncated.")
+                        raise HelixError(
+                            "Invalid genome snapshot:"
+                            " entry payload is"
+                            " truncated."
+                        )
                     if genome.put_chunk(chunk_hash, payload):
                         inserted += 1
                     else:
@@ -462,11 +534,21 @@ def restore_genome(
 
                 trailing = inp.read(1)
                 if trailing:
-                    raise HelixError("Invalid genome snapshot: trailing bytes found.")
+                    raise HelixError(
+                        "Invalid genome snapshot:"
+                        " trailing bytes found."
+                    )
         except OSError as exc:
-            raise HelixError(f"Failed to read genome snapshot: {snapshot_path}") from exc
+            raise HelixError(
+                "Failed to read genome snapshot:"
+                f" {snapshot_path}"
+            ) from exc
 
-    return {"inserted": inserted, "skipped": skipped, "entries": int(chunk_count)}
+    return {
+        "inserted": inserted,
+        "skipped": skipped,
+        "entries": int(chunk_count),
+    }
 
 
 def export_genes(
@@ -495,10 +577,17 @@ def export_genes(
                 out.write(len(chunk).to_bytes(4, "big"))
                 out.write(chunk)
 
-    return {"total": len(seed.recipe.hash_table), "exported": exported, "missing": missing}
+    return {
+        "total": len(seed.recipe.hash_table),
+        "exported": exported,
+        "missing": missing,
+    }
 
 
-def import_genes(pack_path: str | Path, genome_path: str | Path) -> dict[str, int]:
+def import_genes(
+    pack_path: str | Path,
+    genome_path: str | Path,
+) -> dict[str, int]:
     pack_path = Path(pack_path)
     inserted = 0
     skipped = 0

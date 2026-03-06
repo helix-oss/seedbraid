@@ -55,7 +55,10 @@ def _is_timeout_reason(reason: object) -> bool:
 
 
 class PinningServiceAPIProvider:
-    """Pinning Services API adapter (https://ipfs.github.io/pinning-services-api-spec)."""
+    """Pinning Services API adapter.
+
+    See https://ipfs.github.io/pinning-services-api-spec
+    """
 
     provider_name = "psa"
 
@@ -104,7 +107,10 @@ class PinningServiceAPIProvider:
 
         for attempt in range(1, retries + 1):
             try:
-                with urllib.request.urlopen(request, timeout=timeout_ms / 1000.0) as response:
+                timeout_s = timeout_ms / 1000.0
+                with urllib.request.urlopen(
+                    request, timeout=timeout_s,
+                ) as response:
                     raw = response.read()
                 return self._parse_success(raw, requested_cid=cid)
             except urllib.error.HTTPError as exc:
@@ -112,64 +118,124 @@ class PinningServiceAPIProvider:
                 detail = payload or exc.reason
 
                 if exc.code in {401, 403}:
+                    msg = (
+                        "Remote pin authorization "
+                        f"failed (HTTP {exc.code}): "
+                        f"{detail}"
+                    )
                     raise ExternalToolError(
-                        f"Remote pin authorization failed (HTTP {exc.code}): {detail}",
+                        msg,
                         code="HELIX_E_REMOTE_PIN_AUTH",
-                        next_action="Verify remote pin API token/permissions and retry.",
+                        next_action=(
+                            "Verify remote pin API "
+                            "token/permissions and retry."
+                        ),
                     ) from exc
 
                 retryable = exc.code >= 500 or exc.code == 429
+                retryable = (
+                    exc.code >= 500 or exc.code == 429
+                )
                 if retryable and attempt < retries:
                     _sleep_backoff(backoff_ms, attempt)
                     continue
 
                 if 400 <= exc.code < 500:
+                    msg = (
+                        "Remote pin request rejected"
+                        f" (HTTP {exc.code}): "
+                        f"{detail}"
+                    )
                     raise ExternalToolError(
-                        f"Remote pin request rejected (HTTP {exc.code}): {detail}",
+                        msg,
                         code="HELIX_E_REMOTE_PIN_REQUEST",
-                        next_action="Check CID/provider options and retry.",
+                        next_action=(
+                            "Check CID/provider options"
+                            " and retry."
+                        ),
                     ) from exc
 
+                msg = (
+                    "Remote pin request failed"
+                    f" (HTTP {exc.code}): {detail}"
+                )
                 raise ExternalToolError(
-                    f"Remote pin request failed (HTTP {exc.code}): {detail}",
+                    msg,
                     code="HELIX_E_REMOTE_PIN",
-                    next_action="Retry remote pin or verify provider availability.",
+                    next_action=(
+                        "Retry remote pin or verify"
+                        " provider availability."
+                    ),
                 ) from exc
             except urllib.error.URLError as exc:
-                timeout_like = _is_timeout_reason(exc.reason)
+                timeout_like = _is_timeout_reason(
+                    exc.reason,
+                )
                 if attempt < retries:
                     _sleep_backoff(backoff_ms, attempt)
                     continue
 
                 if timeout_like:
+                    msg = (
+                        "Remote pin timed out after"
+                        f" {retries} attempt(s):"
+                        f" {exc.reason}"
+                    )
                     raise ExternalToolError(
-                        f"Remote pin timed out after {retries} attempt(s): {exc.reason}",
+                        msg,
                         code="HELIX_E_REMOTE_PIN_TIMEOUT",
-                        next_action="Increase timeout/retries or verify provider latency.",
+                        next_action=(
+                            "Increase timeout/retries"
+                            " or verify provider"
+                            " latency."
+                        ),
                     ) from exc
 
+                msg = (
+                    "Remote pin request failed"
+                    f" after {retries}"
+                    f" attempt(s): {exc.reason}"
+                )
                 raise ExternalToolError(
-                    f"Remote pin request failed after {retries} attempt(s): {exc.reason}",
+                    msg,
                     code="HELIX_E_REMOTE_PIN",
-                    next_action="Verify provider endpoint/network connectivity and retry.",
+                    next_action=(
+                        "Verify provider endpoint/"
+                        "network connectivity"
+                        " and retry."
+                    ),
                 ) from exc
             except OSError as exc:
                 if attempt < retries:
                     _sleep_backoff(backoff_ms, attempt)
                     continue
+                msg = (
+                    "Remote pin request failed"
+                    f" after {retries}"
+                    f" attempt(s): {exc}"
+                )
                 raise ExternalToolError(
-                    f"Remote pin request failed after {retries} attempt(s): {exc}",
+                    msg,
                     code="HELIX_E_REMOTE_PIN",
-                    next_action="Verify local network path to provider and retry.",
+                    next_action=(
+                        "Verify local network path"
+                        " to provider and retry."
+                    ),
                 ) from exc
 
         raise ExternalToolError(
-            "Remote pin request failed unexpectedly without explicit error context.",
+            "Remote pin request failed unexpectedly"
+            " without explicit error context.",
             code="HELIX_E_REMOTE_PIN",
-            next_action="Retry remote pin and inspect provider/API logs.",
+            next_action=(
+                "Retry remote pin and inspect"
+                " provider/API logs."
+            ),
         )
 
-    def _parse_success(self, raw: bytes, *, requested_cid: str) -> RemotePinResult:
+    def _parse_success(
+        self, raw: bytes, *, requested_cid: str,
+    ) -> RemotePinResult:
         if not raw:
             return RemotePinResult(
                 provider=self.provider_name,
@@ -182,22 +248,38 @@ class PinningServiceAPIProvider:
             payload = json.loads(raw.decode("utf-8"))
         except json.JSONDecodeError as exc:
             raise ExternalToolError(
-                f"Remote pin response is not valid JSON: {exc}",
+                "Remote pin response is not"
+                f" valid JSON: {exc}",
                 code="HELIX_E_REMOTE_PIN",
-                next_action="Retry request or verify provider API compatibility.",
+                next_action=(
+                    "Retry request or verify"
+                    " provider API compatibility."
+                ),
             ) from exc
 
         if not isinstance(payload, dict):
             raise ExternalToolError(
-                "Remote pin response JSON must be an object.",
+                "Remote pin response JSON"
+                " must be an object.",
                 code="HELIX_E_REMOTE_PIN",
-                next_action="Verify provider API compatibility with Pinning Services API.",
+                next_action=(
+                    "Verify provider API"
+                    " compatibility with"
+                    " Pinning Services API."
+                ),
             )
 
         status = payload.get("status")
-        status_text = status if isinstance(status, str) and status else "queued"
+        status_text = (
+            status if isinstance(status, str) and status
+            else "queued"
+        )
         request_id = payload.get("requestid")
-        request_id_text = request_id if isinstance(request_id, str) and request_id else None
+        req_is_str = isinstance(request_id, str)
+        request_id_text = (
+            request_id if req_is_str and request_id
+            else None
+        )
 
         cid = requested_cid
         pin_obj = payload.get("pin")
@@ -221,11 +303,20 @@ def build_remote_pin_provider(
     token: str,
 ) -> RemotePinProvider:
     provider_key = provider.strip().lower()
-    if provider_key in {"psa", "pinning-service-api", "pinning_service_api"}:
-        return PinningServiceAPIProvider(endpoint=endpoint, token=token)
+    valid = {
+        "psa", "pinning-service-api",
+        "pinning_service_api",
+    }
+    if provider_key in valid:
+        return PinningServiceAPIProvider(
+            endpoint=endpoint, token=token,
+        )
 
     raise ExternalToolError(
         f"Unsupported remote pin provider: {provider}",
         code="HELIX_E_INVALID_OPTION",
-        next_action="Use --provider psa for Pinning Services API-compatible providers.",
+        next_action=(
+            "Use --provider psa for Pinning"
+            " Services API-compatible providers."
+        ),
     )
