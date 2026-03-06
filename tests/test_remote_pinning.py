@@ -45,7 +45,10 @@ def test_psa_provider_retries_then_succeeds(monkeypatch) -> None:
             )
         assert timeout == 10.0
         assert req.get_method() == "POST"
-        assert json.loads(req.data.decode("utf-8")) == {"cid": "bafy-test", "name": "seed.hlx"}
+        assert json.loads(req.data.decode("utf-8")) == {
+            "cid": "bafy-test",
+            "name": "seed.hlx",
+        }
         return _Resp(
             {
                 "requestid": "req-1",
@@ -57,7 +60,9 @@ def test_psa_provider_retries_then_succeeds(monkeypatch) -> None:
     monkeypatch.setattr("helix.pinning.urllib.request.urlopen", _fake_urlopen)
     monkeypatch.setattr("helix.pinning.time.sleep", lambda s: sleeps.append(s))
 
-    provider = PinningServiceAPIProvider(endpoint="https://pin.example/api/v1", token="token")
+    provider = PinningServiceAPIProvider(
+        endpoint="https://pin.example/api/v1", token="token"
+    )
     report = provider.remote_add(
         "bafy-test",
         name="seed.hlx",
@@ -89,7 +94,9 @@ def test_psa_provider_maps_auth_failures(monkeypatch) -> None:
 
     monkeypatch.setattr("helix.pinning.urllib.request.urlopen", _fake_urlopen)
 
-    provider = PinningServiceAPIProvider(endpoint="https://pin.example/api/v1", token="bad-token")
+    provider = PinningServiceAPIProvider(
+        endpoint="https://pin.example/api/v1", token="bad-token"
+    )
     with pytest.raises(ExternalToolError) as exc_info:
         provider.remote_add("bafy-test", retries=1, backoff_ms=0)
     assert exc_info.value.code == "HELIX_E_REMOTE_PIN_AUTH"
@@ -138,7 +145,10 @@ def test_publish_can_trigger_remote_pin(tmp_path: Path, monkeypatch) -> None:
     )
 
     assert result.exit_code == 0
-    assert "remote_pin provider=psa cid=bafy-cid status=queued request_id=req-42" in result.output
+    assert (
+        "remote_pin provider=psa cid=bafy-cid status=queued request_id=req-42"
+        in result.output
+    )
     assert result.output.strip().endswith("bafy-cid")
 
 

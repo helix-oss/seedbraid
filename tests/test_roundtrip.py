@@ -15,7 +15,9 @@ def test_roundtrip_bit_perfect(tmp_path: Path) -> None:
     payload = (b"abcdefghij" * 50_000) + bytes(range(256)) * 500
     src.write_bytes(payload)
 
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
     encode_file(
         in_path=src,
         genome_path=genome,

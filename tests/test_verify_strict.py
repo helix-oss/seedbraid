@@ -14,7 +14,9 @@ def test_verify_strict_detects_manifest_hash_mismatch(tmp_path: Path) -> None:
     tampered = tmp_path / "tampered.hlx"
 
     src.write_bytes((b"strict-mode" * 5000) + b"!" * 128)
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,

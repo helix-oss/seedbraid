@@ -21,8 +21,16 @@ def test_cfg_rejects_negative_sizes(tmp_path: Path) -> None:
     src.write_bytes(b"x")
     result = runner.invoke(
         app,
-        ["encode", str(src), "--genome", str(tmp_path / "g"), "--out", str(tmp_path / "s.hlx"),
-         "--avg", "-1"],
+        [
+            "encode",
+            str(src),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "s.hlx"),
+            "--avg",
+            "-1",
+        ],
     )
     assert result.exit_code != 0
 
@@ -32,8 +40,20 @@ def test_cfg_rejects_invalid_ordering(tmp_path: Path) -> None:
     src.write_bytes(b"x")
     result = runner.invoke(
         app,
-        ["encode", str(src), "--genome", str(tmp_path / "g"), "--out", str(tmp_path / "s.hlx"),
-         "--min", "1000", "--avg", "500", "--max", "2000"],
+        [
+            "encode",
+            str(src),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "s.hlx"),
+            "--min",
+            "1000",
+            "--avg",
+            "500",
+            "--max",
+            "2000",
+        ],
     )
     assert result.exit_code != 0
 
@@ -50,13 +70,24 @@ def test_encode_success_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "helix.cli.encode_file",
         lambda **kw: EncodeStats(
-            total_chunks=10, reused_chunks=5, new_chunks=3, raw_chunks=2, unique_hashes=8
+            total_chunks=10,
+            reused_chunks=5,
+            new_chunks=3,
+            raw_chunks=2,
+            unique_hashes=8,
         ),
     )
 
     result = runner.invoke(
         app,
-        ["encode", str(src), "--genome", str(tmp_path / "g"), "--out", str(tmp_path / "s.hlx")],
+        [
+            "encode",
+            str(src),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "s.hlx"),
+        ],
     )
     assert result.exit_code == 0
     assert "encoded" in result.output
@@ -75,7 +106,14 @@ def test_encode_error_handling(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["encode", str(src), "--genome", str(tmp_path / "g"), "--out", str(tmp_path / "s.hlx")],
+        [
+            "encode",
+            str(src),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "s.hlx"),
+        ],
     )
     assert result.exit_code == 1
     assert "error[HELIX_E_TEST]" in result.output
@@ -91,8 +129,14 @@ def test_decode_success_output(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["decode", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g"),
-         "--out", str(tmp_path / "out.bin")],
+        [
+            "decode",
+            str(tmp_path / "s.hlx"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "out.bin"),
+        ],
     )
     assert result.exit_code == 0
     assert "decoded sha256=abcd1234" in result.output
@@ -106,8 +150,14 @@ def test_decode_error_handling(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["decode", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g"),
-         "--out", str(tmp_path / "out.bin")],
+        [
+            "decode",
+            str(tmp_path / "s.hlx"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "out.bin"),
+        ],
     )
     assert result.exit_code == 1
     assert "error[HELIX_E_TEST]" in result.output
@@ -122,8 +172,12 @@ def test_verify_ok_quick_mode(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "helix.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
-            ok=True, missing_hashes=[], missing_count=0,
-            expected_sha256="aaa", actual_sha256="aaa", reason=None,
+            ok=True,
+            missing_hashes=[],
+            missing_count=0,
+            expected_sha256="aaa",
+            actual_sha256="aaa",
+            reason=None,
         ),
     )
 
@@ -140,14 +194,24 @@ def test_verify_ok_strict_mode(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "helix.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
-            ok=True, missing_hashes=[], missing_count=0,
-            expected_sha256="bbb", actual_sha256="bbb", reason=None,
+            ok=True,
+            missing_hashes=[],
+            missing_count=0,
+            expected_sha256="bbb",
+            actual_sha256="bbb",
+            reason=None,
         ),
     )
 
     result = runner.invoke(
         app,
-        ["verify", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g"), "--strict"],
+        [
+            "verify",
+            str(tmp_path / "s.hlx"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--strict",
+        ],
     )
     assert result.exit_code == 0
     assert "verify ok mode=strict" in result.output
@@ -157,8 +221,12 @@ def test_verify_failed_with_missing(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "helix.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
-            ok=False, missing_hashes=["h1", "h2"], missing_count=2,
-            expected_sha256=None, actual_sha256=None, reason="chunks missing",
+            ok=False,
+            missing_hashes=["h1", "h2"],
+            missing_count=2,
+            expected_sha256=None,
+            actual_sha256=None,
+            reason="chunks missing",
         ),
     )
 
@@ -172,12 +240,18 @@ def test_verify_failed_with_missing(tmp_path: Path, monkeypatch) -> None:
     assert "missing_chunk=h1" in result.output
 
 
-def test_verify_failed_with_sha256_mismatch(tmp_path: Path, monkeypatch) -> None:
+def test_verify_failed_with_sha256_mismatch(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr(
         "helix.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
-            ok=False, missing_hashes=[], missing_count=0,
-            expected_sha256="aaa", actual_sha256="bbb", reason="sha256 mismatch",
+            ok=False,
+            missing_hashes=[],
+            missing_count=0,
+            expected_sha256="aaa",
+            actual_sha256="bbb",
+            reason="sha256 mismatch",
         ),
     )
 
@@ -199,8 +273,11 @@ def test_prime_success_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
         "helix.cli.prime_genome",
         lambda **kw: {
-            "files": 3, "total_chunks": 20, "new_chunks": 15,
-            "reused_chunks": 5, "dedup_ratio_bps": 2500,
+            "files": 3,
+            "total_chunks": 20,
+            "new_chunks": 15,
+            "reused_chunks": 5,
+            "dedup_ratio_bps": 2500,
         },
     )
 
@@ -268,7 +345,12 @@ def test_sign_missing_key(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["sign", str(tmp_path / "s.hlx"), "--out", str(tmp_path / "signed.hlx")],
+        [
+            "sign",
+            str(tmp_path / "s.hlx"),
+            "--out",
+            str(tmp_path / "signed.hlx"),
+        ],
     )
     assert result.exit_code == 1
     assert "error[HELIX_E_SIGNING_KEY_MISSING]" in result.output
@@ -280,7 +362,12 @@ def test_sign_success(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["sign", str(tmp_path / "s.hlx"), "--out", str(tmp_path / "signed.hlx")],
+        [
+            "sign",
+            str(tmp_path / "s.hlx"),
+            "--out",
+            str(tmp_path / "signed.hlx"),
+        ],
     )
     assert result.exit_code == 0
     assert "signed" in result.output
@@ -300,8 +387,14 @@ def test_export_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["export-genes", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g"),
-         "--out", str(tmp_path / "genes.pak")],
+        [
+            "export-genes",
+            str(tmp_path / "s.hlx"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "genes.pak"),
+        ],
     )
     assert result.exit_code == 0
     assert "exported total=10 exported=8 missing=2" in result.output
@@ -315,7 +408,12 @@ def test_import_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["import-genes", str(tmp_path / "genes.pak"), "--genome", str(tmp_path / "g")],
+        [
+            "import-genes",
+            str(tmp_path / "genes.pak"),
+            "--genome",
+            str(tmp_path / "g"),
+        ],
     )
     assert result.exit_code == 0
     assert "imported inserted=7 skipped=3" in result.output
@@ -334,8 +432,14 @@ def test_genome_snapshot_cli_output(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["genome", "snapshot", "--genome", str(tmp_path / "g"),
-         "--out", str(tmp_path / "snap.bin")],
+        [
+            "genome",
+            "snapshot",
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "snap.bin"),
+        ],
     )
     assert result.exit_code == 0
     assert "snapshot chunks=50 bytes=102400" in result.output
@@ -349,7 +453,13 @@ def test_genome_restore_cli_output(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["genome", "restore", str(tmp_path / "snap.bin"), "--genome", str(tmp_path / "g")],
+        [
+            "genome",
+            "restore",
+            str(tmp_path / "snap.bin"),
+            "--genome",
+            str(tmp_path / "g"),
+        ],
     )
     assert result.exit_code == 0
     assert "restored entries=50 inserted=45 skipped=5" in result.output
@@ -370,8 +480,16 @@ def test_print_error_unknown_exception(tmp_path: Path, monkeypatch) -> None:
     src.write_bytes(b"x")
     result = runner.invoke(
         app,
-        ["encode", str(src), "--genome", str(tmp_path / "g"), "--out", str(tmp_path / "s.hlx")],
+        [
+            "encode",
+            str(src),
+            "--genome",
+            str(tmp_path / "g"),
+            "--out",
+            str(tmp_path / "s.hlx"),
+        ],
     )
-    # RuntimeError is not caught by the except HelixError clause, so it propagates
-    # The CLI runner captures the traceback
+    # RuntimeError is not caught by the except HelixError
+    # clause, so it propagates. The CLI runner captures
+    # the traceback.
     assert result.exit_code != 0

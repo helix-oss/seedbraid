@@ -6,7 +6,9 @@ from helix.cli import app
 
 
 def test_gen_encryption_key_prints_token(monkeypatch) -> None:
-    monkeypatch.setattr("helix.cli.secrets.token_urlsafe", lambda _n: "generated-token")
+    monkeypatch.setattr(
+        "helix.cli.secrets.token_urlsafe", lambda _n: "generated-token"
+    )
 
     runner = CliRunner()
     result = runner.invoke(app, ["gen-encryption-key"])
@@ -16,7 +18,9 @@ def test_gen_encryption_key_prints_token(monkeypatch) -> None:
 
 
 def test_gen_encryption_key_shell_output(monkeypatch) -> None:
-    monkeypatch.setattr("helix.cli.secrets.token_urlsafe", lambda _n: "shell-token")
+    monkeypatch.setattr(
+        "helix.cli.secrets.token_urlsafe", lambda _n: "shell-token"
+    )
 
     runner = CliRunner()
     result = runner.invoke(app, ["gen-encryption-key", "--shell"])
@@ -26,7 +30,9 @@ def test_gen_encryption_key_shell_output(monkeypatch) -> None:
 
 
 def test_gen_encryption_key_rejects_invalid_env_var(monkeypatch) -> None:
-    monkeypatch.setattr("helix.cli.secrets.token_urlsafe", lambda _n: "ignored-token")
+    monkeypatch.setattr(
+        "helix.cli.secrets.token_urlsafe", lambda _n: "ignored-token"
+    )
 
     runner = CliRunner()
     result = runner.invoke(

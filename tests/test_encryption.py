@@ -16,7 +16,9 @@ def test_encrypted_seed_roundtrip_requires_key(tmp_path: Path) -> None:
     genome = tmp_path / "genome"
 
     src.write_bytes((b"encrypted-seed" * 4000) + bytes(range(128)))
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
@@ -32,7 +34,9 @@ def test_encrypted_seed_roundtrip_requires_key(tmp_path: Path) -> None:
 
     assert seed.read_bytes().startswith(b"HLE1")
 
-    with pytest.raises(SeedFormatError, match="Encrypted seed requires decryption key"):
+    with pytest.raises(
+        SeedFormatError, match="Encrypted seed requires decryption key"
+    ):
         decode_file(seed, genome, out)
 
     with pytest.raises(SeedFormatError, match="authentication failed"):
@@ -48,7 +52,9 @@ def test_verify_strict_with_encrypted_seed(tmp_path: Path) -> None:
     genome = tmp_path / "genome"
 
     src.write_bytes((b"verify-encrypted" * 2500) + b"tail")
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
@@ -62,8 +68,12 @@ def test_verify_strict_with_encrypted_seed(tmp_path: Path) -> None:
         encryption_key="verify-key",
     )
 
-    with pytest.raises(SeedFormatError, match="Encrypted seed requires decryption key"):
+    with pytest.raises(
+        SeedFormatError, match="Encrypted seed requires decryption key"
+    ):
         verify_seed(seed, genome, strict=True)
 
-    report = verify_seed(seed, genome, strict=True, encryption_key="verify-key")
+    report = verify_seed(
+        seed, genome, strict=True, encryption_key="verify-key"
+    )
     assert report.ok

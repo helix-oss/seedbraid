@@ -22,7 +22,9 @@ def test_compat_fixture_hashes_are_frozen() -> None:
         path = FIXTURE_DIR / str(entry["filename"])
         data = path.read_bytes()
         digest = hashlib.sha256(data).hexdigest()
-        assert digest == entry["seed_sha256"], f"fixture digest drifted: {path.name}"
+        assert digest == entry["seed_sha256"], (
+            f"fixture digest drifted: {path.name}"
+        )
 
 
 def test_compat_fixtures_parse_verify_and_decode(tmp_path: Path) -> None:

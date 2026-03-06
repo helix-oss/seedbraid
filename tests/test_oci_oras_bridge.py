@@ -30,7 +30,9 @@ class _Proc:
 
 
 def _write_seed(tmp_path: Path, manifest: dict) -> Path:
-    recipe = Recipe(hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)])
+    recipe = Recipe(
+        hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)]
+    )
     seed_bytes = serialize_seed(
         manifest=manifest,
         recipe=recipe,
@@ -63,7 +65,9 @@ def test_build_oras_annotations_from_manifest(tmp_path: Path) -> None:
     assert annotations[ANNOTATION_TITLE] == "seed.hlx"
 
 
-def test_build_oras_annotations_handles_private_manifest(tmp_path: Path) -> None:
+def test_build_oras_annotations_handles_private_manifest(
+    tmp_path: Path,
+) -> None:
     manifest = {
         "format": "HLX1",
         "version": 1,
@@ -83,7 +87,9 @@ def test_build_oras_annotations_handles_private_manifest(tmp_path: Path) -> None
     assert annotations[ANNOTATION_MANIFEST_PRIVATE] == "true"
 
 
-def test_push_seed_oras_builds_expected_command(tmp_path: Path, monkeypatch) -> None:
+def test_push_seed_oras_builds_expected_command(
+    tmp_path: Path, monkeypatch
+) -> None:
     seed_path = tmp_path / "seed.hlx"
     seed_path.write_bytes(b"HLX1" + b"x" * 32)
     calls: dict[str, object] = {}
@@ -116,7 +122,9 @@ def test_push_seed_oras_builds_expected_command(tmp_path: Path, monkeypatch) -> 
     assert annotations[ANNOTATION_SOURCE_SHA256] == "abc"
 
 
-def test_pull_seed_oras_restores_single_hlx_payload(tmp_path: Path, monkeypatch) -> None:
+def test_pull_seed_oras_restores_single_hlx_payload(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr("helix.oci._require_oras_cli", lambda: "/usr/bin/oras")
 
     def _fake_run(cmd, check=False, text=True, capture_output=True):  # noqa: ANN001, ANN202
@@ -135,7 +143,9 @@ def test_pull_seed_oras_restores_single_hlx_payload(tmp_path: Path, monkeypatch)
     assert out_path.read_bytes() == b"HLX1pulled"
 
 
-def test_pull_seed_oras_fails_when_multiple_hlx_payloads(tmp_path: Path, monkeypatch) -> None:
+def test_pull_seed_oras_fails_when_multiple_hlx_payloads(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr("helix.oci._require_oras_cli", lambda: "/usr/bin/oras")
 
     def _fake_run(cmd, check=False, text=True, capture_output=True):  # noqa: ANN001, ANN202
@@ -151,10 +161,14 @@ def test_pull_seed_oras_fails_when_multiple_hlx_payloads(tmp_path: Path, monkeyp
         pull_seed_oras("ghcr.io/acme/helix-seed:latest", tmp_path / "out.hlx")
 
 
-def test_push_seed_oras_requires_existing_seed(tmp_path: Path, monkeypatch) -> None:
+def test_push_seed_oras_requires_existing_seed(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr("helix.oci._require_oras_cli", lambda: "/usr/bin/oras")
     with pytest.raises(ExternalToolError, match="Seed file not found"):
-        push_seed_oras(tmp_path / "missing.hlx", "ghcr.io/acme/helix-seed:latest")
+        push_seed_oras(
+            tmp_path / "missing.hlx", "ghcr.io/acme/helix-seed:latest"
+        )
 
 
 def test_readme_links_oci_integration_section() -> None:

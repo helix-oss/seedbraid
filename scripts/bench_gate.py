@@ -8,7 +8,9 @@ from helix.perf import evaluate_benchmark_gates, run_shifted_dedup_benchmark
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run shifted dedup benchmark and enforce regression gates.",
+        description=(
+            "Run shifted dedup benchmark and enforce regression gates."
+        ),
     )
     parser.add_argument("--total-size-bytes", type=int, default=3_200_000)
     parser.add_argument("--insert-offset", type=int, default=100_000)

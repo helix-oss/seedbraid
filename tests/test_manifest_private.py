@@ -7,7 +7,9 @@ from helix.codec import encode_file, verify_seed
 from helix.container import read_seed
 
 
-def test_manifest_private_minimizes_metadata_and_preserves_verify(tmp_path: Path) -> None:
+def test_manifest_private_minimizes_metadata_and_preserves_verify(
+    tmp_path: Path,
+) -> None:
     src = tmp_path / "source.bin"
     seed = tmp_path / "seed.hlx"
     genome = tmp_path / "genome"
@@ -18,7 +20,9 @@ def test_manifest_private_minimizes_metadata_and_preserves_verify(tmp_path: Path
         genome_path=genome,
         out_seed_path=seed,
         chunker="fixed",
-        cfg=ChunkerConfig(min_size=1024, avg_size=1024, max_size=1024, window_size=16),
+        cfg=ChunkerConfig(
+            min_size=1024, avg_size=1024, max_size=1024, window_size=16
+        ),
         learn=True,
         portable=False,
         manifest_compression="zlib",

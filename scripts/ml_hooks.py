@@ -19,12 +19,25 @@ def _default_metadata_path(seed_path: Path) -> Path:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Helix ML tooling hooks (MLflow / Hugging Face)")
+    parser = argparse.ArgumentParser(
+        description=("Helix ML tooling hooks (MLflow / Hugging Face)"),
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    mlflow = sub.add_parser("mlflow-log", help="Log Helix seed metadata to MLflow")
-    mlflow.add_argument("seed", type=Path, help="Path to .hlx seed")
-    mlflow.add_argument("--tracking-uri", default=None, help="MLflow tracking URI")
+    mlflow = sub.add_parser(
+        "mlflow-log",
+        help="Log Helix seed metadata to MLflow",
+    )
+    mlflow.add_argument(
+        "seed",
+        type=Path,
+        help="Path to .hlx seed",
+    )
+    mlflow.add_argument(
+        "--tracking-uri",
+        default=None,
+        help="MLflow tracking URI",
+    )
     mlflow.add_argument(
         "--experiment",
         default=os.environ.get("HELIX_MLFLOW_EXPERIMENT", "helix-seeds"),
@@ -35,37 +48,99 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="MLflow run name (default: seed filename)",
     )
-    mlflow.add_argument("--token", default=None, help="MLflow API token")
-    mlflow.add_argument("--timeout-s", type=float, default=20.0, help="HTTP timeout seconds")
-    mlflow.add_argument("--metadata-out", type=Path, default=None, help="Metadata sidecar output")
-    mlflow.add_argument("--cid", default=None, help="Optional IPFS CID")
-    mlflow.add_argument("--oci-reference", default=None, help="Optional OCI reference")
+    mlflow.add_argument(
+        "--token",
+        default=None,
+        help="MLflow API token",
+    )
+    mlflow.add_argument(
+        "--timeout-s",
+        type=float,
+        default=20.0,
+        help="HTTP timeout seconds",
+    )
+    mlflow.add_argument(
+        "--metadata-out",
+        type=Path,
+        default=None,
+        help="Metadata sidecar output",
+    )
+    mlflow.add_argument(
+        "--cid",
+        default=None,
+        help="Optional IPFS CID",
+    )
+    mlflow.add_argument(
+        "--oci-reference",
+        default=None,
+        help="Optional OCI reference",
+    )
     mlflow.add_argument(
         "--encryption-key",
         default=None,
-        help="Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)",
+        help=(
+            "Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)"
+        ),
     )
 
-    hf = sub.add_parser("hf-upload", help="Upload seed + metadata sidecar to Hugging Face Hub")
-    hf.add_argument("seed", type=Path, help="Path to .hlx seed")
-    hf.add_argument("repo_id", help="Hugging Face repo id")
-    hf.add_argument("--repo-type", default="dataset", help="dataset | model | space")
-    hf.add_argument("--revision", default="main", help="Target revision")
-    hf.add_argument("--remote-prefix", default="helix/seeds", help="Remote folder prefix")
-    hf.add_argument("--token", default=None, help="Hugging Face token")
-    hf.add_argument("--metadata", type=Path, default=None, help="Existing metadata sidecar path")
+    hf = sub.add_parser(
+        "hf-upload",
+        help="Upload seed + metadata sidecar to HF Hub",
+    )
+    hf.add_argument(
+        "seed",
+        type=Path,
+        help="Path to .hlx seed",
+    )
+    hf.add_argument("repo_id", help="HF repo id")
+    hf.add_argument(
+        "--repo-type",
+        default="dataset",
+        help="dataset | model | space",
+    )
+    hf.add_argument(
+        "--revision",
+        default="main",
+        help="Target revision",
+    )
+    hf.add_argument(
+        "--remote-prefix",
+        default="helix/seeds",
+        help="Remote folder prefix",
+    )
+    hf.add_argument(
+        "--token",
+        default=None,
+        help="HF token",
+    )
+    hf.add_argument(
+        "--metadata",
+        type=Path,
+        default=None,
+        help="Existing metadata sidecar path",
+    )
     hf.add_argument(
         "--metadata-out",
         type=Path,
         default=None,
         help="Generated metadata sidecar path",
     )
-    hf.add_argument("--cid", default=None, help="Optional IPFS CID")
-    hf.add_argument("--oci-reference", default=None, help="Optional OCI reference")
+    hf.add_argument(
+        "--cid",
+        default=None,
+        help="Optional IPFS CID",
+    )
+    hf.add_argument(
+        "--oci-reference",
+        default=None,
+        help="Optional OCI reference",
+    )
     hf.add_argument(
         "--encryption-key",
         default=None,
-        help="Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)",
+        help=(
+            "Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)"
+        ),
     )
 
     return parser
@@ -82,8 +157,12 @@ def _print_error(exc: Exception) -> int:
     return 1
 
 
-def _build_and_write_metadata(args) -> tuple[dict[str, object], Path]:  # noqa: ANN001
-    encryption_key = args.encryption_key or os.environ.get("HELIX_ENCRYPTION_KEY")
+def _build_and_write_metadata(  # noqa: ANN001
+    args,
+) -> tuple[dict[str, object], Path]:
+    encryption_key = args.encryption_key or os.environ.get(
+        "HELIX_ENCRYPTION_KEY"
+    )
     metadata = build_seed_metadata(
         args.seed,
         cid=args.cid,
@@ -102,12 +181,16 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "mlflow-log":
-            tracking_uri = args.tracking_uri or os.environ.get("MLFLOW_TRACKING_URI")
+            tracking_uri = args.tracking_uri or os.environ.get(
+                "MLFLOW_TRACKING_URI"
+            )
             if not tracking_uri:
                 raise HelixError(
                     "MLflow tracking URI is required.",
                     code="HELIX_E_MLFLOW_CONFIG",
-                    next_action="Pass --tracking-uri or set MLFLOW_TRACKING_URI.",
+                    next_action=(
+                        "Pass --tracking-uri or set MLFLOW_TRACKING_URI."
+                    ),
                 )
 
             metadata, metadata_path = _build_and_write_metadata(args)
@@ -144,8 +227,12 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(
             "hf_uploaded "
-            f"repo={result.repo_id} repo_type={result.repo_type} revision={result.revision} "
-            f"seed_remote={result.seed_remote_path} metadata_remote={result.metadata_remote_path}"
+            f"repo={result.repo_id} "
+            f"repo_type={result.repo_type} "
+            f"revision={result.revision} "
+            f"seed_remote={result.seed_remote_path} "
+            f"metadata_remote="
+            f"{result.metadata_remote_path}"
         )
         return 0
     except Exception as exc:  # noqa: BLE001

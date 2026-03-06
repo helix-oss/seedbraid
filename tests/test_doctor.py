@@ -76,7 +76,9 @@ def test_run_doctor_flags_missing_ipfs(tmp_path: Path, monkeypatch) -> None:
     assert report.fail_count >= 1
 
 
-def test_error_output_includes_code_and_next_action(tmp_path: Path, monkeypatch) -> None:
+def test_error_output_includes_code_and_next_action(
+    tmp_path: Path, monkeypatch
+) -> None:
     src = tmp_path / "input.bin"
     src.write_bytes(b"x")
     monkeypatch.delenv("HELIX_ENCRYPTION_KEY", raising=False)
@@ -106,11 +108,16 @@ def test_error_output_includes_code_and_next_action(tmp_path: Path, monkeypatch)
 
 
 def test_check_ipfs_cli_success(monkeypatch) -> None:
-    monkeypatch.setattr("helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs")
+    monkeypatch.setattr(
+        "helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
+    )
     monkeypatch.setattr(
         "helix.diagnostics.subprocess.run",
         lambda cmd, **kw: subprocess.CompletedProcess(
-            cmd, returncode=0, stdout="ipfs version 0.20.0\n", stderr="",
+            cmd,
+            returncode=0,
+            stdout="ipfs version 0.20.0\n",
+            stderr="",
         ),
     )
     check = _check_ipfs_cli()
@@ -119,11 +126,16 @@ def test_check_ipfs_cli_success(monkeypatch) -> None:
 
 
 def test_check_ipfs_cli_fails_on_returncode(monkeypatch) -> None:
-    monkeypatch.setattr("helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs")
+    monkeypatch.setattr(
+        "helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
+    )
     monkeypatch.setattr(
         "helix.diagnostics.subprocess.run",
         lambda cmd, **kw: subprocess.CompletedProcess(
-            cmd, returncode=1, stdout="", stderr="permission denied",
+            cmd,
+            returncode=1,
+            stdout="",
+            stderr="permission denied",
         ),
     )
     check = _check_ipfs_cli()
@@ -191,7 +203,9 @@ def test_run_doctor_reraises_helix_error(tmp_path: Path, monkeypatch) -> None:
         run_doctor(tmp_path)
 
 
-def test_run_doctor_wraps_unexpected_exception(tmp_path: Path, monkeypatch) -> None:
+def test_run_doctor_wraps_unexpected_exception(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr(
         "helix.diagnostics._check_ipfs_cli",
         lambda: (_ for _ in ()).throw(ValueError("unexpected")),

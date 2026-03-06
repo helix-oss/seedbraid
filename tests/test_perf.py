@@ -37,7 +37,9 @@ def _make_report(
         insert_offset=100_000,
         inserted_size_bytes=1,
         fixed=_make_case("fixed", seed_size_bytes=fixed_seed),
-        cdc=_make_case("cdc_buzhash", reused_chunks=75, seed_size_bytes=cdc_seed),
+        cdc=_make_case(
+            "cdc_buzhash", reused_chunks=75, seed_size_bytes=cdc_seed
+        ),
     )
 
 

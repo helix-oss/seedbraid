@@ -14,7 +14,9 @@ def test_sign_and_verify_with_required_signature(tmp_path: Path) -> None:
     genome = tmp_path / "genome"
 
     src.write_bytes((b"signed-seed" * 5000) + b"!" * 64)
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
@@ -27,7 +29,9 @@ def test_sign_and_verify_with_required_signature(tmp_path: Path) -> None:
         manifest_compression="zlib",
     )
 
-    sign_seed_file(unsigned, signed, signature_key="top-secret", signature_key_id="team-a")
+    sign_seed_file(
+        unsigned, signed, signature_key="top-secret", signature_key_id="team-a"
+    )
 
     seed = parse_seed(signed.read_bytes())
     assert seed.signature is not None
@@ -50,7 +54,9 @@ def test_verify_fails_on_missing_or_invalid_signature(tmp_path: Path) -> None:
     genome = tmp_path / "genome"
 
     src.write_bytes((b"signed-seed" * 2000) + b"@" * 10)
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
@@ -63,7 +69,9 @@ def test_verify_fails_on_missing_or_invalid_signature(tmp_path: Path) -> None:
         manifest_compression="zlib",
     )
 
-    missing = verify_seed(unsigned, genome, strict=False, require_signature=True)
+    missing = verify_seed(
+        unsigned, genome, strict=False, require_signature=True
+    )
     assert not missing.ok
     assert missing.reason == "Signature is required but missing."
 

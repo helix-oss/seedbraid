@@ -28,11 +28,17 @@ def _minimal_seed_bytes() -> bytes:
         "portable": True,
         "learn": True,
     }
-    recipe = Recipe(hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)])
-    return serialize_seed(manifest, recipe, {0: b"abc"}, manifest_compression="zlib")
+    recipe = Recipe(
+        hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)]
+    )
+    return serialize_seed(
+        manifest, recipe, {0: b"abc"}, manifest_compression="zlib"
+    )
 
 
-def test_fetch_retries_and_succeeds_on_second_attempt(tmp_path: Path, monkeypatch) -> None:
+def test_fetch_retries_and_succeeds_on_second_attempt(
+    tmp_path: Path, monkeypatch
+) -> None:
     out = tmp_path / "fetched.hlx"
     seed_blob = _minimal_seed_bytes()
     calls: list[list[str]] = []
@@ -41,10 +47,14 @@ def test_fetch_retries_and_succeeds_on_second_attempt(tmp_path: Path, monkeypatc
     def _fake_run(cmd, check=False, capture_output=False, text=False):  # noqa: ANN001, ANN202
         calls.append(cmd)
         if len(calls) == 1:
-            return _Proc(returncode=1, stdout=b"", stderr=b"temporary ipfs failure")
+            return _Proc(
+                returncode=1, stdout=b"", stderr=b"temporary ipfs failure"
+            )
         return _Proc(returncode=0, stdout=seed_blob, stderr=b"")
 
-    monkeypatch.setattr("helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs")
+    monkeypatch.setattr(
+        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+    )
     monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
     monkeypatch.setattr("helix.ipfs.time.sleep", lambda s: sleeps.append(s))
 
@@ -54,7 +64,9 @@ def test_fetch_retries_and_succeeds_on_second_attempt(tmp_path: Path, monkeypatc
     assert sleeps == [0.01]
 
 
-def test_fetch_uses_gateway_fallback_after_retry_exhaustion(tmp_path: Path, monkeypatch) -> None:
+def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
+    tmp_path: Path, monkeypatch
+) -> None:
     out = tmp_path / "fetched.hlx"
     seed_blob = _minimal_seed_bytes()
     requested_urls: list[str] = []
@@ -80,11 +92,19 @@ def test_fetch_uses_gateway_fallback_after_retry_exhaustion(tmp_path: Path, monk
         assert timeout == 30
         return _Resp(seed_blob)
 
-    monkeypatch.setattr("helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs")
+    monkeypatch.setattr(
+        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+    )
     monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
     monkeypatch.setattr("helix.ipfs.urllib.request.urlopen", _fake_urlopen)
 
-    fetch_seed("bafy-gw", out, retries=2, backoff_ms=0, gateway="https://gw.example/ipfs")
+    fetch_seed(
+        "bafy-gw",
+        out,
+        retries=2,
+        backoff_ms=0,
+        gateway="https://gw.example/ipfs",
+    )
     assert out.read_bytes() == seed_blob
     assert requested_urls == ["https://gw.example/ipfs/bafy-gw"]
 
@@ -100,7 +120,9 @@ def test_pin_health_status_reports_ok_and_not_ok(monkeypatch) -> None:
     def _fake_run(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
         return queued.pop(0)
 
-    monkeypatch.setattr("helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs")
+    monkeypatch.setattr(
+        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+    )
     monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
 
     ok_report = pin_health_status("bafy-ok")

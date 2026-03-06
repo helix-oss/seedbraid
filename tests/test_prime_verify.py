@@ -13,7 +13,9 @@ def test_prime_then_verify(tmp_path: Path) -> None:
     (corpus / "b.bin").write_bytes((b"abcd" * 20_000) + b"Y")
 
     genome = tmp_path / "genome"
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     stats = prime_genome(corpus, genome, chunker="cdc_buzhash", cfg=cfg)
     assert stats["total_chunks"] > 0

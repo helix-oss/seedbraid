@@ -3,7 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from helix.chunking import ChunkerConfig
-from helix.codec import decode_file, encode_file, restore_genome, snapshot_genome, verify_seed
+from helix.codec import (
+    decode_file,
+    encode_file,
+    restore_genome,
+    snapshot_genome,
+    verify_seed,
+)
 from helix.storage import open_genome
 
 
@@ -17,7 +23,9 @@ def test_genome_snapshot_restore_supports_decode(tmp_path: Path) -> None:
     genome_b = tmp_path / "genome-b"
 
     src.write_bytes((b"snapshot-restore-" * 20_000) + bytes(range(255)))
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
@@ -43,7 +51,9 @@ def test_genome_snapshot_restore_supports_decode(tmp_path: Path) -> None:
     assert report.ok
 
 
-def test_genome_restore_replace_overwrites_existing_content(tmp_path: Path) -> None:
+def test_genome_restore_replace_overwrites_existing_content(
+    tmp_path: Path,
+) -> None:
     src_a = tmp_path / "a.bin"
     src_b = tmp_path / "b.bin"
     snapshot = tmp_path / "genome.hgs"
@@ -53,7 +63,9 @@ def test_genome_restore_replace_overwrites_existing_content(tmp_path: Path) -> N
     src_a.write_bytes((b"A" * 200_000) + b"tail-a")
     src_b.write_bytes((b"B" * 200_000) + b"tail-b")
 
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src_a,

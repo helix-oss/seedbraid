@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from helix.perf import BenchCaseResult, ShiftedDedupBenchmark, evaluate_benchmark_gates
+from helix.perf import (
+    BenchCaseResult,
+    ShiftedDedupBenchmark,
+    evaluate_benchmark_gates,
+)
 
 
 def _report(
@@ -41,7 +45,9 @@ def _report(
 
 
 def test_evaluate_benchmark_gates_passes() -> None:
-    report = _report(reuse_improvement_bps=100, seed_size_ratio=1.0, throughput=10.0)
+    report = _report(
+        reuse_improvement_bps=100, seed_size_ratio=1.0, throughput=10.0
+    )
     violations = evaluate_benchmark_gates(
         report,
         min_reuse_improvement_bps=1,
@@ -52,7 +58,9 @@ def test_evaluate_benchmark_gates_passes() -> None:
 
 
 def test_evaluate_benchmark_gates_detects_regressions() -> None:
-    report = _report(reuse_improvement_bps=0, seed_size_ratio=1.5, throughput=0.01)
+    report = _report(
+        reuse_improvement_bps=0, seed_size_ratio=1.5, throughput=0.01
+    )
     violations = evaluate_benchmark_gates(
         report,
         min_reuse_improvement_bps=10,

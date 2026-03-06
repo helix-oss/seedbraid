@@ -36,8 +36,12 @@ def _write_seed(tmp_path: Path, *, manifest_private: bool) -> Path:
         "learn": True,
         "manifest_private": manifest_private,
     }
-    recipe = Recipe(hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)])
-    seed_bytes = serialize_seed(manifest, recipe, {0: b"chunk"}, manifest_compression="zlib")
+    recipe = Recipe(
+        hash_table=[b"\x00" * 32], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)]
+    )
+    seed_bytes = serialize_seed(
+        manifest, recipe, {0: b"chunk"}, manifest_compression="zlib"
+    )
     seed_path = tmp_path / "seed.hlx"
     seed_path.write_bytes(seed_bytes)
     return seed_path
@@ -61,10 +65,14 @@ def test_build_seed_metadata_includes_restore_fields(tmp_path: Path) -> None:
     assert metadata["oci_reference"] == "ghcr.io/acme/helix-seed:v1"
 
 
-def test_log_seed_metadata_to_mlflow_creates_experiment_and_run(monkeypatch) -> None:
+def test_log_seed_metadata_to_mlflow_creates_experiment_and_run(
+    monkeypatch,
+) -> None:
     calls: list[tuple[str, str, dict[str, object] | None]] = []
 
-    def _fake_request(method, url, *, payload, token, timeout_s, not_found_ok=False):  # noqa: ANN001, ANN202
+    def _fake_request(
+        method, url, *, payload, token, timeout_s, not_found_ok=False
+    ):  # noqa: ANN001, ANN202
         calls.append((method, url, payload))
         assert token == "ml-token"
         assert timeout_s == 10.0
@@ -102,9 +110,13 @@ def test_log_seed_metadata_to_mlflow_creates_experiment_and_run(monkeypatch) -> 
     assert len(calls) == 4
 
 
-def test_upload_seed_and_metadata_to_hf_invokes_cli_twice(tmp_path: Path, monkeypatch) -> None:
+def test_upload_seed_and_metadata_to_hf_invokes_cli_twice(
+    tmp_path: Path, monkeypatch
+) -> None:
     seed_path = _write_seed(tmp_path, manifest_private=True)
-    metadata_path = write_seed_metadata({"seed_sha256": "abc"}, tmp_path / "seed.hlx.metadata.json")
+    metadata_path = write_seed_metadata(
+        {"seed_sha256": "abc"}, tmp_path / "seed.hlx.metadata.json"
+    )
 
     calls: list[tuple[list[str], str | None]] = []
 
@@ -112,7 +124,9 @@ def test_upload_seed_and_metadata_to_hf_invokes_cli_twice(tmp_path: Path, monkey
         calls.append((cmd, None if env is None else env.get("HF_TOKEN")))
         return _Proc(returncode=0, stdout="ok", stderr="")
 
-    monkeypatch.setattr("helix.mlhooks._resolve_hf_cli", lambda: ["huggingface-cli", "upload"])
+    monkeypatch.setattr(
+        "helix.mlhooks._resolve_hf_cli", lambda: ["huggingface-cli", "upload"]
+    )
     monkeypatch.setattr("helix.mlhooks.subprocess.run", _fake_run)
 
     result = upload_seed_and_metadata_to_hf(
@@ -132,9 +146,13 @@ def test_upload_seed_and_metadata_to_hf_invokes_cli_twice(tmp_path: Path, monkey
     assert calls[1][1] == "hf-token"
 
 
-def test_upload_seed_and_metadata_to_hf_requires_token(tmp_path: Path, monkeypatch) -> None:
+def test_upload_seed_and_metadata_to_hf_requires_token(
+    tmp_path: Path, monkeypatch
+) -> None:
     seed_path = _write_seed(tmp_path, manifest_private=True)
-    metadata_path = write_seed_metadata({"seed_sha256": "abc"}, tmp_path / "seed.hlx.metadata.json")
+    metadata_path = write_seed_metadata(
+        {"seed_sha256": "abc"}, tmp_path / "seed.hlx.metadata.json"
+    )
 
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.delenv("HUGGINGFACE_HUB_TOKEN", raising=False)

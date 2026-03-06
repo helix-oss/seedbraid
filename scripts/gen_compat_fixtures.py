@@ -47,7 +47,10 @@ def _build_fixture_bytes(
         "created_at": "2026-02-13T00:00:00+00:00",
         "fixture_name": "compat-v1",
     }
-    recipe = Recipe(hash_table=[chunk_hash], ops=[RecipeOp(opcode=OP_RAW, hash_index=0)])
+    recipe = Recipe(
+        hash_table=[chunk_hash],
+        ops=[RecipeOp(opcode=OP_RAW, hash_index=0)],
+    )
     return serialize_seed(
         manifest=manifest,
         recipe=recipe,
@@ -70,7 +73,9 @@ def main() -> None:
         },
         {
             "filename": "portable_raw_signed_v1.hlx",
-            "payload": b"HELIX-COMPAT-FIXTURE-V1\nsigned portable raw payload\n",
+            "payload": (
+                b"HELIX-COMPAT-FIXTURE-V1\nsigned portable raw payload\n"
+            ),
             "compression": "none",
             "signed": True,
             "signature_key": "fixture-sign-key-v1",
@@ -85,7 +90,9 @@ def main() -> None:
             compression=spec["compression"],
             signed=bool(spec["signed"]),
             signature_key=spec.get("signature_key"),
-            signature_key_id=str(spec.get("signature_key_id", "compat-fixture")),
+            signature_key_id=str(
+                spec.get("signature_key_id", "compat-fixture")
+            ),
         )
         path = FIXTURE_DIR / str(spec["filename"])
         path.write_bytes(blob)
@@ -103,7 +110,8 @@ def main() -> None:
         )
 
     manifest_path = FIXTURE_DIR / "manifest.json"
-    manifest_path.write_text(json.dumps({"fixtures": metadata}, indent=2, sort_keys=True) + "\n")
+    content = json.dumps({"fixtures": metadata}, indent=2, sort_keys=True)
+    manifest_path.write_text(content + "\n")
     print(f"wrote {len(metadata)} fixtures to {FIXTURE_DIR}")
 
 

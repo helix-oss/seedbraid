@@ -21,8 +21,15 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     push = sub.add_parser("push", help="Push a .hlx seed to OCI reference")
-    push.add_argument("seed", type=Path, help="Path to .hlx seed file")
-    push.add_argument("reference", help="OCI reference: <registry>/<repo>:<tag>")
+    push.add_argument(
+        "seed",
+        type=Path,
+        help="Path to .hlx seed file",
+    )
+    push.add_argument(
+        "reference",
+        help="OCI reference: <registry>/<repo>:<tag>",
+    )
     push.add_argument(
         "--artifact-type",
         default=HELIX_OCI_ARTIFACT_TYPE,
@@ -36,12 +43,25 @@ def _build_parser() -> argparse.ArgumentParser:
     push.add_argument(
         "--encryption-key",
         default=None,
-        help="Passphrase when reading encrypted HLE1 seed for annotation extraction.",
+        help=(
+            "Passphrase when reading encrypted"
+            " HLE1 seed for annotation extraction."
+        ),
     )
 
-    pull = sub.add_parser("pull", help="Pull a .hlx seed from OCI reference")
-    pull.add_argument("reference", help="OCI reference: <registry>/<repo>:<tag>")
-    pull.add_argument("out", type=Path, help="Output path for pulled .hlx seed")
+    pull = sub.add_parser(
+        "pull",
+        help="Pull a .hlx seed from OCI ref",
+    )
+    pull.add_argument(
+        "reference",
+        help="OCI reference: <registry>/<repo>:<tag>",
+    )
+    pull.add_argument(
+        "out",
+        type=Path,
+        help="Output path for pulled .hlx seed",
+    )
 
     return parser
 
@@ -68,12 +88,16 @@ def main(argv: list[str] | None = None) -> int:
                 args.reference,
                 artifact_type=args.artifact_type,
                 media_type=args.media_type,
-                encryption_key=args.encryption_key or os.environ.get("HELIX_ENCRYPTION_KEY"),
+                encryption_key=(
+                    args.encryption_key
+                    or os.environ.get("HELIX_ENCRYPTION_KEY")
+                ),
             )
             print(
                 "pushed "
                 f"seed={Path(args.seed).name} ref={args.reference} "
-                f"artifact_type={args.artifact_type} media_type={args.media_type}"
+                f"artifact_type={args.artifact_type} "
+                f"media_type={args.media_type}"
             )
             for key, value in sorted(annotations.items()):
                 print(f"annotation {key}={value}")

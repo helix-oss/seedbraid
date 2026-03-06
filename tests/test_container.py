@@ -22,17 +22,31 @@ def test_seed_serialize_parse_serialize_stable() -> None:
     h2 = bytes.fromhex("11" * 32)
     recipe = Recipe(
         hash_table=[h1, h2],
-        ops=[RecipeOp(opcode=OP_REF, hash_index=0), RecipeOp(opcode=OP_RAW, hash_index=1)],
+        ops=[
+            RecipeOp(opcode=OP_REF, hash_index=0),
+            RecipeOp(opcode=OP_RAW, hash_index=1),
+        ],
     )
     manifest = {
         "format": "HLX1",
         "version": 1,
         "source_size": 5,
         "source_sha256": "deadbeef",
-        "chunker": {"name": "fixed", "min": 1, "avg": 1, "max": 1, "window_size": 0},
+        "chunker": {
+            "name": "fixed",
+            "min": 1,
+            "avg": 1,
+            "max": 1,
+            "window_size": 0,
+        },
         "portable": True,
         "learn": False,
-        "stats": {"total_chunks": 2, "reused_chunks": 1, "new_chunks": 1, "raw_chunks": 1},
+        "stats": {
+            "total_chunks": 2,
+            "reused_chunks": 1,
+            "new_chunks": 1,
+            "raw_chunks": 1,
+        },
         "created_at": "2026-02-08T00:00:00+00:00",
     }
     raw = {1: b"abc"}
@@ -51,16 +65,29 @@ def test_seed_serialize_parse_serialize_stable() -> None:
 
 def test_seed_integrity_detects_manifest_sha256_mismatch() -> None:
     h1 = bytes.fromhex("22" * 32)
-    recipe = Recipe(hash_table=[h1], ops=[RecipeOp(opcode=OP_REF, hash_index=0)])
+    recipe = Recipe(
+        hash_table=[h1], ops=[RecipeOp(opcode=OP_REF, hash_index=0)]
+    )
     manifest = {
         "format": "HLX1",
         "version": 1,
         "source_size": 1,
         "source_sha256": "ab",
-        "chunker": {"name": "fixed", "min": 1, "avg": 1, "max": 1, "window_size": 0},
+        "chunker": {
+            "name": "fixed",
+            "min": 1,
+            "avg": 1,
+            "max": 1,
+            "window_size": 0,
+        },
         "portable": False,
         "learn": True,
-        "stats": {"total_chunks": 1, "reused_chunks": 1, "new_chunks": 0, "raw_chunks": 0},
+        "stats": {
+            "total_chunks": 1,
+            "reused_chunks": 1,
+            "new_chunks": 0,
+            "raw_chunks": 0,
+        },
         "created_at": "2026-02-08T00:00:00+00:00",
     }
     seed = serialize_seed(manifest, recipe, {}, manifest_compression="zlib")

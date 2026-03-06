@@ -6,7 +6,9 @@ from helix.chunking import ChunkerConfig
 from helix.codec import decode_file, encode_file, export_genes, import_genes
 
 
-def test_export_import_genes_pack_allows_decode_on_fresh_genome(tmp_path: Path) -> None:
+def test_export_import_genes_pack_allows_decode_on_fresh_genome(
+    tmp_path: Path,
+) -> None:
     src = tmp_path / "source.bin"
     seed = tmp_path / "seed.hlx"
     genes = tmp_path / "genes.pack"
@@ -16,7 +18,9 @@ def test_export_import_genes_pack_allows_decode_on_fresh_genome(tmp_path: Path) 
     genome_b = tmp_path / "genome-b"
 
     src.write_bytes((b"chunk-A" * 20_000) + (b"chunk-B" * 20_000))
-    cfg = ChunkerConfig(min_size=1024, avg_size=4096, max_size=16384, window_size=32)
+    cfg = ChunkerConfig(
+        min_size=1024, avg_size=4096, max_size=16384, window_size=32
+    )
 
     encode_file(
         in_path=src,
