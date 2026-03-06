@@ -1,0 +1,155 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Minimal default permissions; jobs escalate as needed.
+permissions:
+  contents: read
+
+env:
+  UV_CACHE_DIR: .uv-cache
+
+jobs:
+  # -- 1. verify ------------------------------------------------
+  # Extract version from tag and verify it matches __version__.
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: extract
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Extracted version: ${VERSION}"
+
+      - name: Verify __version__ matches tag
+        run: |
+          INIT_VERSION=$(python3 -c "
+          import ast, pathlib, sys
+          src = pathlib.Path('src/helix/__init__.py').read_text()
+          version = None
+          for node in ast.walk(ast.parse(src)):
+              if isinstance(node, ast.Assign):
+                  for t in node.targets:
+                      if isinstance(t, ast.Name) and t.id == '__version__':
+                          version = ast.literal_eval(node.value)
+          if version is None:
+              print('ERROR: __version__ not found', file=sys.stderr)
+              sys.exit(1)
+          print(version)
+          ")
+          TAG_VERSION="${{ steps.extract.outputs.version }}"
+          if [ "${INIT_VERSION}" != "${TAG_VERSION}" ]; then
+            echo "::error::Version mismatch! Tag=${TAG_VERSION} __version__=${INIT_VERSION}"
+            echo "next_action: Update src/helix/__init__.py to match the tag, or delete and recreate the tag."
+            exit 1
+          fi
+          echo "Version verified: ${INIT_VERSION}"
+
+  # -- 2. ci -----------------------------------------------------
+  # Reuse the full CI workflow (lint, test, compat, bench-gate).
+  ci:
+    needs: verify
+    uses: ./.github/workflows/ci.yml
+
+  # -- 3. build --------------------------------------------------
+  # Build sdist + wheel and upload as artifacts.
+  build:
+    needs: [verify, ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Verify built version matches tag
+        run: |
+          VERSION="${{ needs.verify.outputs.version }}"
+          ls dist/ | grep -q "${VERSION}" || {
+            echo "::error::Built artifacts do not contain version ${VERSION}"
+            echo "next_action: Check pyproject.toml dynamic version configuration."
+            exit 1
+          }
+          echo "Built artifacts:"
+          ls -la dist/
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+          if-no-files-found: error
+
+  # -- 4. publish ------------------------------------------------
+  # Publish to PyPI using Trusted Publishing (OIDC).
+  publish:
+    needs: [verify, ci, build]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+
+  # -- 5. release ------------------------------------------------
+  # Create a GitHub Release with attached artifacts.
+  release:
+    needs: [verify, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ needs.verify.outputs.version }}"
+          TAG="${{ github.ref_name }}"
+          PRERELEASE_FLAG=""
+          if echo "${VERSION}" | grep -qE '[ab]|rc|dev'; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "${TAG}" \
+            dist/*.tar.gz dist/*.whl \
+            --title "${TAG}" \
+            --generate-notes \
+            ${PRERELEASE_FLAG}
