@@ -6,7 +6,7 @@ tools:
   - Grep
   - Glob
   - Bash
-model: haiku
+model: sonnet
 ---
 
 You are a codebase researcher. Explore, discover, and document findings.
