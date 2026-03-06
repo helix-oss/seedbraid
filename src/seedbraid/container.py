@@ -89,7 +89,7 @@ def _compress(data: bytes, name: str) -> bytes:
         return zstd.ZstdCompressor(level=3).compress(data)
     raise SeedFormatError(
         f"Unsupported compression: {name}",
-        next_action=ACTION_REGENERATE_SEED,
+        next_action=ACTION_CHECK_OPTIONS,
     )
 
 
@@ -521,7 +521,7 @@ def parse_seed(data: bytes) -> Seed:
     if integrity_section_start is None:
         raise SeedFormatError(
             "Integrity section position not found.",
-            next_action=ACTION_REGENERATE_SEED,
+            next_action=ACTION_REPORT_BUG,
         )
     if (
         signature_section_start is not None
@@ -657,7 +657,7 @@ def parse_seed(data: bytes) -> Seed:
         if signature_section_start is None:
             raise SeedFormatError(
                 "Signature section position not found.",
-                next_action=ACTION_REGENERATE_SEED,
+                next_action=ACTION_REPORT_BUG,
             )
         signed_payload = data[:signature_section_start]
 

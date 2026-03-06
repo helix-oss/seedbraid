@@ -100,8 +100,10 @@ def test_seed_integrity_detects_manifest_sha256_mismatch() -> None:
     seed = serialize_seed(manifest, recipe, {}, manifest_compression="zlib")
     tampered = _tamper_integrity_field(seed, "manifest_sha256", "0" * 64)
 
-    with pytest.raises(SeedFormatError, match="Manifest SHA-256 mismatch"):
+    with pytest.raises(SeedFormatError) as exc_info:
         parse_seed(tampered)
+    assert "Manifest SHA-256 mismatch" in str(exc_info.value)
+    assert exc_info.value.next_action == ACTION_REFETCH_SEED
 
 
 def _tamper_integrity_field(seed_blob: bytes, key: str, value: str) -> bytes:
@@ -144,32 +146,6 @@ class TestNextAction:
         with pytest.raises(SeedFormatError) as exc_info:
             parse_seed(blob)
         assert exc_info.value.next_action == ACTION_VERIFY_SEED
-
-    def test_integrity_mismatch_has_refetch_action(self) -> None:
-        h1 = bytes.fromhex("22" * 32)
-        recipe = Recipe(
-            hash_table=[h1],
-            ops=[RecipeOp(opcode=OP_REF, hash_index=0)],
-        )
-        manifest = {
-            "format": "HLX1",
-            "version": 1,
-            "source_size": 1,
-            "source_sha256": "ab",
-            "chunker": {"name": "fixed"},
-            "portable": False,
-            "learn": True,
-        }
-        seed = serialize_seed(
-            manifest, recipe, {},
-            manifest_compression="zlib",
-        )
-        tampered = _tamper_integrity_field(
-            seed, "manifest_sha256", "0" * 64,
-        )
-        with pytest.raises(SeedFormatError) as exc_info:
-            parse_seed(tampered)
-        assert exc_info.value.next_action == ACTION_REFETCH_SEED
 
     def test_decrypt_wrong_key_has_verify_encryption_action(
         self,
