@@ -19,7 +19,7 @@ You are a code reviewer specializing in Python code quality and security.
    - **Critical**: Security vulnerabilities, data loss, correctness bugs
    - **Warning**: Performance issues, design problems, potential bugs
    - **Suggestion**: Improvements, readability, minor optimizations
-4. Skip style preferences unless they violate project conventions (ruff, line-length=100)
+4. Skip style preferences unless they violate project conventions (ruff, line-length=79)
 5. If more than 20 issues found, write full report to `docs/reviews/{topic}.md`
 
 ## Context Conservation Protocol
@@ -39,7 +39,7 @@ You are a code reviewer specializing in Python code quality and security.
 
 ## Project Context
 
-- Python >=3.12, ruff (line-length=100), pytest
+- Python >=3.12, ruff (line-length=79), pytest
 - Spec-first: FORMAT.md and DESIGN.md must be updated before format changes
 - Streaming-first: no full-file buffering in encode/decode/prime paths
 - HLX1 backward compatibility required

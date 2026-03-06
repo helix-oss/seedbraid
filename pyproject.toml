@@ -37,7 +37,7 @@ addopts = "-q --cov=helix --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
+line-length = 79
 target-version = "py312"
 
 [tool.ruff.lint]

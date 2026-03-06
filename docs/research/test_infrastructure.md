@@ -365,7 +365,7 @@ UV_CACHE_DIR=.uv-cache uv run --no-editable ruff check .
 
 # Ruff config (pyproject.toml)
 [tool.ruff]
-line-length = 100
+line-length = 79
 target-version = "py312"
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["B008", "B904"]
