@@ -613,15 +613,7 @@ def _verify_hlx1_integrity(
             next_action=ACTION_REGENERATE_SEED,
         ) from exc
 
-    integrity_start = section_starts.get(
-        SECTION_INTEGRITY,
-    )
-    if integrity_start is None:
-        raise SeedFormatError(
-            "Integrity section position"
-            " not found.",
-            next_action=ACTION_REPORT_BUG,
-        )
+    integrity_start = section_starts[SECTION_INTEGRITY]
     sig_start = section_starts.get(SECTION_SIGNATURE)
     if (
         sig_start is not None

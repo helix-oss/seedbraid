@@ -386,24 +386,16 @@ def _check_chunk_availability(
     expected_sha256: str | None,
 ) -> VerifyReport | None:
     missing: list[str] = []
+    ht_len = len(seed.recipe.hash_table)
     for op in seed.recipe.ops:
-        if op.hash_index >= len(seed.recipe.hash_table):
+        if op.hash_index >= ht_len:
             return _fail_report(
                 "Recipe index out of bounds.",
                 expected_sha256=expected_sha256,
             )
         digest = seed.recipe.hash_table[op.hash_index]
-        has_genome = genome.has_chunk(digest)
         has_raw = op.hash_index in seed.raw_payloads
-        if (
-            op.opcode == OP_REF
-            and not (has_genome or has_raw)
-        ):
-            missing.append(digest.hex())
-        if (
-            op.opcode == OP_RAW
-            and not (has_raw or has_genome)
-        ):
+        if not (has_raw or genome.has_chunk(digest)):
             missing.append(digest.hex())
 
     if missing:
