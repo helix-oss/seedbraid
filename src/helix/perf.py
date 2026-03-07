@@ -120,6 +120,35 @@ def run_shifted_dedup_benchmark(
     chunker_cfg: ChunkerConfig | None = None,
     compression: str = "zlib",
 ) -> ShiftedDedupBenchmark:
+    """Run a shifted-insertion dedup benchmark.
+
+    Generates a random base file, inserts bytes at
+    ``insert_offset`` to create a shifted variant,
+    then compares fixed vs CDC chunking reuse.
+    All work is done in a temporary directory.
+
+    Args:
+        total_size_bytes: Size of the base file in
+            bytes.
+        insert_offset: Byte offset at which to
+            insert data in the shifted variant.
+        inserted: Bytes to insert at the offset.
+        random_seed: Seed for deterministic random
+            data generation.
+        chunker_cfg: CDC parameters.  Defaults to
+            small sizes suitable for benchmarking.
+        compression: Manifest compression algorithm
+            name.
+
+    Returns:
+        Benchmark results comparing fixed and CDC
+        chunking.
+
+    Raises:
+        ValueError: If ``total_size_bytes`` is not
+            positive or ``insert_offset`` is out of
+            range.
+    """
     cfg = chunker_cfg or ChunkerConfig(
         min_size=4_096,
         avg_size=16_384,
@@ -173,6 +202,22 @@ def evaluate_benchmark_gates(
     max_seed_size_ratio: float,
     min_cdc_throughput_mib_s: float,
 ) -> list[str]:
+    """Evaluate benchmark results against gate thresholds.
+
+    Args:
+        report: Benchmark results to evaluate.
+        min_reuse_improvement_bps: Minimum CDC reuse
+            improvement over fixed chunking in basis
+            points.
+        max_seed_size_ratio: Maximum allowed ratio
+            of CDC seed size to fixed seed size.
+        min_cdc_throughput_mib_s: Minimum CDC encode
+            throughput in MiB/s.
+
+    Returns:
+        List of violation messages.  Empty list
+        means all gates passed.
+    """
     violations: list[str] = []
     if report.reuse_improvement_bps < min_reuse_improvement_bps:
         violations.append(
