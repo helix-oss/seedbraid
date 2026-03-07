@@ -13,6 +13,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from glob import glob
 from pathlib import Path
+from typing import Any
 
 from .chunking import ChunkerConfig, iter_chunks
 from .container import (
@@ -87,6 +88,139 @@ def _chunk_stream_from_file(
         yield from iter_chunks(f, chunker, cfg)
 
 
+def _build_chunk_index(
+    in_path: Path,
+    genome: GenomeStorage,
+    chunker: str,
+    cfg: ChunkerConfig,
+    learn: bool,
+    portable: bool,
+) -> tuple[
+    list[bytes], list[RecipeOp],
+    dict[int, bytes], EncodeStats,
+]:
+    hash_to_index: dict[bytes, int] = {}
+    hash_table: list[bytes] = []
+    ops: list[RecipeOp] = []
+    raw_payloads: dict[int, bytes] = {}
+
+    total_chunks = 0
+    reused_chunks = 0
+    new_chunks = 0
+    raw_chunks = 0
+
+    for chunk in _chunk_stream_from_file(
+        in_path, chunker, cfg,
+    ):
+        total_chunks += 1
+        digest = _sha256_bytes(chunk)
+
+        index = hash_to_index.get(digest)
+        if index is None:
+            index = len(hash_table)
+            hash_to_index[digest] = index
+            hash_table.append(digest)
+
+        known = genome.has_chunk(digest)
+        if known:
+            reused_chunks += 1
+            ops.append(
+                RecipeOp(
+                    opcode=OP_REF,
+                    hash_index=index,
+                ),
+            )
+            continue
+
+        new_chunks += 1
+        if learn:
+            genome.put_chunk(digest, chunk)
+
+        if portable:
+            raw_payloads[index] = chunk
+            raw_chunks += 1
+            ops.append(
+                RecipeOp(
+                    opcode=OP_RAW,
+                    hash_index=index,
+                ),
+            )
+        elif learn:
+            ops.append(
+                RecipeOp(
+                    opcode=OP_REF,
+                    hash_index=index,
+                ),
+            )
+        else:
+            raise HelixError(
+                "Encountered unknown chunk while"
+                " --no-learn and --no-portable"
+                " are active."
+                " Enable --learn or --portable.",
+                next_action=(
+                    ACTION_ENABLE_LEARN_OR_PORTABLE
+                ),
+            )
+
+    stats = EncodeStats(
+        total_chunks=total_chunks,
+        reused_chunks=reused_chunks,
+        new_chunks=new_chunks,
+        raw_chunks=raw_chunks,
+        unique_hashes=len(hash_table),
+    )
+    return hash_table, ops, raw_payloads, stats
+
+
+def _build_manifest(
+    in_path: Path,
+    chunker: str,
+    cfg: ChunkerConfig,
+    stats: EncodeStats,
+    portable: bool,
+    learn: bool,
+    manifest_private: bool,
+) -> dict[str, Any]:
+    if manifest_private:
+        return {
+            "format": "HLX1",
+            "version": 1,
+            "manifest_private": True,
+            "source_size": None,
+            "source_sha256": None,
+            "chunker": {"name": chunker},
+            "portable": portable,
+            "learn": learn,
+        }
+    return {
+        "format": "HLX1",
+        "version": 1,
+        "manifest_private": False,
+        "source_size": in_path.stat().st_size,
+        "source_sha256": sha256_file(in_path),
+        "chunker": {
+            "name": chunker,
+            "min": cfg.min_size,
+            "avg": cfg.avg_size,
+            "max": cfg.max_size,
+            "window_size": cfg.window_size,
+        },
+        "portable": portable,
+        "learn": learn,
+        "stats": {
+            "total_chunks": stats.total_chunks,
+            "reused_chunks": stats.reused_chunks,
+            "new_chunks": stats.new_chunks,
+            "raw_chunks": stats.raw_chunks,
+            "unique_hashes": stats.unique_hashes,
+        },
+        "created_at": (
+            dt.datetime.now(dt.UTC).isoformat()
+        ),
+    }
+
+
 def encode_file(
     in_path: str | Path,
     genome_path: str | Path,
@@ -102,98 +236,20 @@ def encode_file(
 ) -> EncodeStats:
     in_path = Path(in_path)
 
-    hash_to_index: dict[bytes, int] = {}
-    hash_table: list[bytes] = []
-    ops: list[RecipeOp] = []
-    raw_payloads: dict[int, bytes] = {}
-
-    total_chunks = 0
-    reused_chunks = 0
-    new_chunks = 0
-    raw_chunks = 0
-
     with open_genome(genome_path) as genome:
-        for chunk in _chunk_stream_from_file(in_path, chunker, cfg):
-            total_chunks += 1
-            digest = _sha256_bytes(chunk)
-
-            index = hash_to_index.get(digest)
-            if index is None:
-                index = len(hash_table)
-                hash_to_index[digest] = index
-                hash_table.append(digest)
-
-            known = genome.has_chunk(digest)
-            if known:
-                reused_chunks += 1
-                ops.append(RecipeOp(opcode=OP_REF, hash_index=index))
-                continue
-
-            new_chunks += 1
-            if learn:
-                genome.put_chunk(digest, chunk)
-
-            if portable:
-                raw_payloads[index] = chunk
-                raw_chunks += 1
-                ops.append(RecipeOp(opcode=OP_RAW, hash_index=index))
-            elif learn:
-                ops.append(RecipeOp(opcode=OP_REF, hash_index=index))
-            else:
-                raise HelixError(
-                    "Encountered unknown chunk while"
-                    " --no-learn and --no-portable"
-                    " are active."
-                    " Enable --learn or --portable.",
-                    next_action=ACTION_ENABLE_LEARN_OR_PORTABLE,
-                )
-
-        stats = EncodeStats(
-            total_chunks=total_chunks,
-            reused_chunks=reused_chunks,
-            new_chunks=new_chunks,
-            raw_chunks=raw_chunks,
-            unique_hashes=len(hash_table),
+        hash_table, ops, raw_payloads, stats = (
+            _build_chunk_index(
+                in_path, genome,
+                chunker, cfg, learn, portable,
+            )
         )
-        if manifest_private:
-            manifest = {
-                "format": "HLX1",
-                "version": 1,
-                "manifest_private": True,
-                "source_size": None,
-                "source_sha256": None,
-                "chunker": {"name": chunker},
-                "portable": portable,
-                "learn": learn,
-            }
-        else:
-            manifest = {
-                "format": "HLX1",
-                "version": 1,
-                "manifest_private": False,
-                "source_size": in_path.stat().st_size,
-                "source_sha256": sha256_file(in_path),
-                "chunker": {
-                    "name": chunker,
-                    "min": cfg.min_size,
-                    "avg": cfg.avg_size,
-                    "max": cfg.max_size,
-                    "window_size": cfg.window_size,
-                },
-                "portable": portable,
-                "learn": learn,
-                "stats": {
-                    "total_chunks": stats.total_chunks,
-                    "reused_chunks": stats.reused_chunks,
-                    "new_chunks": stats.new_chunks,
-                    "raw_chunks": stats.raw_chunks,
-                    "unique_hashes": stats.unique_hashes,
-                },
-                "created_at": (
-                    dt.datetime.now(dt.UTC).isoformat()
-                ),
-            }
-        recipe = Recipe(hash_table=hash_table, ops=ops)
+        manifest = _build_manifest(
+            in_path, chunker, cfg, stats,
+            portable, learn, manifest_private,
+        )
+        recipe = Recipe(
+            hash_table=hash_table, ops=ops,
+        )
         write_seed(
             out_seed_path,
             manifest,
