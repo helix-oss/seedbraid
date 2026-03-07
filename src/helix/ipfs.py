@@ -129,7 +129,7 @@ def _fetch_from_gateway(cid: str, gateway: str) -> bytes:
     url = f"{gateway.rstrip('/')}/{cid}"
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
-            return response.read()
+            return response.read()  # type: ignore[no-any-return]
     except (urllib.error.URLError, OSError) as exc:
         raise ExternalToolError(
             f"Gateway fetch failed ({url}): {exc}",

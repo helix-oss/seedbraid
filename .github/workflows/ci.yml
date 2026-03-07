@@ -29,6 +29,8 @@ jobs:
         run: uv sync --no-editable --extra dev
       - name: Ruff lint
         run: uv run --no-sync --no-editable ruff check .
+      - name: Mypy type check
+        run: PYTHONPATH=src uv run --no-sync --no-editable mypy src/helix/
 
   test:
     runs-on: ubuntu-latest

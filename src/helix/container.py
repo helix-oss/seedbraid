@@ -16,6 +16,7 @@ import struct
 import zlib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .errors import (
     ACTION_CHECK_OPTIONS,
@@ -81,11 +82,11 @@ class Recipe:
 
 @dataclass(frozen=True)
 class Seed:
-    manifest: dict
+    manifest: dict[str, Any]
     recipe: Recipe
     raw_payloads: dict[int, bytes]
     manifest_compression: str
-    signature: dict | None
+    signature: dict[str, Any] | None
     signed_payload: bytes | None
 
 
@@ -103,7 +104,7 @@ def _compress(data: bytes, name: str) -> bytes:
                 " dependency 'zstandard'.",
                 next_action=ACTION_INSTALL_ZSTD,
             ) from exc
-        return zstd.ZstdCompressor(level=3).compress(data)
+        return zstd.ZstdCompressor(level=3).compress(data)  # type: ignore[no-any-return]
     raise SeedFormatError(
         f"Unsupported compression: {name}",
         next_action=ACTION_CHECK_OPTIONS,
@@ -124,7 +125,7 @@ def _decompress(data: bytes, ctype: int) -> bytes:
                 " 'zstandard' is not installed.",
                 next_action=ACTION_INSTALL_ZSTD,
             ) from exc
-        return zstd.ZstdDecompressor().decompress(data)
+        return zstd.ZstdDecompressor().decompress(data)  # type: ignore[no-any-return]
     raise SeedFormatError(
         f"Unknown manifest compression id: {ctype}",
         next_action=ACTION_REGENERATE_SEED,
@@ -449,7 +450,7 @@ def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
 
 
 def serialize_seed(
-    manifest: dict,
+    manifest: dict[str, Any],
     recipe: Recipe,
     raw_payloads: dict[int, bytes],
     manifest_compression: str = "zlib",
@@ -774,7 +775,7 @@ def read_seed(path: str | Path, *, encryption_key: str | None = None) -> Seed:
 
 def write_seed(
     path: str | Path,
-    manifest: dict,
+    manifest: dict[str, Any],
     recipe: Recipe,
     raw_payloads: dict[int, bytes],
     manifest_compression: str,
