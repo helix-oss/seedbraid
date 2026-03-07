@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .container import read_seed
 from .errors import ExternalToolError
@@ -109,11 +110,11 @@ def _request_json(
     method: str,
     url: str,
     *,
-    payload: dict[str, object] | None,
+    payload: dict[str, Any] | None,
     token: str | None,
     timeout_s: float,
     not_found_ok: bool = False,
-) -> dict[str, object] | None:
+) -> dict[str, Any] | None:
     body = (
         None
         if payload is None

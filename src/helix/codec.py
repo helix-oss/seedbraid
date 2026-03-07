@@ -9,6 +9,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import struct
+from collections.abc import Iterator
 from dataclasses import dataclass
 from glob import glob
 from pathlib import Path
@@ -35,7 +36,7 @@ from .errors import (
     DecodeError,
     HelixError,
 )
-from .storage import open_genome
+from .storage import GenomeStorage, open_genome
 
 GENES_MAGIC = b"GENE1"
 GENOME_SNAPSHOT_MAGIC = b"HGS1"
@@ -80,7 +81,7 @@ def sha256_file(path: str | Path) -> str:
 
 def _chunk_stream_from_file(
     path: str | Path, chunker: str, cfg: ChunkerConfig,
-):
+) -> Iterator[bytes]:
     with Path(path).open("rb") as f:
         yield from iter_chunks(f, chunker, cfg)
 
@@ -207,7 +208,7 @@ def _resolve_chunk(
     op: RecipeOp,
     hash_table: list[bytes],
     raw_payloads: dict[int, bytes],
-    genome,
+    genome: GenomeStorage,
 ) -> bytes:
     if op.hash_index >= len(hash_table):
         raise DecodeError(
