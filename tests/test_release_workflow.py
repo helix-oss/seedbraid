@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Helpers mirroring release.yml logic
 # ---------------------------------------------------------------------------
@@ -37,7 +36,7 @@ def extract_version_from_source(src: str) -> str | None:
 
 
 def tag_to_version(tag: str) -> str:
-    """Strip leading 'v' prefix from a git tag, mirroring TAG#v in release.yml."""
+    """Strip leading 'v' prefix from a git tag."""
     return tag[1:] if tag.startswith("v") else tag
 
 
@@ -80,7 +79,7 @@ def test_extract_version_prerelease_dev() -> None:
 
 
 def test_extract_version_with_module_docstring() -> None:
-    """Version is correctly extracted even when a module docstring is present."""
+    """Version is extracted even with a module docstring."""
     src = textwrap.dedent(
         '''\
         """Module docstring."""
@@ -119,9 +118,7 @@ def test_extract_version_list_value_returns_none() -> None:
 
 
 def test_extract_version_picks_first_assignment() -> None:
-    """When __version__ is assigned twice, ast.walk order determines the result.
-    The function must return a string (either assignment), not None.
-    """
+    """Dual __version__ assignment returns a string."""
     src = '__version__ = "1.0.0"\n__version__ = "2.0.0"\n'
     result = extract_version_from_source(src)
     assert result in {"1.0.0", "2.0.0"}
@@ -254,7 +251,7 @@ def test_actual_version_is_pep440_compliant() -> None:
 
 
 def test_actual_version_tag_roundtrip() -> None:
-    """Tagging with 'v' + __version__ and stripping 'v' must yield __version__ back."""
+    """v-prefix roundtrip must recover __version__."""
     init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
     version = extract_version_from_source(init.read_text())
     assert version is not None
@@ -263,7 +260,7 @@ def test_actual_version_tag_roundtrip() -> None:
 
 
 def test_actual_version_prerelease_classification() -> None:
-    """is_prerelease() result must be consistent with PEP 440 pre-release markers."""
+    """is_prerelease() is consistent with PEP 440."""
     init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
     version = extract_version_from_source(init.read_text())
     assert version is not None

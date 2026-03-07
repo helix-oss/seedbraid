@@ -1,0 +1,11 @@
+# Helix sponsorship configuration
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+#
+# To activate the Sponsor button, at least one entry must resolve to a
+# valid funding account.  For "github:" entries the account must be
+# enrolled in GitHub Sponsors.
+
+github: [helix-oss]
+# open_collective: helix-oss
+# ko_fi: helix-oss
+# custom: ["https://helix-oss.example.com/sponsor"]
