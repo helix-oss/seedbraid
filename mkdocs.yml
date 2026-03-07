@@ -1,0 +1,93 @@
+site_name: Helix
+site_description: >-
+  Reference-based file reconstruction with CDC chunking,
+  HLX1 binary seed format, and IPFS transport.
+repo_url: https://github.com/kytk-03/helix
+repo_name: kytk-03/helix
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            docstring_style: google
+            docstring_section_style: table
+            merge_init_into_class: true
+            show_if_no_docstring: false
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+
+exclude_docs: |
+  plans/
+  research/
+  reviews/
+  PERFORMANCE.md
+  THREAT_MODEL.md
+  OSS_RELEASE_CHECKLIST.md
+  TURN_EXECUTION_PLAN.md
+  RISK_MITIGATION_PLAN.md
+  ECOSYSTEM_TICKETS.md
+
+nav:
+  - Home: index.md
+  - Design: DESIGN.md
+  - Format Spec: FORMAT.md
+  - Error Codes: ERROR_CODES.md
+  - API Reference:
+      - Overview: api/index.md
+      - Core:
+          - helix.codec: api/codec.md
+          - helix.container: api/container.md
+          - helix.chunking: api/chunking.md
+          - helix.storage: api/storage.md
+      - CLI:
+          - helix.cli: api/cli.md
+      - Transport:
+          - helix.ipfs: api/ipfs.md
+          - helix.pinning: api/pinning.md
+          - helix.oci: api/oci.md
+      - Integrations:
+          - helix.mlhooks: api/mlhooks.md
+          - helix.perf: api/perf.md
+          - helix.diagnostics: api/diagnostics.md
+      - Utilities:
+          - helix.errors: api/errors.md
