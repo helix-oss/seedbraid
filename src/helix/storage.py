@@ -14,11 +14,56 @@ from typing import Protocol, Self
 
 
 class GenomeStorage(Protocol):
-    def has_chunk(self, chunk_hash: bytes) -> bool: ...
+    """Content-addressed chunk storage interface.
 
-    def get_chunk(self, chunk_hash: bytes) -> bytes | None: ...
+    Implementations must provide CRUD operations on
+    binary chunks keyed by their 32-byte SHA-256
+    digest.
+    """
 
-    def put_chunk(self, chunk_hash: bytes, data: bytes) -> bool: ...
+    def has_chunk(self, chunk_hash: bytes) -> bool:
+        """Check whether a chunk exists in storage.
+
+        Args:
+            chunk_hash: 32-byte SHA-256 digest of
+                the chunk.
+
+        Returns:
+            ``True`` if the chunk is stored,
+            ``False`` otherwise.
+        """
+        ...
+
+    def get_chunk(
+        self, chunk_hash: bytes,
+    ) -> bytes | None:
+        """Retrieve a chunk by its hash.
+
+        Args:
+            chunk_hash: 32-byte SHA-256 digest of
+                the chunk.
+
+        Returns:
+            Raw chunk bytes, or ``None`` if not
+            found.
+        """
+        ...
+
+    def put_chunk(
+        self, chunk_hash: bytes, data: bytes,
+    ) -> bool:
+        """Store a chunk keyed by its hash.
+
+        Args:
+            chunk_hash: 32-byte SHA-256 digest of
+                the chunk.
+            data: Raw chunk bytes to store.
+
+        Returns:
+            ``True`` if the chunk was newly inserted,
+            ``False`` if it already existed.
+        """
+        ...
 
     def count_chunks(self) -> int: ...
 
@@ -36,6 +81,15 @@ class GenomeStorage(Protocol):
 
 class SQLiteGenome:
     def __init__(self, db_path: str | Path) -> None:
+        """Open or create a SQLite genome database.
+
+        Creates the parent directory and the chunks
+        table if they do not already exist.
+
+        Args:
+            db_path: Filesystem path to the SQLite
+                database file.
+        """
         self.path = Path(db_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.path)
@@ -108,6 +162,20 @@ class SQLiteGenome:
 
 
 def resolve_genome_db_path(genome_path: str | Path) -> Path:
+    """Resolve a genome path to its SQLite file path.
+
+    If ``genome_path`` ends with ``.sqlite`` or
+    ``.db``, it is returned as-is.  Otherwise
+    ``genome.sqlite`` is appended as the default
+    database filename.
+
+    Args:
+        genome_path: Directory or explicit database
+            file path.
+
+    Returns:
+        Resolved path to the SQLite database file.
+    """
     p = Path(genome_path)
     if p.suffix in {".sqlite", ".db"}:
         return p
@@ -115,4 +183,17 @@ def resolve_genome_db_path(genome_path: str | Path) -> Path:
 
 
 def open_genome(genome_path: str | Path) -> SQLiteGenome:
+    """Open a genome database from a path.
+
+    Convenience wrapper that resolves the database
+    file via ``resolve_genome_db_path`` and returns
+    a ready-to-use ``SQLiteGenome`` instance.
+
+    Args:
+        genome_path: Directory or explicit database
+            file path.
+
+    Returns:
+        Connected ``SQLiteGenome`` instance.
+    """
     return SQLiteGenome(resolve_genome_db_path(genome_path))
