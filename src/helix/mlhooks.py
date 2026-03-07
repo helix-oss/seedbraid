@@ -65,6 +65,24 @@ def build_seed_metadata(
     oci_reference: str | None = None,
     encryption_key: str | None = None,
 ) -> dict[str, object]:
+    """Build a metadata dict from a seed file.
+
+    Extracts manifest fields and computes a SHA-256
+    digest of the seed file.  Optionally includes
+    IPFS CID and OCI reference.
+
+    Args:
+        seed_path: Path to the ``.hlx`` seed file.
+        cid: IPFS CID to include in metadata.
+        oci_reference: OCI reference to include.
+        encryption_key: Passphrase to decrypt the
+            seed if encrypted.
+
+    Returns:
+        Dict with keys such as ``"seed_file"``,
+        ``"seed_sha256"``, ``"chunker"``,
+        ``"source_sha256"``, and more.
+    """
     seed_path = Path(seed_path)
     seed = read_seed(seed_path, encryption_key=encryption_key)
     manifest = seed.manifest
@@ -99,6 +117,19 @@ def write_seed_metadata(
     metadata: dict[str, object],
     out_path: str | Path,
 ) -> Path:
+    """Write seed metadata to a JSON sidecar file.
+
+    Creates parent directories if needed.
+
+    Args:
+        metadata: Metadata dict as returned by
+            ``build_seed_metadata``.
+        out_path: Destination file path for the
+            JSON sidecar.
+
+    Returns:
+        The ``out_path`` as a ``Path`` object.
+    """
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(metadata, sort_keys=True, indent=2)
@@ -202,6 +233,31 @@ def log_seed_metadata_to_mlflow(
     token: str | None = None,
     timeout_s: float = 20.0,
 ) -> MLflowLogResult:
+    """Log seed metadata to MLflow as run parameters.
+
+    Creates the experiment if it does not exist, then
+    creates a new run and logs metadata as params.
+    Parameter keys are truncated to 250 chars and
+    values to 500 chars.
+
+    Args:
+        metadata: Metadata dict to log.
+        tracking_uri: MLflow tracking server URL.
+        experiment_name: Name of the MLflow
+            experiment.
+        run_name: Display name for the new run.
+        token: Optional bearer token for
+            authentication.
+        timeout_s: HTTP request timeout in seconds.
+
+    Returns:
+        Result with ``experiment_id`` and
+        ``run_id``.
+
+    Raises:
+        ExternalToolError: If the tracking URI is
+            empty or API requests fail.
+    """
     tracking_uri = tracking_uri.strip()
     if not tracking_uri:
         raise ExternalToolError(
@@ -318,6 +374,35 @@ def upload_seed_and_metadata_to_hf(
     remote_prefix: str = "helix/seeds",
     token: str | None = None,
 ) -> HuggingFaceUploadResult:
+    """Upload a seed and its metadata sidecar to HF Hub.
+
+    Uses ``huggingface-cli`` (or ``hf``) to upload
+    both files.  Token is resolved from the argument,
+    ``HF_TOKEN``, ``HUGGINGFACE_HUB_TOKEN``, or
+    ``HUGGINGFACEHUB_API_TOKEN`` environment
+    variables in that order.
+
+    Args:
+        repo_id: Hugging Face repository identifier
+            (e.g. ``"user/repo"``).
+        seed_path: Path to the ``.hlx`` seed file.
+        metadata_path: Path to the JSON sidecar.
+        repo_type: One of ``"dataset"``,
+            ``"model"``, ``"space"``.
+        revision: Git revision / branch to upload
+            to.
+        remote_prefix: Remote directory prefix for
+            uploaded files.
+        token: Hugging Face API token.
+
+    Returns:
+        Result with repo info and remote file paths.
+
+    Raises:
+        ExternalToolError: If the CLI is missing,
+            files do not exist, token is missing,
+            or the upload fails.
+    """
     if repo_type not in {"dataset", "model", "space"}:
         raise ExternalToolError(
             f"Unsupported Hugging Face repo type: {repo_type}",
