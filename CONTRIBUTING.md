@@ -43,17 +43,18 @@ Use prefixed commit messages:
 
 Only maintainers can create releases.
 
-1. Update `src/helix/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
-2. Commit: `git commit -m "chore: bump version to X.Y.Z"`
-3. Tag: `git tag vX.Y.Z`
-4. Push: `git push origin main && git push origin vX.Y.Z`
-5. The release workflow runs automatically:
+1. Update `CHANGELOG.md`: move `[Unreleased]` items to a new version section.
+2. Update `src/helix/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
+3. Commit: `git commit -m "chore: bump version to X.Y.Z"`
+4. Tag: `git tag vX.Y.Z`
+5. Push: `git push origin main && git push origin vX.Y.Z`
+6. The release workflow runs automatically:
    - Verifies tag matches `__version__`
    - Runs full CI (lint, test, compat, bench-gate)
    - Builds sdist + wheel
    - Publishes to PyPI (Trusted Publishing / OIDC)
-   - Creates GitHub Release with artifacts
-6. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/helix/).
+   - Creates GitHub Release with artifacts and auto-generated notes
+7. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/helix/).
 
 > **Note**: PyPI uses Trusted Publishing (OIDC). No API token is needed.
 > Pre-release versions (containing `a`, `b`, `rc`, or `dev`) are automatically
