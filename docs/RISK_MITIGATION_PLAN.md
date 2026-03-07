@@ -24,18 +24,18 @@ Priority scale:
 ## Risk Register and Mitigation Summary
 | ID | Priority | Risk | Primary Control | Success KPI |
 |---|---|---|---|---|
-| R-01 | P0 | Genome欠損で復元不能 | strict verify + genome snapshot/restore | DR演習で復元成功率100% |
-| R-02 | P0 | CRC中心で改ざん耐性が弱い | section SHA-256 + optional signature | 改ざんケース検知率100% |
-| R-03 | P0 | seed公開時の情報漏えい | encryption + manifest minimization | 鍵なし復号不可、メタ露出最小化 |
-| R-04 | P1 | CIDがあっても取得不能 | pin strategy + fetch retry/fallback | fetch成功率99.9%以上 |
-| R-05 | P1 | 運用環境差で失敗しやすい | helix doctor + actionable errors | 一次切り分け時間50%短縮 |
-| R-06 | P1 | 将来の互換性破壊 | compatibility policy + fixture tests | 旧seed回帰テスト常時緑 |
-| R-07 | P2 | 性能/コスト劣化 | benchmark gates + storage tuning | 閾値割れPRの自動検知 |
-| R-08 | P2 | OSS維持体制の持続性不足 | support/donation guidance + maintainer workflow | 継続支援指標の可視化 |
+| R-01 | P0 | Unrecoverable restoration due to missing genome | strict verify + genome snapshot/restore | 100% restore success in DR drills |
+| R-02 | P0 | Weak tamper resistance (CRC-centric) | section SHA-256 + optional signature | 100% tamper detection rate |
+| R-03 | P0 | Information leakage on seed publication | encryption + manifest minimization | Decryption impossible without key; metadata exposure minimized |
+| R-04 | P1 | Retrieval failure despite valid CID | pin strategy + fetch retry/fallback | Fetch success rate >= 99.9% |
+| R-05 | P1 | Operational failures due to environment differences | helix doctor + actionable errors | 50% reduction in initial triage time |
+| R-06 | P1 | Future backward-compatibility breakage | compatibility policy + fixture tests | Legacy seed regression tests always green |
+| R-07 | P2 | Performance/cost degradation | benchmark gates + storage tuning | Auto-detection of threshold-violating PRs |
+| R-08 | P2 | Insufficient OSS sustainability | support/donation guidance + maintainer workflow | Sustainability metrics visible |
 
 ## Detailed Mitigation Plans
 
-### R-01 (P0) Genome欠損で復元不能
+### R-01 (P0) Unrecoverable restoration due to missing genome
 Objective:
 - Prevent decode failures caused by missing referenced chunks.
 
@@ -52,7 +52,7 @@ Deliverables:
 Acceptance criteria:
 - Simulated loss of genome can be recovered from snapshot with zero data loss.
 
-### R-02 (P0) 改ざん耐性不足
+### R-02 (P0) Insufficient tamper resistance
 Objective:
 - Strengthen seed tamper detection beyond CRC.
 
@@ -69,7 +69,7 @@ Deliverables:
 Acceptance criteria:
 - Any modified section causes verification failure in cryptographic mode.
 
-### R-03 (P0) 機密性リスク
+### R-03 (P0) Confidentiality risk
 Objective:
 - Reduce plaintext leakage when sharing/publishing seeds.
 
@@ -86,7 +86,7 @@ Deliverables:
 Acceptance criteria:
 - Encrypted seed cannot be decoded without key material.
 
-### R-04 (P1) IPFS可用性
+### R-04 (P1) IPFS availability
 Objective:
 - Improve retrieval reliability across nodes and time.
 
@@ -103,7 +103,7 @@ Deliverables:
 Acceptance criteria:
 - Controlled outage simulation still meets fetch success target.
 
-### R-05 (P1) 運用失敗率
+### R-05 (P1) Operational failure rate
 Objective:
 - Make failures self-diagnosable for non-expert operators.
 
@@ -119,7 +119,7 @@ Deliverables:
 Acceptance criteria:
 - Top 10 failure scenarios are diagnosable from doctor + one command.
 
-### R-06 (P1) 互換性管理
+### R-06 (P1) Compatibility management
 Objective:
 - Avoid accidental breakage of existing seeds when evolving format.
 
@@ -135,7 +135,7 @@ Deliverables:
 Acceptance criteria:
 - Historical fixtures continue parsing and verifying in CI.
 
-### R-07 (P2) 性能/コスト
+### R-07 (P2) Performance/cost
 Objective:
 - Keep dedup ratio and throughput stable as code evolves.
 
@@ -151,7 +151,7 @@ Deliverables:
 Acceptance criteria:
 - PRs exceeding regression budget are blocked.
 
-### R-08 (P2) OSS持続性リスク
+### R-08 (P2) OSS sustainability risk
 Objective:
 - Define a sustainable OSS support boundary without restricting OSS core.
 

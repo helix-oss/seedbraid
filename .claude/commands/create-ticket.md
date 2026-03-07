@@ -5,52 +5,52 @@ description: "Create a new refactoring ticket with Claude Code workflow recommen
 
 # /create-ticket
 
-チケットの説明: $ARGUMENTS
+Ticket description: $ARGUMENTS
 
 ## Instructions
 
-与えられたチケット説明から、構造化されたリファクタリングチケットを生成する。
+Generate a structured refactoring ticket from the given ticket description.
 
-### Phase 1: 調査（researcher agent）
+### Phase 1: Investigation (researcher agent)
 
-researcher agent を使って以下を調査:
+Use the researcher agent to investigate:
 
-1. チケット説明に関連するソースコード (`src/helix/`, `tests/`)
-2. 影響を受けるファイルと行範囲
-3. 既存のテストカバレッジ
-4. 関連するドキュメント (`docs/`)
-5. 依存関係（他チケットとの関連）
+1. Source code related to the ticket description (`src/helix/`, `tests/`)
+2. Affected files and line ranges
+3. Existing test coverage
+4. Related documentation (`docs/`)
+5. Dependencies (relationships with other tickets)
 
-### Phase 2: 計画（planner agent）
+### Phase 2: Planning (planner agent)
 
-planner agent を使って以下を設計:
+Use the planner agent to design:
 
-1. チケットの構造（背景・Scope・Acceptance Criteria・Implementation Notes）
-2. 適切なカテゴリ（Security / CodeQuality / Doc / DevOps / Community）とサイズ（S/M/L/XL）の判定
-3. `.docs/templates/workflow-patterns.md` を参照し、カテゴリ×サイズに基づくワークフロー推奨を生成
+1. Ticket structure (Background, Scope, Acceptance Criteria, Implementation Notes)
+2. Appropriate category (Security / CodeQuality / Doc / DevOps / Community) and size (S/M/L/XL)
+3. Workflow recommendations based on category x size, referencing `.docs/templates/workflow-patterns.md`
 
-### Phase 3: チケット出力
+### Phase 3: Ticket output
 
-以下のフォーマットでチケットを生成し、ユーザーに提示する:
+Generate the ticket in the following format and present it to the user:
 
 ```markdown
-## T-NNN: [タイトル]
+## T-NNN: [Title]
 
-| 項目 | 値 |
-|------|-----|
+| Field | Value |
+|-------|-------|
 | Priority | **P?** |
-| Category | [カテゴリ] |
+| Category | [Category] |
 | Size | [S/M/L/XL] |
-| Dependencies | [依存チケット or —] |
+| Dependencies | [Dependent tickets or —] |
 
-### 背景
+### Background
 
-[問題の説明と根拠]
+[Problem description and rationale]
 
 ### Scope
 
-| ファイル | 行 | 変更内容 |
-|----------|-----|---------|
+| File | Lines | Change |
+|------|-------|--------|
 | ... | ... | ... |
 
 ### Acceptance Criteria
@@ -64,29 +64,29 @@ planner agent を使って以下を設計:
 
 ### Claude Code Workflow
 
-| Phase | Command / Agent | 目的 |
-|-------|----------------|------|
+| Phase | Command / Agent | Purpose |
+|-------|----------------|---------|
 | 1. ... | ... | ... |
 
-**実行例**:
+**Example execution**:
 ```
-[コマンドフロー]
+[Command flow]
 ```
 ```
 
-### ワークフロー選択ガイド
+### Workflow selection guide
 
-利用可能なコマンド・エージェントを `.claude/commands/` と `.claude/agents/` から読み取り、
-`.docs/templates/workflow-patterns.md` のパターンを参照してワークフローを設計すること。
+Read available commands and agents from `.claude/commands/` and `.claude/agents/`,
+and reference patterns in `.docs/templates/workflow-patterns.md` to design the workflow.
 
-**カテゴリ別の基本方針**:
-- **Security**: `/security-scan` を前後に挟む。spec-first でドキュメント先行。
-- **CodeQuality**: `/refactor` コマンドを活用。振る舞い変更なしを保証。
-- **Doc**: doc-writer agent を活用。
-- **DevOps**: CI/CD設定はテスト困難なため `/plan` で慎重に設計。
-- **Community**: 業界標準テンプレートを参照。
+**Category-specific guidelines**:
+- **Security**: Wrap with `/security-scan` before and after. Spec-first with documentation leading.
+- **CodeQuality**: Use `/refactor` command. Guarantee no behavior changes.
+- **Doc**: Use doc-writer agent.
+- **DevOps**: CI/CD configs are hard to test; design carefully with `/plan`.
+- **Community**: Reference industry-standard templates.
 
-**サイズ別の方針**:
-- **S**: `/plan` 省略可。直接実装。
-- **M**: `/plan` 推奨。
-- **L/XL**: `/plan` 必須。段階実装を推奨。
+**Size-specific guidelines**:
+- **S**: `/plan` optional. Direct implementation.
+- **M**: `/plan` recommended.
+- **L/XL**: `/plan` required. Incremental implementation recommended.

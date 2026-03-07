@@ -74,6 +74,11 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 - Security and operations readiness: signing/encryption and operator tooling (`doctor`, `snapshot`, `restore`).
 - Stable format governance and backward-compatibility policy for long-lived seed archives.
 
+## Installation
+
+> **Note**: PyPI publishing is currently on hold. `pip install helix` is not yet available.
+> Please install from source.
+
 ## Quick Start
 ```bash
 uv sync --no-editable --extra dev
