@@ -43,20 +43,35 @@ Use prefixed commit messages:
 
 Only maintainers can create releases.
 
-1. Update `CHANGELOG.md`: move `[Unreleased]` items to a new version section.
-2. Update `src/helix/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
-3. Commit: `git commit -m "chore: bump version to X.Y.Z"`
-4. Tag: `git tag vX.Y.Z`
-5. Push: `git push origin main && git push origin vX.Y.Z`
-6. The release workflow runs automatically:
+1. Create a release branch:
+   ```bash
+   git checkout -b release/vX.Y.Z main
+   ```
+2. Update `CHANGELOG.md`: move `[Unreleased]` items to a new version section.
+3. Update `src/helix/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
+4. Commit: `git commit -m "chore: bump version to X.Y.Z"`
+5. Push and create a PR:
+   ```bash
+   git push origin release/vX.Y.Z
+   gh pr create --title "chore: release vX.Y.Z" --body "Release vX.Y.Z"
+   ```
+6. Merge the PR via GitHub (squash or rebase). CI must pass before merge.
+7. Tag the merged commit and push:
+   ```bash
+   git checkout main && git pull
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+8. The release workflow runs automatically:
    - Verifies tag matches `__version__`
    - Runs full CI (lint, test, compat, bench-gate)
    - Builds sdist + wheel
    - Publishes to PyPI (Trusted Publishing / OIDC)
    - Creates GitHub Release with artifacts and auto-generated notes
-7. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/helix/).
+9. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/helix/).
 
-> **Note**: PyPI uses Trusted Publishing (OIDC). No API token is needed.
+> **Note**: Direct push to `main` is not allowed. All changes must go through a PR.
+> PyPI uses Trusted Publishing (OIDC). No API token is needed.
 > Pre-release versions (containing `a`, `b`, `rc`, or `dev`) are automatically
 > marked as pre-release on GitHub.
 
