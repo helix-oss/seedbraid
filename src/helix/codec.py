@@ -71,6 +71,17 @@ def _sha256_bytes(data: bytes) -> bytes:
 
 
 def sha256_file(path: str | Path) -> str:
+    """Compute the SHA-256 hex digest of a file.
+
+    Reads the file in streaming 1 MiB blocks to
+    avoid loading the entire file into memory.
+
+    Args:
+        path: Path to the file to hash.
+
+    Returns:
+        Lowercase hex-encoded SHA-256 digest string.
+    """
     h = hashlib.sha256()
     with Path(path).open("rb") as f:
         while True:
@@ -234,6 +245,47 @@ def encode_file(
     encryption_key: str | None = None,
     manifest_private: bool = False,
 ) -> EncodeStats:
+    """Encode a file into an HLX1 seed using the genome.
+
+    Chunks the input file, stores new chunks in the
+    genome when ``learn=True``, and writes the binary
+    seed to ``out_seed_path``.
+
+    Args:
+        in_path: Path to the source file to encode.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        out_seed_path: Destination path for the
+            ``.hlx`` seed output.
+        chunker: Algorithm name.  One of
+            ``"fixed"``, ``"cdc_buzhash"``,
+            ``"cdc_rabin"``.
+        cfg: CDC parameters (min/avg/max chunk sizes
+            and window size).
+        learn: Store new chunks in the genome during
+            encode.
+        portable: Embed unknown chunks as RAW
+            payloads in the seed.
+        manifest_compression: Compression for the
+            manifest section.  One of ``"none"``,
+            ``"zlib"``, ``"zstd"``.
+        encryption_key: Passphrase to wrap the seed
+            in HLE1 encryption.  ``None`` disables
+            encryption.
+        manifest_private: Omit source path, size,
+            and SHA-256 from the manifest.
+
+    Returns:
+        Encode statistics with chunk counts and
+        dedup metrics.
+
+    Raises:
+        HelixError: If an unknown chunk is found
+            while both ``learn`` and ``portable``
+            are ``False``.
+        SeedFormatError: If the manifest compression
+            is unsupported.
+    """
     in_path = Path(in_path)
 
     with open_genome(genome_path) as genome:
@@ -305,6 +357,30 @@ def decode_file(
     *,
     encryption_key: str | None = None,
 ) -> str:
+    """Reconstruct a file from an HLX1 seed.
+
+    Resolves each chunk from the genome or embedded
+    RAW payloads, writes the reassembled file, and
+    verifies the SHA-256 digest against the manifest.
+
+    Args:
+        seed_path: Path to the ``.hlx`` seed file.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        out_path: Destination path for the
+            reconstructed file.
+        encryption_key: Passphrase to decrypt the
+            seed if encrypted.
+
+    Returns:
+        Lowercase hex SHA-256 digest of the decoded
+        file.
+
+    Raises:
+        DecodeError: If a required chunk is missing
+            or the reconstructed hash does not match
+            the manifest.
+    """
     seed = read_seed(
         seed_path, encryption_key=encryption_key,
     )
@@ -467,6 +543,32 @@ def verify_seed(
     signature_key: str | None = None,
     encryption_key: str | None = None,
 ) -> VerifyReport:
+    """Verify a seed against the genome.
+
+    In default mode, checks chunk availability only.
+    In ``strict`` mode, fully reconstructs the file
+    in memory and verifies the SHA-256 digest.
+
+    Args:
+        seed_path: Path to the ``.hlx`` seed file.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        strict: Reconstruct and hash-verify the full
+            file instead of just checking chunk
+            availability.
+        require_signature: Fail if the seed has no
+            signature section.
+        signature_key: HMAC key to verify the
+            signature.  ``None`` skips verification
+            unless ``require_signature`` is set.
+        encryption_key: Passphrase to decrypt the
+            seed if encrypted.
+
+    Returns:
+        Verification report with ``ok`` status,
+        missing hashes, and optional SHA-256
+        digests.
+    """
     seed = read_seed(
         seed_path, encryption_key=encryption_key,
     )
@@ -525,6 +627,26 @@ def prime_genome(
     chunker: str,
     cfg: ChunkerConfig,
 ) -> dict[str, int]:
+    """Learn chunks from files into the genome.
+
+    Accepts a directory path (recursively scanned)
+    or a glob pattern.  Each file is chunked and new
+    chunks are stored in the genome.
+
+    Args:
+        dir_or_glob: Directory path or glob pattern
+            for input files.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        chunker: Chunking algorithm name.
+        cfg: Chunker parameters.
+
+    Returns:
+        Dict with keys ``"files"``,
+        ``"total_chunks"``, ``"new_chunks"``,
+        ``"reused_chunks"``, and
+        ``"dedup_ratio_bps"`` (basis points).
+    """
     total_chunks = 0
     new_chunks = 0
 
@@ -559,6 +681,25 @@ def snapshot_genome(
     genome_path: str | Path,
     out_path: str | Path,
 ) -> dict[str, int]:
+    """Export the genome to an HGS1 binary snapshot.
+
+    Writes all chunks to a portable binary file that
+    can be restored on another machine.
+
+    Args:
+        genome_path: Path to the genome directory or
+            SQLite file.
+        out_path: Destination path for the snapshot
+            file.
+
+    Returns:
+        Dict with keys ``"chunks"`` and ``"bytes"``
+        indicating the number of chunks and total
+        payload bytes exported.
+
+    Raises:
+        HelixError: If writing to ``out_path`` fails.
+    """
     out_path = Path(out_path)
     total_chunks = 0
     total_bytes = 0
@@ -596,6 +737,28 @@ def restore_genome(
     *,
     replace: bool,
 ) -> dict[str, int]:
+    """Restore a genome from an HGS1 snapshot.
+
+    When ``replace`` is ``True``, all existing chunks
+    are deleted before import.
+
+    Args:
+        snapshot_path: Path to the HGS1 snapshot
+            file.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        replace: Delete all existing chunks before
+            restoring.
+
+    Returns:
+        Dict with keys ``"inserted"``,
+        ``"skipped"``, and ``"entries"``.
+
+    Raises:
+        HelixError: If the snapshot is truncated,
+            has an invalid magic or version, or
+            reading fails.
+    """
     snapshot_path = Path(snapshot_path)
     inserted = 0
     skipped = 0
@@ -677,6 +840,23 @@ def export_genes(
     genome_path: str | Path,
     out_path: str | Path,
 ) -> dict[str, int]:
+    """Export seed-dependent chunks to a GENE1 pack.
+
+    Writes chunks referenced by the seed's hash
+    table.  Missing chunks are written as zero-length
+    entries and counted separately.
+
+    Args:
+        seed_path: Path to the ``.hlx`` seed file.
+        genome_path: Path to the genome directory or
+            SQLite file.
+        out_path: Destination path for the GENE1
+            pack file.
+
+    Returns:
+        Dict with keys ``"total"``, ``"exported"``,
+        and ``"missing"``.
+    """
     seed = read_seed(seed_path)
     out_path = Path(out_path)
     exported = 0
@@ -709,6 +889,23 @@ def import_genes(
     pack_path: str | Path,
     genome_path: str | Path,
 ) -> dict[str, int]:
+    """Import chunks from a GENE1 pack into the genome.
+
+    Zero-length entries in the pack are skipped.
+
+    Args:
+        pack_path: Path to the GENE1 pack file.
+        genome_path: Path to the genome directory or
+            SQLite file.
+
+    Returns:
+        Dict with keys ``"inserted"`` and
+        ``"skipped"``.
+
+    Raises:
+        HelixError: If the pack magic is invalid or
+            the file is truncated.
+    """
     pack_path = Path(pack_path)
     inserted = 0
     skipped = 0
