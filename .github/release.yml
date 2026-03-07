@@ -1,0 +1,30 @@
+# GitHub auto-generated release notes configuration.
+# Controls how --generate-notes categorizes PRs in release notes.
+# https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+changelog:
+  exclude:
+    labels:
+      - duplicate
+      - invalid
+      - wontfix
+      - question
+  categories:
+    - title: "Security"
+      labels:
+        - security
+    - title: "New Features"
+      labels:
+        - enhancement
+        - feature
+    - title: "Bug Fixes"
+      labels:
+        - bug
+        - fix
+    - title: "Documentation"
+      labels:
+        - documentation
+    - title: "Maintenance"
+      labels:
+        - chore
+        - dependencies
+        - ci
