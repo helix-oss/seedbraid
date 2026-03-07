@@ -29,6 +29,21 @@ UV_CACHE_DIR=.uv-cache uv run --no-editable ruff check .
 PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-editable python -m pytest
 ```
 
+## Documentation
+
+Build and preview API reference docs locally:
+
+```bash
+uv sync --no-editable --extra docs
+uv run mkdocs serve      # http://127.0.0.1:8000
+```
+
+Build static site:
+
+```bash
+uv run mkdocs build      # outputs to site/
+```
+
 ## Commit Style
 Use prefixed commit messages:
 - `feat: ...`
