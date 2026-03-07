@@ -33,6 +33,7 @@ from .errors import (
 )
 
 try:
+    from cryptography.exceptions import InvalidTag
     from cryptography.hazmat.primitives.ciphers.aead import (
         AESGCM,
     )
@@ -326,6 +327,26 @@ def _hmac_sha256_hex(data: bytes, key: str) -> str:
     return hmac.new(key.encode("utf-8"), data, hashlib.sha256).hexdigest()
 
 
+def _scrypt_base_key(
+    passphrase: str,
+    salt: bytes,
+    *,
+    n: int = SCRYPT_N_DEFAULT,
+    r: int = SCRYPT_R_DEFAULT,
+    p: int = SCRYPT_P_DEFAULT,
+) -> bytes:
+    """Derive 32-byte base key via scrypt."""
+    return hashlib.scrypt(
+        passphrase.encode("utf-8"),
+        salt=salt,
+        n=n,
+        r=r,
+        p=p,
+        dklen=32,
+        maxmem=256 * r * n + 1024 * 1024,
+    )
+
+
 def _derive_encryption_keys(
     passphrase: str,
     salt: bytes,
@@ -334,14 +355,8 @@ def _derive_encryption_keys(
     r: int = SCRYPT_R_DEFAULT,
     p: int = SCRYPT_P_DEFAULT,
 ) -> tuple[bytes, bytes]:
-    base_key = hashlib.scrypt(
-        passphrase.encode("utf-8"),
-        salt=salt,
-        n=n,
-        r=r,
-        p=p,
-        dklen=32,
-        maxmem=256 * r * n + 1024 * 1024,
+    base_key = _scrypt_base_key(
+        passphrase, salt, n=n, r=r, p=p,
     )
     enc_key = hashlib.sha256(base_key + b"enc").digest()
     mac_key = hashlib.sha256(base_key + b"mac").digest()
@@ -357,14 +372,8 @@ def _derive_aead_key(
     p: int = SCRYPT_P_DEFAULT,
 ) -> bytes:
     """Derive a 32-byte AEAD key via scrypt + HKDF-SHA256."""
-    base_key = hashlib.scrypt(
-        passphrase.encode("utf-8"),
-        salt=salt,
-        n=n,
-        r=r,
-        p=p,
-        dklen=32,
-        maxmem=256 * r * n + 1024 * 1024,
+    base_key = _scrypt_base_key(
+        passphrase, salt, n=n, r=r, p=p,
     )
     hkdf = HKDFExpand(
         algorithm=SHA256(),
@@ -395,7 +404,7 @@ def _decrypt_aead(
         return AESGCM(key).decrypt(
             nonce, ciphertext_with_tag, aad,
         )
-    except Exception as exc:
+    except InvalidTag as exc:
         raise SeedFormatError(
             "Encrypted seed authentication failed"
             " (wrong key or tampering).",
@@ -456,8 +465,8 @@ def validate_encrypted_seed_envelope(
     """Validate the structure of an HLE1 envelope.
 
     Checks magic, version, header fields, scrypt
-    parameter minimums (v2), and overall length
-    consistency.  Supports v1 and v2 headers.
+    parameter minimums (v2+), and overall length
+    consistency.  Supports v1, v2, and v3 headers.
 
     Args:
         blob: Complete encrypted seed bytes
@@ -473,14 +482,12 @@ def validate_encrypted_seed_envelope(
             below the minimum, or lengths are
             inconsistent.
     """
-    if len(blob) < 4 + 2 + 1 + 1 + 8 + 32:
+    if len(blob) < 6:
         raise SeedFormatError(
             "Encrypted seed is too short.",
             next_action=ACTION_REFETCH_SEED,
         )
-    (
-        magic, version, salt_len, nonce_len, ciphertext_len,
-    ) = struct.unpack_from(">4sHBBQ", blob, 0)
+    magic, version = struct.unpack_from(">4sH", blob, 0)
     if magic != ENC_MAGIC:
         raise SeedFormatError(
             "Encrypted seed magic mismatch."
@@ -490,6 +497,15 @@ def validate_encrypted_seed_envelope(
 
     algo_id = 0
     if version == 1:
+        if len(blob) < 16 + 32:
+            raise SeedFormatError(
+                "Encrypted seed v1 header"
+                " truncated.",
+                next_action=ACTION_REFETCH_SEED,
+            )
+        (
+            _, _, salt_len, nonce_len, ciphertext_len,
+        ) = struct.unpack_from(_V1_HEADER_FMT, blob, 0)
         header_len = 16
         scrypt_n = SCRYPT_N_V1
         scrypt_r = SCRYPT_R_DEFAULT
@@ -502,15 +518,9 @@ def validate_encrypted_seed_envelope(
                 next_action=ACTION_REFETCH_SEED,
             )
         (
+            _, _, salt_len, nonce_len, ciphertext_len,
             scrypt_n, scrypt_r, scrypt_p, reserved,
-        ) = struct.unpack_from(">IBBH", blob, 16)
-        if scrypt_n < SCRYPT_N_MIN:
-            raise SeedFormatError(
-                f"scrypt n={scrypt_n} below"
-                f" minimum {SCRYPT_N_MIN};"
-                " possible downgrade attack.",
-                next_action=ACTION_REFETCH_SEED,
-            )
+        ) = struct.unpack_from(_V2_HEADER_FMT, blob, 0)
         if reserved != 0:
             raise SeedFormatError(
                 "Reserved field in encrypted"
@@ -548,16 +558,9 @@ def validate_encrypted_seed_envelope(
             )
         if reserved2 != 0:
             raise SeedFormatError(
-                "Reserved2 field in encrypted"
+                "Reserved field in encrypted"
                 " seed v3 header is non-zero.",
                 next_action=ACTION_UPGRADE_HELIX,
-            )
-        if scrypt_n < SCRYPT_N_MIN:
-            raise SeedFormatError(
-                f"scrypt n={scrypt_n} below"
-                f" minimum {SCRYPT_N_MIN};"
-                " possible downgrade attack.",
-                next_action=ACTION_REFETCH_SEED,
             )
         header_len = _V3_HEADER_SIZE
     else:
@@ -567,16 +570,19 @@ def validate_encrypted_seed_envelope(
             next_action=ACTION_UPGRADE_HELIX,
         )
 
-    if version <= 2:
-        expected_len = (
-            header_len + salt_len + nonce_len
-            + ciphertext_len + 32
+    if version >= 2 and scrypt_n < SCRYPT_N_MIN:
+        raise SeedFormatError(
+            f"scrypt n={scrypt_n} below"
+            f" minimum {SCRYPT_N_MIN};"
+            " possible downgrade attack.",
+            next_action=ACTION_REFETCH_SEED,
         )
-    else:
-        expected_len = (
-            header_len + salt_len + nonce_len
-            + ciphertext_len
-        )
+
+    mac_len = 32 if version <= 2 else 0
+    expected_len = (
+        header_len + salt_len + nonce_len
+        + ciphertext_len + mac_len
+    )
     if len(blob) != expected_len:
         raise SeedFormatError(
             "Encrypted seed length mismatch"
@@ -672,7 +678,7 @@ def _encrypt_v3(
         _V3_HEADER_FMT,
         ENC_MAGIC, ENC_VERSION_V3,
         ALGO_AES_256_GCM,
-        16, AEAD_NONCE_LEN,
+        len(salt), AEAD_NONCE_LEN,
         0, 0, 0,
         ct_len,
         SCRYPT_N_DEFAULT, SCRYPT_R_DEFAULT,
@@ -757,13 +763,21 @@ def _decrypt_v3(
             " cryptography package.",
             next_action=ACTION_INSTALL_CRYPTO,
         )
+    if info.algo_id != ALGO_AES_256_GCM:
+        raise SeedFormatError(
+            "Unsupported AEAD algorithm"
+            f" id: {info.algo_id}",
+            next_action=ACTION_UPGRADE_HELIX,
+        )
     aad = blob[: info.header_len]
     salt_off = info.header_len
     nonce_off = salt_off + info.salt_len
     ct_off = nonce_off + info.nonce_len
     salt = blob[salt_off:nonce_off]
     nonce = blob[nonce_off:ct_off]
-    ciphertext_with_tag = blob[ct_off:]
+    ciphertext_with_tag = blob[
+        ct_off : ct_off + info.ciphertext_len
+    ]
 
     aead_key = _derive_aead_key(
         passphrase, salt,
