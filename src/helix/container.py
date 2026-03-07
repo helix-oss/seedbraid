@@ -133,6 +133,23 @@ def _decompress(data: bytes, ctype: int) -> bytes:
 
 
 def encode_recipe(recipe: Recipe) -> bytes:
+    """Serialize a recipe to binary format.
+
+    Encodes the hash table and op stream per the
+    FORMAT.md recipe section specification.
+
+    Args:
+        recipe: Recipe containing a hash table of
+            32-byte SHA-256 digests and a list of
+            ops.
+
+    Returns:
+        Binary-encoded recipe bytes.
+
+    Raises:
+        SeedFormatError: If any hash table entry is
+            not exactly 32 bytes.
+    """
     out = bytearray()
     out.extend(struct.pack(">II", len(recipe.ops), len(recipe.hash_table)))
     for digest in recipe.hash_table:
@@ -149,6 +166,22 @@ def encode_recipe(recipe: Recipe) -> bytes:
 
 
 def decode_recipe(data: bytes) -> Recipe:
+    """Deserialize a recipe from binary format.
+
+    Parses the hash table and op stream, validating
+    opcodes and index bounds.
+
+    Args:
+        data: Raw bytes of the recipe section.
+
+    Returns:
+        Decoded ``Recipe`` with hash table and ops.
+
+    Raises:
+        SeedFormatError: If the data is truncated,
+            contains unknown opcodes, or has out-of-
+            bounds hash indices.
+    """
     if len(data) < 8:
         raise SeedFormatError(
             "Recipe section too short.",
@@ -196,6 +229,17 @@ def decode_recipe(data: bytes) -> Recipe:
 
 
 def encode_raw_payloads(raw_payloads: dict[int, bytes]) -> bytes:
+    """Serialize RAW payloads to binary format.
+
+    Entries are written in ascending index order.
+
+    Args:
+        raw_payloads: Map of hash-table index to
+            embedded chunk data.
+
+    Returns:
+        Binary-encoded RAW section bytes.
+    """
     out = bytearray(struct.pack(">I", len(raw_payloads)))
     for index in sorted(raw_payloads):
         payload = raw_payloads[index]
@@ -205,6 +249,18 @@ def encode_raw_payloads(raw_payloads: dict[int, bytes]) -> bytes:
 
 
 def decode_raw_payloads(data: bytes) -> dict[int, bytes]:
+    """Deserialize RAW payloads from binary format.
+
+    Args:
+        data: Raw bytes of the RAW section.
+
+    Returns:
+        Map of hash-table index to chunk data.
+
+    Raises:
+        SeedFormatError: If the section is truncated
+            or has trailing bytes.
+    """
     if len(data) < 4:
         raise SeedFormatError(
             "RAW section too short.",
@@ -289,6 +345,18 @@ def _xor_bytes(a: bytes, b: bytes) -> bytes:
 
 
 def is_encrypted_seed_data(data: bytes) -> bool:
+    """Check whether raw bytes begin with the HLE1 magic.
+
+    Only inspects the first four bytes; does not
+    validate the full envelope.
+
+    Args:
+        data: Raw seed bytes to inspect.
+
+    Returns:
+        ``True`` if ``data`` starts with the HLE1
+        encrypted seed magic bytes.
+    """
     return len(data) >= 4 and data[:4] == ENC_MAGIC
 
 
@@ -307,6 +375,26 @@ class EncryptedEnvelopeInfo:
 def validate_encrypted_seed_envelope(
     blob: bytes,
 ) -> EncryptedEnvelopeInfo:
+    """Validate the structure of an HLE1 envelope.
+
+    Checks magic, version, header fields, scrypt
+    parameter minimums (v2), and overall length
+    consistency.  Supports v1 and v2 headers.
+
+    Args:
+        blob: Complete encrypted seed bytes
+            including the trailing MAC.
+
+    Returns:
+        Parsed envelope metadata with header
+        dimensions and KDF parameters.
+
+    Raises:
+        SeedFormatError: If the magic is wrong, the
+            version is unsupported, scrypt ``n`` is
+            below the minimum, or lengths are
+            inconsistent.
+    """
     if len(blob) < 4 + 2 + 1 + 1 + 8 + 32:
         raise SeedFormatError(
             "Encrypted seed is too short.",
@@ -396,6 +484,20 @@ def _build_signature_payload(
 
 
 def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
+    """Encrypt seed bytes into an HLE1 v2 envelope.
+
+    Derives encryption and MAC keys via scrypt,
+    encrypts with a counter-mode keystream (XOR),
+    and appends an HMAC-SHA256 authentication tag.
+
+    Args:
+        seed_bytes: Plaintext HLX1 seed bytes.
+        passphrase: Passphrase for key derivation.
+
+    Returns:
+        HLE1 v2 envelope bytes (header + salt +
+        nonce + ciphertext + 32-byte MAC).
+    """
     salt = os.urandom(16)
     nonce = os.urandom(16)
     enc_key, mac_key = _derive_encryption_keys(passphrase, salt)
@@ -417,6 +519,24 @@ def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
 
 
 def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
+    """Decrypt an HLE1 envelope back to plaintext.
+
+    Validates the envelope structure, verifies the
+    HMAC-SHA256 MAC, then decrypts the ciphertext.
+
+    Args:
+        blob: Complete HLE1 envelope bytes.
+        passphrase: Passphrase used during
+            encryption.
+
+    Returns:
+        Decrypted plaintext HLX1 seed bytes.
+
+    Raises:
+        SeedFormatError: If MAC verification fails
+            (wrong key or tampered data) or the
+            envelope is malformed.
+    """
     info = validate_encrypted_seed_envelope(blob)
 
     salt_off = info.header_len
@@ -457,6 +577,32 @@ def serialize_seed(
     signature_key: str | None = None,
     signature_key_id: str = "default",
 ) -> bytes:
+    """Assemble a complete HLX1 seed binary.
+
+    Builds sections in order: manifest, recipe,
+    optional RAW payloads, optional signature, and
+    integrity.
+
+    Args:
+        manifest: Seed manifest dictionary.
+        recipe: Chunk recipe with hash table and ops.
+        raw_payloads: Map of hash-table index to
+            embedded chunk data.
+        manifest_compression: Compression for the
+            manifest section.  One of ``"none"``,
+            ``"zlib"``, ``"zstd"``.
+        signature_key: HMAC key for signing.
+            ``None`` skips the signature section.
+        signature_key_id: Key identifier stored in
+            the signature section.
+
+    Returns:
+        Complete HLX1 binary seed bytes.
+
+    Raises:
+        SeedFormatError: If ``manifest_compression``
+            is not a recognised name.
+    """
     if manifest_compression not in _COMPRESSION_NAME_TO_ID:
         raise SeedFormatError(
             "Unsupported manifest compression:"
@@ -749,6 +895,23 @@ def _decode_signature_section(
 
 
 def parse_seed(data: bytes) -> Seed:
+    """Parse an HLX1 binary seed into its components.
+
+    Validates the header, scans TLV sections,
+    verifies CRC32/SHA-256 integrity, and decodes
+    the manifest, recipe, raw payloads, and optional
+    signature.
+
+    Args:
+        data: Complete HLX1 seed bytes (unencrypted).
+
+    Returns:
+        Parsed ``Seed`` dataclass.
+
+    Raises:
+        SeedFormatError: If the seed is malformed,
+            truncated, or integrity checks fail.
+    """
     section_count = _parse_hlx1_header(data)
     payloads, section_starts = _scan_hlx1_sections(
         data, section_count,
@@ -788,6 +951,25 @@ def parse_seed(data: bytes) -> Seed:
 
 
 def read_seed(path: str | Path, *, encryption_key: str | None = None) -> Seed:
+    """Read and parse a seed file from disk.
+
+    Automatically detects HLE1 encryption and
+    decrypts before parsing when an encryption key
+    is provided.
+
+    Args:
+        path: Path to the ``.hlx`` seed file.
+        encryption_key: Passphrase for decryption.
+            Required if the seed is encrypted.
+
+    Returns:
+        Parsed ``Seed`` dataclass.
+
+    Raises:
+        SeedFormatError: If the seed is encrypted
+            but no key is provided, or if parsing
+            fails.
+    """
     blob = Path(path).read_bytes()
     if is_encrypted_seed_data(blob):
         if encryption_key is None:
@@ -811,6 +993,30 @@ def write_seed(
     signature_key_id: str = "default",
     encryption_key: str | None = None,
 ) -> None:
+    """Serialize and write an HLX1 seed to disk.
+
+    Assembles the seed binary, optionally wraps it
+    in HLE1 encryption, and writes to ``path``.
+
+    Args:
+        path: Destination file path.
+        manifest: Seed manifest dictionary.
+        recipe: Chunk recipe with hash table and ops.
+        raw_payloads: Map of hash-table index to
+            embedded chunk data.
+        manifest_compression: Compression algorithm
+            name for the manifest section.
+        signature_key: HMAC key for signing.
+            ``None`` skips the signature.
+        signature_key_id: Key identifier stored in
+            the signature section.
+        encryption_key: Passphrase for HLE1
+            encryption.  ``None`` skips encryption.
+
+    Raises:
+        SeedFormatError: If ``manifest_compression``
+            is unsupported.
+    """
     data = serialize_seed(
         manifest=manifest,
         recipe=recipe,
@@ -831,6 +1037,20 @@ def sign_seed_file(
     signature_key: str,
     signature_key_id: str = "default",
 ) -> None:
+    """Add an HMAC-SHA256 signature to a seed file.
+
+    Reads the seed from ``in_path``, re-serializes
+    it with the signature, and writes the result to
+    ``out_path``.
+
+    Args:
+        in_path: Path to the unsigned seed file.
+        out_path: Destination path for the signed
+            seed.
+        signature_key: HMAC key used for signing.
+        signature_key_id: Key identifier stored in
+            the signature section.
+    """
     seed = read_seed(in_path)
     write_seed(
         path=out_path,
@@ -846,6 +1066,19 @@ def sign_seed_file(
 def verify_signature(
     seed: Seed, signature_key: str,
 ) -> tuple[bool, str | None]:
+    """Verify the HMAC-SHA256 signature of a seed.
+
+    Checks the algorithm, payload hash, and HMAC
+    value against the provided key.
+
+    Args:
+        seed: Parsed seed with optional signature.
+        signature_key: HMAC key to verify against.
+
+    Returns:
+        Tuple of ``(True, None)`` on success, or
+        ``(False, reason)`` describing the failure.
+    """
     if seed.signature is None:
         return False, "Signature is missing."
     if seed.signed_payload is None:
