@@ -39,6 +39,24 @@ def _require_ipfs() -> str:
 
 
 def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
+    """Publish a seed file to IPFS and return its CID.
+
+    Adds the seed via ``ipfs add`` and optionally
+    pins it locally.
+
+    Args:
+        seed_path: Path to the ``.hlx`` seed file.
+        pin: Pin the CID locally after publishing.
+
+    Returns:
+        Content identifier (CID) string returned by
+        IPFS.
+
+    Raises:
+        ExternalToolError: If the ``ipfs`` CLI is
+            missing, the daemon is unreachable, or
+            the pin operation fails.
+    """
     ipfs = _require_ipfs()
     seed_path = Path(seed_path)
     if not seed_path.exists():
@@ -150,6 +168,28 @@ def fetch_seed(
     backoff_ms: int = 200,
     gateway: str | None = None,
 ) -> None:
+    """Fetch a seed from IPFS by CID and write it to disk.
+
+    Retries ``ipfs cat`` with exponential backoff.
+    Falls back to an HTTP gateway when provided.
+    Validates the fetched seed before returning.
+
+    Args:
+        cid: IPFS content identifier to fetch.
+        out_path: Destination file path for the
+            downloaded seed.
+        retries: Maximum number of ``ipfs cat``
+            attempts.
+        backoff_ms: Initial backoff in milliseconds,
+            doubled on each retry.
+        gateway: Optional HTTP gateway URL for
+            fallback (e.g.
+            ``"https://ipfs.io/ipfs"``).
+
+    Raises:
+        ExternalToolError: If all fetch attempts fail
+            or the fetched data is not a valid seed.
+    """
     ipfs = _require_ipfs()
     out_path = Path(out_path)
     if retries < 1:
@@ -214,6 +254,25 @@ def fetch_seed(
 
 
 def pin_health_status(cid: str) -> dict[str, str | bool | None]:
+    """Check local pin status and block availability.
+
+    Queries the IPFS node for pin state and block
+    reachability of the given CID.
+
+    Args:
+        cid: IPFS content identifier to check.
+
+    Returns:
+        Dict with keys ``"cid"``, ``"pinned"``
+        (bool), ``"pin_type"`` (str or None),
+        ``"block_available"`` (bool), ``"ok"``
+        (bool), and ``"reason"`` (str or None).
+
+    Raises:
+        ExternalToolError: If the IPFS daemon is
+            unreachable or the pin query fails
+            unexpectedly.
+    """
     ipfs = _require_ipfs()
 
     pin_proc = subprocess.run(
@@ -294,6 +353,32 @@ def remote_pin_cid(
     retries: int = 3,
     backoff_ms: int = 200,
 ) -> RemotePinResult:
+    """Register a CID with a remote pinning provider.
+
+    Resolves endpoint and token from arguments or
+    environment variables (``HELIX_PINNING_ENDPOINT``,
+    ``HELIX_PINNING_TOKEN``).
+
+    Args:
+        cid: IPFS content identifier to pin.
+        provider: Provider type.  Currently only
+            ``"psa"`` (Pinning Services API) is
+            supported.
+        endpoint: Provider API endpoint URL.
+        token: Bearer token for authentication.
+        name: Optional human-readable pin name.
+        timeout_ms: Request timeout in milliseconds.
+        retries: Maximum number of attempts.
+        backoff_ms: Initial backoff in milliseconds.
+
+    Returns:
+        Result with provider, CID, status, and
+        optional request ID.
+
+    Raises:
+        ExternalToolError: If configuration is
+            incomplete or all attempts fail.
+    """
     resolved_endpoint = endpoint or os.environ.get("HELIX_PINNING_ENDPOINT")
     resolved_token = token or os.environ.get("HELIX_PINNING_TOKEN")
 
