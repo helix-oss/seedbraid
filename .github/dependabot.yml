@@ -1,0 +1,40 @@
+# Dependabot configuration — https://docs.github.com/en/code-security/dependabot
+# NOTE: uv.lock is not supported by Dependabot (as of 2025-03).
+#       After merging a pip update PR, run `uv lock` manually to sync uv.lock.
+version: 2
+
+updates:
+  # ----------------------------------------------------------------
+  # Python dependencies (pyproject.toml)
+  # ----------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # ----------------------------------------------------------------
+  # GitHub Actions dependencies
+  # ----------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
