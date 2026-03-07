@@ -4,8 +4,8 @@
 
 Helix provides reference-based reconstruction with deterministic content-defined chunking (CDC), a binary HLX1 seed format, and IPFS publish/fetch transport.
 
-## Alpha Status (Read First)
-- Helix is currently in alpha stage.
+## Beta Status (Read First)
+- Helix is currently in beta stage.
 - Before production use, run strict validation in your own runtime/storage/network environment.
 - Treat successful `verify --strict` and bit-perfect restore checks as release gates for your team.
 
@@ -21,7 +21,7 @@ from pathlib import Path
 import sys
 
 out = Path(sys.argv[1])
-payload = (b"helix-alpha-smoke" * 20000) + bytes(range(256)) * 200
+payload = (b"helix-beta-smoke" * 20000) + bytes(range(256)) * 200
 out.write_bytes(payload)
 print(f"wrote {out} bytes={len(payload)}")
 PY
