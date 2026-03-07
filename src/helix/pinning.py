@@ -26,6 +26,13 @@ class RemotePinResult:
 
 
 class RemotePinProvider(Protocol):
+    """Remote pinning provider interface.
+
+    Implementations register CIDs with a remote
+    pinning service and return a result with status
+    and optional request ID.
+    """
+
     provider_name: str
 
     def remote_add(
@@ -37,6 +44,28 @@ class RemotePinProvider(Protocol):
         retries: int = 3,
         backoff_ms: int = 200,
     ) -> RemotePinResult:
+        """Register a CID with the remote provider.
+
+        Implementations should retry transient
+        failures with exponential backoff.
+
+        Args:
+            cid: IPFS content identifier to pin.
+            name: Optional human-readable pin name.
+            timeout_ms: Per-request timeout in
+                milliseconds.
+            retries: Maximum number of attempts.
+            backoff_ms: Initial backoff in
+                milliseconds, doubled per retry.
+
+        Returns:
+            Result with provider, CID, status, and
+            optional request ID.
+
+        Raises:
+            ExternalToolError: If all attempts fail
+                or authentication is rejected.
+        """
         ...
 
 
@@ -81,6 +110,31 @@ class PinningServiceAPIProvider:
         retries: int = 3,
         backoff_ms: int = 200,
     ) -> RemotePinResult:
+        """Register a CID via the Pinning Services API.
+
+        Sends a POST to the ``/pins`` endpoint.
+        Retries on 5xx/429 responses and network
+        errors with exponential backoff.  Returns
+        immediately on 401/403 auth failures.
+
+        Args:
+            cid: IPFS content identifier to pin.
+            name: Optional human-readable pin name.
+            timeout_ms: Per-request timeout in
+                milliseconds.
+            retries: Maximum number of attempts.
+            backoff_ms: Initial backoff in
+                milliseconds, doubled per retry.
+
+        Returns:
+            Result with provider, CID, status, and
+            optional request ID.
+
+        Raises:
+            ExternalToolError: If authentication
+                fails, all retries are exhausted,
+                or the response is malformed.
+        """
         if retries < 1:
             raise ExternalToolError(
                 "Remote pin retries must be >= 1.",
@@ -308,6 +362,22 @@ def build_remote_pin_provider(
     endpoint: str,
     token: str,
 ) -> RemotePinProvider:
+    """Create a remote pinning provider by name.
+
+    Args:
+        provider: Provider type.  Accepted values:
+            ``"psa"``, ``"pinning-service-api"``,
+            ``"pinning_service_api"``.
+        endpoint: Provider API endpoint URL.
+        token: Bearer token for authentication.
+
+    Returns:
+        Configured ``RemotePinProvider`` instance.
+
+    Raises:
+        ExternalToolError: If ``provider`` is not a
+            recognised name.
+    """
     provider_key = provider.strip().lower()
     valid = {
         "psa", "pinning-service-api",
