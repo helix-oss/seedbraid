@@ -57,15 +57,8 @@ markdown_extensions:
       permalink: true
 
 exclude_docs: |
-  plans/
-  research/
-  reviews/
   PERFORMANCE.md
   THREAT_MODEL.md
-  OSS_RELEASE_CHECKLIST.md
-  TURN_EXECUTION_PLAN.md
-  RISK_MITIGATION_PLAN.md
-  ECOSYSTEM_TICKETS.md
 
 nav:
   - Home: index.md

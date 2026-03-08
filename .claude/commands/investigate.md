@@ -12,5 +12,5 @@ Current repo state:
 
 1. Spawn the **researcher** agent to investigate this topic
 2. Do NOT read files directly — delegate ALL exploration to the agent
-3. The researcher will save detailed findings to `docs/research/`
+3. The researcher will save detailed findings to `.docs/research/`
 4. Report the summary and output file path to the user

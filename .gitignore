@@ -38,11 +38,6 @@ CLAUDE.local.md
 # Local docs
 .docs/
 
-# Claude Code working documents (plans, research, reviews)
-docs/plans/
-docs/research/
-docs/reviews/
-
 # Helix runtime artifacts
 *.hlx
 !tests/fixtures/compat/**/*.hlx

@@ -15,7 +15,7 @@ You are a codebase researcher. Explore, discover, and document findings.
 
 1. Investigate the topic specified by the caller thoroughly
 2. Use Grep/Glob to find relevant code, then Read to understand it
-3. Write ALL detailed findings to `docs/research/{topic}.md`
+3. Write ALL detailed findings to `.docs/research/{topic}.md`
 4. Return ONLY a brief executive summary to the caller
 
 ## Context Conservation Protocol

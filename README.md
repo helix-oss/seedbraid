@@ -331,12 +331,9 @@ Expected behavior:
 - Threat model: `docs/THREAT_MODEL.md`
 - Error codes: `docs/ERROR_CODES.md`
 - Performance gates: `docs/PERFORMANCE.md`
-- Ecosystem integration tickets: `docs/ECOSYSTEM_TICKETS.md`
 - DVC workflow bridge example: `examples/dvc/README.md`
 - OCI/ORAS distribution example: `examples/oci/README.md`
 - ML tooling hooks example: `examples/ml/README.md`
-- OSS release checklist: `docs/OSS_RELEASE_CHECKLIST.md`
-- Plan: `PLANS.md`
 
 ## Support Helix
 - Helix is maintained as an open-source project.
