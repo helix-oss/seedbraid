@@ -43,6 +43,8 @@ Implement reference-based reconstruction + shift-robust dedup with lossless reco
 - Python 3.12+ runtime.
 - `ipfs` CLI may be absent; publish/fetch must fail clearly and tests should skip.
 - No encryption in initial baseline; security posture documented in threat model.
+  *(Initial plan note: HLE1 encryption was added in subsequent iterations; see
+  THREAT_MODEL.md and FORMAT.md for current encryption support.)*
 
 ## Change Log
 - 2026-02-08: Initial plan created from empty repository.

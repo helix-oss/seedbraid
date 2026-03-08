@@ -32,12 +32,20 @@
 - `helix publish` warns when uploading unencrypted seeds.
 
 ## KDF Cost Parameters
-- HLE1 v2 embeds scrypt parameters (n, r, p) in the header; default is n=32768, r=8, p=1.
-- Parameters are MAC-authenticated: HMAC-SHA256 covers the full payload including header.
+- HLE1 v2/v3 embed scrypt parameters (n, r, p) in the header; default is n=32768, r=8, p=1.
 - Minimum scrypt_n >= 16384 is enforced before key derivation to prevent KDF cost
   downgrade attacks where an attacker modifies the header to weaken brute-force resistance.
-- MAC verification requires the correct passphrase, so the n-floor check is the first
-  line of defense against pre-MAC header manipulation.
+- **v1/v2 (HMAC-SHA256 MAC)**: Parameters are MAC-authenticated. HMAC-SHA256 covers the
+  full payload including the header, so any header manipulation (including KDF parameters)
+  invalidates the MAC. MAC verification requires the correct passphrase, so the n-floor
+  check is the first line of defense against pre-MAC header manipulation.
+- **v3 (AEAD AAD)**: The 28-byte header is passed as Additional Authenticated Data (AAD)
+  to AES-256-GCM. The AEAD authentication tag binds the full 28-byte header —
+  including algo_id, scrypt_n/r/p, salt_len, nonce_len, and ciphertext_len —
+  to the ciphertext. Any header modification
+  causes AEAD decryption to fail, providing tamper detection without a separate MAC.
+  This is a stronger binding than the external HMAC approach because authentication
+  is integral to the decryption primitive.
 - HLE1 v1 seeds use implicit n=16384 and remain decryptable for backward compatibility.
 
 ## Limitations
