@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from helix.perf import run_shifted_dedup_benchmark
+from seedbraid.perf import run_shifted_dedup_benchmark
 
 
 def main() -> None:

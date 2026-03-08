@@ -1,5 +1,5 @@
-# helix.cli
+# seedbraid.cli
 
-Typer-based command-line interface for Helix operations.
+Typer-based command-line interface for Seedbraid operations.
 
-::: helix.cli
+::: seedbraid.cli

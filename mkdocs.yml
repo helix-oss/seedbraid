@@ -1,9 +1,9 @@
-site_name: Helix
+site_name: Seedbraid
 site_description: >-
   Reference-based file reconstruction with CDC chunking,
-  HLX1 binary seed format, and IPFS transport.
-repo_url: https://github.com/kytk-03/helix
-repo_name: kytk-03/helix
+  SBD1 binary seed format, and IPFS transport.
+repo_url: https://github.com/kytk-03/seedbraid
+repo_name: kytk-03/seedbraid
 
 theme:
   name: material
@@ -68,19 +68,19 @@ nav:
   - API Reference:
       - Overview: api/index.md
       - Core:
-          - helix.codec: api/codec.md
-          - helix.container: api/container.md
-          - helix.chunking: api/chunking.md
-          - helix.storage: api/storage.md
+          - seedbraid.codec: api/codec.md
+          - seedbraid.container: api/container.md
+          - seedbraid.chunking: api/chunking.md
+          - seedbraid.storage: api/storage.md
       - CLI:
-          - helix.cli: api/cli.md
+          - seedbraid.cli: api/cli.md
       - Transport:
-          - helix.ipfs: api/ipfs.md
-          - helix.pinning: api/pinning.md
-          - helix.oci: api/oci.md
+          - seedbraid.ipfs: api/ipfs.md
+          - seedbraid.pinning: api/pinning.md
+          - seedbraid.oci: api/oci.md
       - Integrations:
-          - helix.mlhooks: api/mlhooks.md
-          - helix.perf: api/perf.md
-          - helix.diagnostics: api/diagnostics.md
+          - seedbraid.mlhooks: api/mlhooks.md
+          - seedbraid.perf: api/perf.md
+          - seedbraid.diagnostics: api/diagnostics.md
       - Utilities:
-          - helix.errors: api/errors.md
+          - seedbraid.errors: api/errors.md

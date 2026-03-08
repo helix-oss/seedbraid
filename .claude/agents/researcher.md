@@ -33,6 +33,6 @@ You are a codebase researcher. Explore, discover, and document findings.
 
 ## Project Context
 
-- Python >=3.12 project (helix): CDC chunking, HLX1 binary format, IPFS transport
-- Source: `src/helix/`, Tests: `tests/`, Docs: `docs/`
+- Python >=3.12 project (seedbraid): CDC chunking, SBD1 binary format, IPFS transport
+- Source: `src/seedbraid/`, Tests: `tests/`, Docs: `docs/`
 - Key docs: `docs/FORMAT.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`

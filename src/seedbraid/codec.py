@@ -1,7 +1,7 @@
 """High-level encode, decode, verify, and genome management operations.
 
-Orchestrates chunking, genome storage, and HLX1 seed container I/O
-to implement the core Helix file reconstruction workflow.
+Orchestrates chunking, genome storage, and SBD1 seed container I/O
+to implement the core Seedbraid file reconstruction workflow.
 """
 
 from __future__ import annotations
@@ -32,16 +32,16 @@ from .errors import (
     ACTION_ENABLE_LEARN_OR_PORTABLE,
     ACTION_REFETCH_SEED,
     ACTION_REGENERATE_SEED,
-    ACTION_UPGRADE_HELIX,
+    ACTION_UPGRADE_SEEDBRAID,
     ACTION_VERIFY_GENES_PACK,
     ACTION_VERIFY_SNAPSHOT,
     DecodeError,
-    HelixError,
+    SeedbraidError,
 )
 from .storage import GenomeStorage, open_genome
 
 GENES_MAGIC = b"GENE1"
-GENOME_SNAPSHOT_MAGIC = b"HGS1"
+GENOME_SNAPSHOT_MAGIC = b"SGS1"
 GENOME_SNAPSHOT_VERSION = 1
 
 
@@ -164,7 +164,7 @@ def _build_chunk_index(
                 ),
             )
         else:
-            raise HelixError(
+            raise SeedbraidError(
                 "Encountered unknown chunk while"
                 " --no-learn and --no-portable"
                 " are active."
@@ -195,7 +195,7 @@ def _build_manifest(
 ) -> dict[str, Any]:
     if manifest_private:
         return {
-            "format": "HLX1",
+            "format": "SBD1",
             "version": 1,
             "manifest_private": True,
             "source_size": None,
@@ -205,7 +205,7 @@ def _build_manifest(
             "learn": learn,
         }
     return {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "manifest_private": False,
         "source_size": in_path.stat().st_size,
@@ -245,7 +245,7 @@ def encode_file(
     encryption_key: str | None = None,
     manifest_private: bool = False,
 ) -> EncodeStats:
-    """Encode a file into an HLX1 seed using the genome.
+    """Encode a file into an SBD1 seed using the genome.
 
     Chunks the input file, stores new chunks in the
     genome when ``learn=True``, and writes the binary
@@ -256,7 +256,7 @@ def encode_file(
         genome_path: Path to the genome directory or
             SQLite file.
         out_seed_path: Destination path for the
-            ``.hlx`` seed output.
+            ``.sbd`` seed output.
         chunker: Algorithm name.  One of
             ``"fixed"``, ``"cdc_buzhash"``,
             ``"cdc_rabin"``.
@@ -270,7 +270,7 @@ def encode_file(
             manifest section.  One of ``"none"``,
             ``"zlib"``, ``"zstd"``.
         encryption_key: Passphrase to wrap the seed
-            in HLE1 encryption.  ``None`` disables
+            in SBE1 encryption.  ``None`` disables
             encryption.
         manifest_private: Omit source path, size,
             and SHA-256 from the manifest.
@@ -280,7 +280,7 @@ def encode_file(
         dedup metrics.
 
     Raises:
-        HelixError: If an unknown chunk is found
+        SeedbraidError: If an unknown chunk is found
             while both ``learn`` and ``portable``
             are ``False``.
         SeedFormatError: If the manifest compression
@@ -357,14 +357,14 @@ def decode_file(
     *,
     encryption_key: str | None = None,
 ) -> str:
-    """Reconstruct a file from an HLX1 seed.
+    """Reconstruct a file from an SBD1 seed.
 
     Resolves each chunk from the genome or embedded
     RAW payloads, writes the reassembled file, and
     verifies the SHA-256 digest against the manifest.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         genome_path: Path to the genome directory or
             SQLite file.
         out_path: Destination path for the
@@ -550,7 +550,7 @@ def verify_seed(
     in memory and verifies the SHA-256 digest.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         genome_path: Path to the genome directory or
             SQLite file.
         strict: Reconstruct and hash-verify the full
@@ -681,7 +681,7 @@ def snapshot_genome(
     genome_path: str | Path,
     out_path: str | Path,
 ) -> dict[str, int]:
-    """Export the genome to an HGS1 binary snapshot.
+    """Export the genome to an SGS1 binary snapshot.
 
     Writes all chunks to a portable binary file that
     can be restored on another machine.
@@ -698,7 +698,7 @@ def snapshot_genome(
         payload bytes exported.
 
     Raises:
-        HelixError: If writing to ``out_path`` fails.
+        SeedbraidError: If writing to ``out_path`` fails.
     """
     out_path = Path(out_path)
     total_chunks = 0
@@ -722,7 +722,7 @@ def snapshot_genome(
                     total_chunks += 1
                     total_bytes += len(payload)
         except OSError as exc:
-            raise HelixError(
+            raise SeedbraidError(
                 "Failed to write genome snapshot:"
                 f" {out_path}",
                 next_action=ACTION_CHECK_DISK,
@@ -737,13 +737,13 @@ def restore_genome(
     *,
     replace: bool,
 ) -> dict[str, int]:
-    """Restore a genome from an HGS1 snapshot.
+    """Restore a genome from an SGS1 snapshot.
 
     When ``replace`` is ``True``, all existing chunks
     are deleted before import.
 
     Args:
-        snapshot_path: Path to the HGS1 snapshot
+        snapshot_path: Path to the SGS1 snapshot
             file.
         genome_path: Path to the genome directory or
             SQLite file.
@@ -755,7 +755,7 @@ def restore_genome(
         ``"skipped"``, and ``"entries"``.
 
     Raises:
-        HelixError: If the snapshot is truncated,
+        SeedbraidError: If the snapshot is truncated,
             has an invalid magic or version, or
             reading fails.
     """
@@ -769,23 +769,23 @@ def restore_genome(
             with snapshot_path.open("rb") as inp:
                 header = inp.read(14)
                 if len(header) != 14:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Invalid genome snapshot:"
                         " header is truncated.",
                         next_action=ACTION_VERIFY_SNAPSHOT,
                     )
                 magic, version, chunk_count = struct.unpack(">4sHQ", header)
                 if magic != GENOME_SNAPSHOT_MAGIC:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Invalid genome snapshot"
-                        " magic. Expected HGS1.",
+                        " magic. Expected SGS1.",
                         next_action=ACTION_VERIFY_SNAPSHOT,
                     )
                 if version != GENOME_SNAPSHOT_VERSION:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Unsupported genome snapshot"
                         f" version: {version}.",
-                        next_action=ACTION_UPGRADE_HELIX,
+                        next_action=ACTION_UPGRADE_SEEDBRAID,
                     )
 
                 if replace:
@@ -794,7 +794,7 @@ def restore_genome(
                 for _ in range(chunk_count):
                     entry_header = inp.read(36)
                     if len(entry_header) != 36:
-                        raise HelixError(
+                        raise SeedbraidError(
                             "Invalid genome snapshot:"
                             " entry header is"
                             " truncated.",
@@ -803,7 +803,7 @@ def restore_genome(
                     chunk_hash, size = struct.unpack(">32sI", entry_header)
                     payload = inp.read(size)
                     if len(payload) != size:
-                        raise HelixError(
+                        raise SeedbraidError(
                             "Invalid genome snapshot:"
                             " entry payload is"
                             " truncated.",
@@ -816,13 +816,13 @@ def restore_genome(
 
                 trailing = inp.read(1)
                 if trailing:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Invalid genome snapshot:"
                         " trailing bytes found.",
                         next_action=ACTION_VERIFY_SNAPSHOT,
                     )
         except OSError as exc:
-            raise HelixError(
+            raise SeedbraidError(
                 "Failed to read genome snapshot:"
                 f" {snapshot_path}",
                 next_action=ACTION_CHECK_DISK,
@@ -847,7 +847,7 @@ def export_genes(
     entries and counted separately.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         genome_path: Path to the genome directory or
             SQLite file.
         out_path: Destination path for the GENE1
@@ -903,7 +903,7 @@ def import_genes(
         ``"skipped"``.
 
     Raises:
-        HelixError: If the pack magic is invalid or
+        SeedbraidError: If the pack magic is invalid or
             the file is truncated.
     """
     pack_path = Path(pack_path)
@@ -914,7 +914,7 @@ def import_genes(
         with pack_path.open("rb") as inp:
             magic = inp.read(len(GENES_MAGIC))
             if magic != GENES_MAGIC:
-                raise HelixError(
+                raise SeedbraidError(
                     "Invalid genes pack magic."
                     " Expected GENE1.",
                     next_action=ACTION_VERIFY_GENES_PACK,
@@ -923,14 +923,14 @@ def import_genes(
             for _ in range(count):
                 digest = inp.read(32)
                 if len(digest) != 32:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Truncated genes pack hash entry.",
                         next_action=ACTION_VERIFY_GENES_PACK,
                     )
                 size = int.from_bytes(inp.read(4), "big")
                 chunk = inp.read(size)
                 if len(chunk) != size:
-                    raise HelixError(
+                    raise SeedbraidError(
                         "Truncated genes pack"
                         " payload entry.",
                         next_action=ACTION_VERIFY_GENES_PACK,

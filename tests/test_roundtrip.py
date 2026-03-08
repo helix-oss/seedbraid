@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from helix.chunking import ChunkerConfig
-from helix.codec import decode_file, encode_file, sha256_file
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import decode_file, encode_file, sha256_file
 
 
 def test_roundtrip_bit_perfect(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
     out = tmp_path / "decoded.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     genome = tmp_path / "genome"
 
     payload = (b"abcdefghij" * 50_000) + bytes(range(256)) * 500

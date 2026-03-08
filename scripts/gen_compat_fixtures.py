@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from helix.container import OP_RAW, Recipe, RecipeOp, serialize_seed
+from seedbraid.container import OP_RAW, Recipe, RecipeOp, serialize_seed
 
 FIXTURE_DIR = Path("tests/fixtures/compat/v1")
 
@@ -23,7 +23,7 @@ def _build_fixture_bytes(
 ) -> bytes:
     chunk_hash = hashlib.sha256(payload).digest()
     manifest = {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "manifest_private": False,
         "source_size": len(payload),
@@ -66,15 +66,15 @@ def main() -> None:
 
     specs = [
         {
-            "filename": "portable_raw_v1.hlx",
-            "payload": b"HELIX-COMPAT-FIXTURE-V1\nportable raw payload\n",
+            "filename": "portable_raw_v1.sbd",
+            "payload": b"SB-COMPAT-FIXTURE-V1\nportable raw payload\n",
             "compression": "zlib",
             "signed": False,
         },
         {
-            "filename": "portable_raw_signed_v1.hlx",
+            "filename": "portable_raw_signed_v1.sbd",
             "payload": (
-                b"HELIX-COMPAT-FIXTURE-V1\nsigned portable raw payload\n"
+                b"SB-COMPAT-FIXTURE-V1\nsigned portable raw payload\n"
             ),
             "compression": "none",
             "signed": True,

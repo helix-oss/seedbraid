@@ -24,4 +24,4 @@ Preferred path:
 
 ## Scope Notes
 - Third-party tools (`ipfs`, OS package managers, Python runtime) are out of direct code scope.
-- Helix-specific issues (seed parsing, integrity verification, encryption/signature handling, CLI behavior) are in scope.
+- Seedbraid-specific issues (seed parsing, integrity verification, encryption/signature handling, CLI behavior) are in scope.

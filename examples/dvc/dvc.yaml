@@ -5,14 +5,14 @@ stages:
       - ./data/input.bin
       - ./scripts/encode_seed.sh
     outs:
-      - ./artifacts/seed/current.hlx
+      - ./artifacts/seed/current.sbd
       - ./artifacts/genome/genome.sqlite
-      - ./artifacts/genome/snapshot.hgs
+      - ./artifacts/genome/snapshot.sgs
   verify:
     cmd: ./scripts/verify_seed.sh
     deps:
       - ./scripts/verify_seed.sh
-      - ./artifacts/seed/current.hlx
+      - ./artifacts/seed/current.sbd
       - ./artifacts/genome/genome.sqlite
     outs:
       - ./artifacts/metadata/verify.ok
@@ -20,8 +20,8 @@ stages:
     cmd: ./scripts/fetch_seed.sh
     deps:
       - ./scripts/fetch_seed.sh
-      - ./artifacts/seed/current.hlx
+      - ./artifacts/seed/current.sbd
       - ./artifacts/metadata/verify.ok
     outs:
       - ./artifacts/metadata/seed.cid
-      - ./artifacts/fetched/current.hlx
+      - ./artifacts/fetched/current.sbd

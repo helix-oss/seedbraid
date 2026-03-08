@@ -1,7 +1,7 @@
-# helix.errors
+# seedbraid.errors
 
-Exception hierarchy and structured error codes for Helix operations.
+Exception hierarchy and structured error codes for Seedbraid operations.
 
-::: helix.errors
+::: seedbraid.errors
     options:
       show_source: false

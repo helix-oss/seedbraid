@@ -4,22 +4,22 @@ from pathlib import Path
 
 import pytest
 
-from helix.chunking import ChunkerConfig
-from helix.codec import (
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import (
     decode_file,
     encode_file,
     restore_genome,
     snapshot_genome,
     verify_seed,
 )
-from helix.errors import ACTION_VERIFY_SNAPSHOT, HelixError
-from helix.storage import open_genome
+from seedbraid.errors import ACTION_VERIFY_SNAPSHOT, SeedbraidError
+from seedbraid.storage import open_genome
 
 
 def test_genome_snapshot_restore_supports_decode(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
-    snapshot = tmp_path / "genome.hgs"
+    seed = tmp_path / "seed.sbd"
+    snapshot = tmp_path / "genome.sgs"
     out = tmp_path / "decoded.bin"
 
     genome_a = tmp_path / "genome-a"
@@ -59,7 +59,7 @@ def test_genome_restore_replace_overwrites_existing_content(
 ) -> None:
     src_a = tmp_path / "a.bin"
     src_b = tmp_path / "b.bin"
-    snapshot = tmp_path / "genome.hgs"
+    snapshot = tmp_path / "genome.sgs"
     genome_a = tmp_path / "genome-a"
     genome_b = tmp_path / "genome-b"
 
@@ -73,7 +73,7 @@ def test_genome_restore_replace_overwrites_existing_content(
     encode_file(
         in_path=src_a,
         genome_path=genome_a,
-        out_seed_path=tmp_path / "a.hlx",
+        out_seed_path=tmp_path / "a.sbd",
         chunker="cdc_buzhash",
         cfg=cfg,
         learn=True,
@@ -83,7 +83,7 @@ def test_genome_restore_replace_overwrites_existing_content(
     encode_file(
         in_path=src_b,
         genome_path=genome_b,
-        out_seed_path=tmp_path / "b.hlx",
+        out_seed_path=tmp_path / "b.sbd",
         chunker="cdc_buzhash",
         cfg=cfg,
         learn=True,
@@ -103,9 +103,9 @@ def test_genome_restore_replace_overwrites_existing_content(
 def test_restore_bad_magic_has_next_action(
     tmp_path: Path,
 ) -> None:
-    bad_snap = tmp_path / "bad.hgs"
+    bad_snap = tmp_path / "bad.sgs"
     bad_snap.write_bytes(b"XXXX" + b"\x00" * 10)
-    with pytest.raises(HelixError) as exc_info:
+    with pytest.raises(SeedbraidError) as exc_info:
         restore_genome(
             bad_snap, tmp_path / "genome",
             replace=False,

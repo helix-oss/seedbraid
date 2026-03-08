@@ -7,7 +7,7 @@ import struct
 
 import pytest
 
-from helix.container import (
+from seedbraid.container import (
     _V1_HEADER_FMT,
     _V2_HEADER_FMT,
     _V3_HEADER_SIZE,
@@ -31,9 +31,9 @@ from helix.container import (
     serialize_seed,
     validate_encrypted_seed_envelope,
 )
-from helix.errors import (
+from seedbraid.errors import (
     ACTION_REFETCH_SEED,
-    ACTION_UPGRADE_HELIX,
+    ACTION_UPGRADE_SEEDBRAID,
     ACTION_VERIFY_ENCRYPTION,
     ACTION_VERIFY_SEED,
     SeedFormatError,
@@ -51,7 +51,7 @@ def test_seed_serialize_parse_serialize_stable() -> None:
         ],
     )
     manifest = {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "source_size": 5,
         "source_sha256": "deadbeef",
@@ -92,7 +92,7 @@ def test_seed_integrity_detects_manifest_sha256_mismatch() -> None:
         hash_table=[h1], ops=[RecipeOp(opcode=OP_REF, hash_index=0)]
     )
     manifest = {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "source_size": 1,
         "source_sha256": "ab",
@@ -171,7 +171,7 @@ class TestNextAction:
             hash_table=[h1],
             ops=[RecipeOp(opcode=OP_REF, hash_index=0)],
         )
-        manifest = {"format": "HLX1", "version": 1}
+        manifest = {"format": "SBD1", "version": 1}
         seed_bytes = serialize_seed(
             manifest, recipe, {},
             manifest_compression="none",
@@ -185,8 +185,8 @@ class TestNextAction:
         )
 
 
-class TestHLE1V2:
-    """HLE1 v2 header, v1 backward compat, and guard tests."""
+class TestSBE1V2:
+    """SBE1 v2 header, v1 backward compat, and guard tests."""
 
     def test_v1_encrypted_seed_decryptable(self) -> None:
         """Manually built v1 blob decrypts correctly."""
@@ -286,12 +286,12 @@ class TestHLE1V2:
             validate_encrypted_seed_envelope(blob)
         assert (
             exc_info.value.next_action
-            == ACTION_UPGRADE_HELIX
+            == ACTION_UPGRADE_SEEDBRAID
         )
 
 
-class TestHLE1V3:
-    """HLE1 v3 AEAD (AES-256-GCM) tests."""
+class TestSBE1V3:
+    """SBE1 v3 AEAD (AES-256-GCM) tests."""
 
     def test_v3_roundtrip(self) -> None:
         """v3 encrypt -> decrypt roundtrip."""

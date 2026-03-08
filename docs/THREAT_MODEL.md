@@ -1,4 +1,4 @@
-# Helix Threat Model
+# Seedbraid Threat Model
 
 ## Assets
 - Source file content represented by chunk references and optional RAW payloads.
@@ -27,12 +27,12 @@
 - Integrity section validates manifest, recipe, and full payload CRC32.
 - Verify/decode enforce expected output SHA-256.
 - Portable mode is opt-in and defaults off.
-- Optional encrypted wrapper (`HLE1`) protects seed confidentiality at rest/in transit when passphrase is provided.
+- Optional encrypted wrapper (`SBE1`) protects seed confidentiality at rest/in transit when passphrase is provided.
 - Optional private-manifest mode (`--manifest-private`) reduces exposed metadata fields.
-- `helix publish` warns when uploading unencrypted seeds.
+- `seedbraid publish` warns when uploading unencrypted seeds.
 
 ## KDF Cost Parameters
-- HLE1 v2/v3 embed scrypt parameters (n, r, p) in the header; default is n=32768, r=8, p=1.
+- SBE1 v2/v3 embed scrypt parameters (n, r, p) in the header; default is n=32768, r=8, p=1.
 - Minimum scrypt_n >= 16384 is enforced before key derivation to prevent KDF cost
   downgrade attacks where an attacker modifies the header to weaken brute-force resistance.
 - **v1/v2 (HMAC-SHA256 MAC)**: Parameters are MAC-authenticated. HMAC-SHA256 covers the
@@ -46,7 +46,7 @@
   causes AEAD decryption to fail, providing tamper detection without a separate MAC.
   This is a stronger binding than the external HMAC approach because authentication
   is integral to the decryption primitive.
-- HLE1 v1 seeds use implicit n=16384 and remain decryptable for backward compatibility.
+- SBE1 v1 seeds use implicit n=16384 and remain decryptable for backward compatibility.
 
 ## Limitations
 - CRC32 detects accidental corruption and simple tampering, not cryptographic forgery.
@@ -76,8 +76,8 @@
 - Publish only seeds safe for public exposure (or strongly encrypted).
 - Use signatures and reproducible verify workflow for consumer trust.
 
-## AEAD Migration (HLE1 v3)
-- HLE1 v3 replaces the custom SHA-256 counter-mode stream cipher with
+## AEAD Migration (SBE1 v3)
+- SBE1 v3 replaces the custom SHA-256 counter-mode stream cipher with
   AES-256-GCM (NIST SP 800-38D), eliminating the non-standard encryption
   primitive.
 - Key derivation uses HKDF-SHA256 (RFC 5869) instead of ad-hoc

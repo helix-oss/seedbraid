@@ -1,5 +1,5 @@
-# helix.codec
+# seedbraid.codec
 
-Core encode/decode/verify operations for Helix seed files.
+Core encode/decode/verify operations for Seedbraid seed files.
 
-::: helix.codec
+::: seedbraid.codec

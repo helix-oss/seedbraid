@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from helix.chunking import ChunkerConfig
-from helix.codec import encode_file, verify_seed
-from helix.container import parse_seed, sign_seed_file
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import encode_file, verify_seed
+from seedbraid.container import parse_seed, sign_seed_file
 
 
 def test_sign_and_verify_with_required_signature(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
-    unsigned = tmp_path / "seed.hlx"
-    signed = tmp_path / "seed.signed.hlx"
+    unsigned = tmp_path / "seed.sbd"
+    signed = tmp_path / "seed.signed.sbd"
     genome = tmp_path / "genome"
 
     src.write_bytes((b"signed-seed" * 5000) + b"!" * 64)
@@ -49,8 +49,8 @@ def test_sign_and_verify_with_required_signature(tmp_path: Path) -> None:
 
 def test_verify_fails_on_missing_or_invalid_signature(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
-    unsigned = tmp_path / "seed.hlx"
-    signed = tmp_path / "seed.signed.hlx"
+    unsigned = tmp_path / "seed.sbd"
+    signed = tmp_path / "seed.signed.sbd"
     genome = tmp_path / "genome"
 
     src.write_bytes((b"signed-seed" * 2000) + b"@" * 10)

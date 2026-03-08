@@ -32,7 +32,7 @@ def _require_ipfs() -> str:
         raise ExternalToolError(
             "ipfs CLI not found. Install IPFS and ensure `ipfs` is on PATH. "
             "Check with: `ipfs --version`.",
-            code="HELIX_E_IPFS_NOT_FOUND",
+            code="SB_E_IPFS_NOT_FOUND",
             next_action="Install Kubo and verify with `ipfs --version`.",
         )
     return ipfs
@@ -45,7 +45,7 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
     pins it locally.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         pin: Pin the CID locally after publishing.
 
     Returns:
@@ -62,10 +62,10 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
     if not seed_path.exists():
         raise ExternalToolError(
             f"Seed file not found: {seed_path}",
-            code="HELIX_E_SEED_NOT_FOUND",
+            code="SB_E_SEED_NOT_FOUND",
             next_action=(
                 "Provide an existing seed file"
-                " path to `helix publish`."
+                " path to `seedbraid publish`."
             ),
         )
 
@@ -79,7 +79,7 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
         msg = proc.stderr.strip() or proc.stdout.strip() or "ipfs add failed"
         raise ExternalToolError(
             f"Failed to publish seed to IPFS: {msg}",
-            code="HELIX_E_IPFS_PUBLISH",
+            code="SB_E_IPFS_PUBLISH",
             next_action="Ensure IPFS daemon is running and retry publish.",
         )
 
@@ -87,8 +87,11 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
     if not cid:
         raise ExternalToolError(
             "IPFS publish did not return CID.",
-            code="HELIX_E_IPFS_PUBLISH",
-            next_action="Retry `helix publish` and inspect ipfs daemon logs.",
+            code="SB_E_IPFS_PUBLISH",
+            next_action=(
+                "Retry `seedbraid publish` and"
+                " inspect ipfs daemon logs."
+            ),
         )
 
     if pin:
@@ -107,7 +110,7 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
             raise ExternalToolError(
                 f"Published CID {cid},"
                 f" but pin failed: {msg}",
-                code="HELIX_E_IPFS_PUBLISH",
+                code="SB_E_IPFS_PUBLISH",
                 next_action=(
                     "Run `ipfs pin add <cid>`"
                     " manually and verify"
@@ -135,7 +138,7 @@ def _validate_fetched_seed_blob(cid: str, out_path: Path, blob: bytes) -> None:
             f"Fetched bytes for CID {cid}, but"
             " integrity/manifest validation"
             f" failed: {exc}",
-            code="HELIX_E_SEED_FORMAT",
+            code="SB_E_SEED_FORMAT",
             next_action=(
                 "Refetch the CID or verify publisher"
                 " integrity before decode."
@@ -151,7 +154,7 @@ def _fetch_from_gateway(cid: str, gateway: str) -> bytes:
     except (urllib.error.URLError, OSError) as exc:
         raise ExternalToolError(
             f"Gateway fetch failed ({url}): {exc}",
-            code="HELIX_E_IPFS_FETCH",
+            code="SB_E_IPFS_FETCH",
             next_action=(
                 "Try another gateway or confirm"
                 " network access from this"
@@ -195,13 +198,13 @@ def fetch_seed(
     if retries < 1:
         raise ExternalToolError(
             "Fetch retries must be >= 1.",
-            code="HELIX_E_INVALID_OPTION",
+            code="SB_E_INVALID_OPTION",
             next_action="Use `--retries` with value >= 1.",
         )
     if backoff_ms < 0:
         raise ExternalToolError(
             "Fetch backoff must be >= 0ms.",
-            code="HELIX_E_INVALID_OPTION",
+            code="SB_E_INVALID_OPTION",
             next_action="Use `--backoff-ms` with value >= 0.",
         )
 
@@ -245,9 +248,9 @@ def fetch_seed(
     )
     raise ExternalToolError(
         detail,
-        code="HELIX_E_IPFS_FETCH",
+        code="SB_E_IPFS_FETCH",
         next_action=(
-            "Use `helix fetch <cid> --gateway https://ipfs.io/ipfs` "
+            "Use `seedbraid fetch <cid> --gateway https://ipfs.io/ipfs` "
             "or check IPFS node health."
         ),
     )
@@ -305,11 +308,11 @@ def pin_health_status(cid: str) -> dict[str, str | bool | None]:
             raise ExternalToolError(
                 "Failed to query pin status"
                 f" for CID {cid}: {pin_msg}",
-                code="HELIX_E_IPFS_PIN_STATUS",
+                code="SB_E_IPFS_PIN_STATUS",
                 next_action=(
                     "Verify IPFS daemon is running"
                     " and retry"
-                    " `helix pin-health <cid>`."
+                    " `seedbraid pin-health <cid>`."
                 ),
             )
 
@@ -356,8 +359,8 @@ def remote_pin_cid(
     """Register a CID with a remote pinning provider.
 
     Resolves endpoint and token from arguments or
-    environment variables (``HELIX_PINNING_ENDPOINT``,
-    ``HELIX_PINNING_TOKEN``).
+    environment variables (``SB_PINNING_ENDPOINT``,
+    ``SB_PINNING_TOKEN``).
 
     Args:
         cid: IPFS content identifier to pin.
@@ -379,8 +382,8 @@ def remote_pin_cid(
         ExternalToolError: If configuration is
             incomplete or all attempts fail.
     """
-    resolved_endpoint = endpoint or os.environ.get("HELIX_PINNING_ENDPOINT")
-    resolved_token = token or os.environ.get("HELIX_PINNING_TOKEN")
+    resolved_endpoint = endpoint or os.environ.get("SB_PINNING_ENDPOINT")
+    resolved_token = token or os.environ.get("SB_PINNING_TOKEN")
 
     missing: list[str] = []
     if not resolved_endpoint:
@@ -391,9 +394,9 @@ def remote_pin_cid(
         missing_csv = ", ".join(missing)
         raise ExternalToolError(
             f"Remote pin configuration is incomplete (missing {missing_csv}).",
-            code="HELIX_E_REMOTE_PIN_CONFIG",
+            code="SB_E_REMOTE_PIN_CONFIG",
             next_action=(
-                "Set HELIX_PINNING_ENDPOINT and HELIX_PINNING_TOKEN, "
+                "Set SB_PINNING_ENDPOINT and SB_PINNING_TOKEN, "
                 "or pass --endpoint/--token explicitly."
             ),
         )

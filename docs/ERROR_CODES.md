@@ -1,58 +1,58 @@
-# Helix Error Codes
+# Seedbraid Error Codes
 
-This document defines operator-facing error codes emitted by the Helix CLI.
+This document defines operator-facing error codes emitted by the Seedbraid CLI.
 
 ## Format
-- Prefix: `HELIX_E_`
+- Prefix: `SB_E_`
 - Stability: codes are stable across patch/minor releases.
 - Output: CLI prints `error[CODE]: <message>` and `next_action: <hint>` when available.
 
 ## Core Codes
-- `HELIX_E_UNKNOWN`
-  - Unexpected non-Helix exception path.
-- `HELIX_E_SEED_FORMAT`
+- `SB_E_UNKNOWN`
+  - Unexpected non-Seedbraid exception path.
+- `SB_E_SEED_FORMAT`
   - Seed/container integrity, parse, or decryption format error.
-- `HELIX_E_DECODE`
+- `SB_E_DECODE`
   - Reconstruction/decode failure.
-- `HELIX_E_EXTERNAL_TOOL`
+- `SB_E_EXTERNAL_TOOL`
   - Generic external tool failure.
 
 ## Operational Codes
-- `HELIX_E_IPFS_NOT_FOUND`
+- `SB_E_IPFS_NOT_FOUND`
   - `ipfs` CLI was not found on `PATH`.
-- `HELIX_E_IPFS_PUBLISH`
+- `SB_E_IPFS_PUBLISH`
   - `ipfs add` or pin operation failed.
-- `HELIX_E_IPFS_FETCH`
+- `SB_E_IPFS_FETCH`
   - `ipfs cat`/gateway fetch failed after retries.
-- `HELIX_E_IPFS_PIN_STATUS`
+- `SB_E_IPFS_PIN_STATUS`
   - Pin status query failed unexpectedly.
-- `HELIX_E_REMOTE_PIN_CONFIG`
+- `SB_E_REMOTE_PIN_CONFIG`
   - Remote pin request is missing required provider config (endpoint/token).
-- `HELIX_E_REMOTE_PIN_AUTH`
+- `SB_E_REMOTE_PIN_AUTH`
   - Remote pin provider rejected authentication/authorization.
-- `HELIX_E_REMOTE_PIN_REQUEST`
+- `SB_E_REMOTE_PIN_REQUEST`
   - Remote pin provider rejected request as invalid (client-side request issue).
-- `HELIX_E_REMOTE_PIN_TIMEOUT`
+- `SB_E_REMOTE_PIN_TIMEOUT`
   - Remote pin request timed out after configured retries.
-- `HELIX_E_REMOTE_PIN`
+- `SB_E_REMOTE_PIN`
   - Remote pin request failed unexpectedly (server/network/protocol error).
-- `HELIX_E_SEED_NOT_FOUND`
+- `SB_E_SEED_NOT_FOUND`
   - Seed path passed to publish does not exist.
-- `HELIX_E_INVALID_OPTION`
+- `SB_E_INVALID_OPTION`
   - Invalid runtime option value (for example retries/backoff bounds).
-- `HELIX_E_ENCRYPTION_KEY_MISSING`
+- `SB_E_ENCRYPTION_KEY_MISSING`
   - Encryption requested without key material.
-- `HELIX_E_SIGNING_KEY_MISSING`
+- `SB_E_SIGNING_KEY_MISSING`
   - Signing requested without signing key env var.
-- `HELIX_E_DOCTOR_CHECK`
+- `SB_E_DOCTOR_CHECK`
   - Doctor check encountered an unexpected exception.
-- `HELIX_E_MLFLOW_CONFIG`
+- `SB_E_MLFLOW_CONFIG`
   - MLflow metadata logging is missing required configuration.
-- `HELIX_E_MLFLOW_REQUEST`
+- `SB_E_MLFLOW_REQUEST`
   - MLflow API request for metadata logging failed.
-- `HELIX_E_HF_CONFIG`
+- `SB_E_HF_CONFIG`
   - Hugging Face upload config is invalid or missing credentials.
-- `HELIX_E_HF_REQUEST`
+- `SB_E_HF_REQUEST`
   - Hugging Face upload request/CLI invocation failed.
 
 ## Guidance

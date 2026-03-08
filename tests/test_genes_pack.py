@@ -4,16 +4,21 @@ from pathlib import Path
 
 import pytest
 
-from helix.chunking import ChunkerConfig
-from helix.codec import decode_file, encode_file, export_genes, import_genes
-from helix.errors import ACTION_VERIFY_GENES_PACK, HelixError
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import (
+    decode_file,
+    encode_file,
+    export_genes,
+    import_genes,
+)
+from seedbraid.errors import ACTION_VERIFY_GENES_PACK, SeedbraidError
 
 
 def test_export_import_genes_pack_allows_decode_on_fresh_genome(
     tmp_path: Path,
 ) -> None:
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     genes = tmp_path / "genes.pack"
     out = tmp_path / "decoded.bin"
 
@@ -51,7 +56,7 @@ def test_import_genes_bad_magic_has_next_action(
 ) -> None:
     pack = tmp_path / "bad.pack"
     pack.write_bytes(b"BADMAGIC")
-    with pytest.raises(HelixError) as exc_info:
+    with pytest.raises(SeedbraidError) as exc_info:
         import_genes(pack, tmp_path / "genome")
     assert (
         exc_info.value.next_action
@@ -64,7 +69,7 @@ def test_import_genes_truncated_hash_has_next_action(
 ) -> None:
     pack = tmp_path / "trunc.pack"
     pack.write_bytes(b"GENE1" + (1).to_bytes(4, "big") + b"\x00" * 10)
-    with pytest.raises(HelixError) as exc_info:
+    with pytest.raises(SeedbraidError) as exc_info:
         import_genes(pack, tmp_path / "genome")
     assert (
         exc_info.value.next_action

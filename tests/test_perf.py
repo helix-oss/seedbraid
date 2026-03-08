@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from helix.perf import (
+from seedbraid.perf import (
     BenchCaseResult,
     ShiftedDedupBenchmark,
     run_shifted_dedup_benchmark,

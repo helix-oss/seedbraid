@@ -1,4 +1,4 @@
-"""Environment and dependency diagnostics for ``helix doctor``.
+"""Environment and dependency diagnostics for ``seedbraid doctor``.
 
 Checks Python version, IPFS CLI availability, genome path
 writability, and compression library status.
@@ -15,7 +15,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .errors import ExternalToolError, HelixError
+from .errors import ExternalToolError, SeedbraidError
 from .storage import resolve_genome_db_path
 
 
@@ -159,7 +159,7 @@ def _check_genome_path(genome_path: Path) -> DoctorCheck:
     try:
         with tempfile.NamedTemporaryFile(
             dir=parent,
-            prefix=".helix-doctor-",
+            prefix=".seedbraid-doctor-",
             delete=True,
         ):
             pass
@@ -235,14 +235,14 @@ def run_doctor(genome_path: str | Path) -> DoctorReport:
         checks.append(_check_ipfs_path())
         checks.append(_check_genome_path(path))
         checks.extend(_check_compression())
-    except HelixError:
+    except SeedbraidError:
         raise
     except Exception as exc:  # noqa: BLE001
         raise ExternalToolError(
             f"doctor failed unexpectedly: {exc}",
-            code="HELIX_E_DOCTOR_CHECK",
+            code="SB_E_DOCTOR_CHECK",
             next_action=(
-                "Re-run `helix doctor --genome <path>`"
+                "Re-run `seedbraid doctor --genome <path>`"
                 " and inspect environment setup."
             ),
         ) from exc

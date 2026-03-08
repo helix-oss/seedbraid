@@ -6,10 +6,10 @@ argument-hint: "[target module or file (optional, defaults to all)]"
 Run security audit. Target: $ARGUMENTS
 
 Security-sensitive modules:
-- `src/helix/container.py` — HLX1 binary format parsing
-- `src/helix/codec.py` — encoding/decoding
-- `src/helix/ipfs.py` — IPFS transport
-- `src/helix/pinning.py` — IPFS pinning services
+- `src/seedbraid/container.py` — SBD1 binary format parsing
+- `src/seedbraid/codec.py` — encoding/decoding
+- `src/seedbraid/ipfs.py` — IPFS transport
+- `src/seedbraid/pinning.py` — IPFS pinning services
 
 ## Instructions
 

@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from helix.cli import app
-from helix.errors import ExternalToolError
-from helix.ipfs import remote_pin_cid
-from helix.pinning import PinningServiceAPIProvider, RemotePinResult
+from seedbraid.cli import app
+from seedbraid.errors import ExternalToolError
+from seedbraid.ipfs import remote_pin_cid
+from seedbraid.pinning import PinningServiceAPIProvider, RemotePinResult
 
 
 class _Resp:
@@ -47,7 +47,7 @@ def test_psa_provider_retries_then_succeeds(monkeypatch) -> None:
         assert req.get_method() == "POST"
         assert json.loads(req.data.decode("utf-8")) == {
             "cid": "bafy-test",
-            "name": "seed.hlx",
+            "name": "seed.sbd",
         }
         return _Resp(
             {
@@ -57,15 +57,21 @@ def test_psa_provider_retries_then_succeeds(monkeypatch) -> None:
             }
         )
 
-    monkeypatch.setattr("helix.pinning.urllib.request.urlopen", _fake_urlopen)
-    monkeypatch.setattr("helix.pinning.time.sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(
+        "seedbraid.pinning.urllib.request.urlopen",
+        _fake_urlopen,
+    )
+    monkeypatch.setattr(
+        "seedbraid.pinning.time.sleep",
+        lambda s: sleeps.append(s),
+    )
 
     provider = PinningServiceAPIProvider(
         endpoint="https://pin.example/api/v1", token="token"
     )
     report = provider.remote_add(
         "bafy-test",
-        name="seed.hlx",
+        name="seed.sbd",
         timeout_ms=10_000,
         retries=2,
         backoff_ms=25,
@@ -92,28 +98,31 @@ def test_psa_provider_maps_auth_failures(monkeypatch) -> None:
             fp=io.BytesIO(b"unauthorized"),
         )
 
-    monkeypatch.setattr("helix.pinning.urllib.request.urlopen", _fake_urlopen)
+    monkeypatch.setattr(
+        "seedbraid.pinning.urllib.request.urlopen",
+        _fake_urlopen,
+    )
 
     provider = PinningServiceAPIProvider(
         endpoint="https://pin.example/api/v1", token="bad-token"
     )
     with pytest.raises(ExternalToolError) as exc_info:
         provider.remote_add("bafy-test", retries=1, backoff_ms=0)
-    assert exc_info.value.code == "HELIX_E_REMOTE_PIN_AUTH"
+    assert exc_info.value.code == "SB_E_REMOTE_PIN_AUTH"
 
 
 def test_remote_pin_cid_requires_endpoint_and_token(monkeypatch) -> None:
-    monkeypatch.delenv("HELIX_PINNING_ENDPOINT", raising=False)
-    monkeypatch.delenv("HELIX_PINNING_TOKEN", raising=False)
+    monkeypatch.delenv("SB_PINNING_ENDPOINT", raising=False)
+    monkeypatch.delenv("SB_PINNING_TOKEN", raising=False)
 
     with pytest.raises(ExternalToolError) as exc_info:
         remote_pin_cid("bafy-test")
-    assert exc_info.value.code == "HELIX_E_REMOTE_PIN_CONFIG"
+    assert exc_info.value.code == "SB_E_REMOTE_PIN_CONFIG"
 
 
 def test_publish_can_trigger_remote_pin(tmp_path: Path, monkeypatch) -> None:
-    seed = tmp_path / "seed.hlx"
-    seed.write_bytes(b"HLE1" + b"x" * 32)
+    seed = tmp_path / "seed.sbd"
+    seed.write_bytes(b"SBE1" + b"x" * 32)
 
     def _fake_publish(_seed: Path, pin: bool = False) -> str:
         assert pin is False
@@ -127,8 +136,8 @@ def test_publish_can_trigger_remote_pin(tmp_path: Path, monkeypatch) -> None:
             request_id="req-42",
         )
 
-    monkeypatch.setattr("helix.cli.publish_seed", _fake_publish)
-    monkeypatch.setattr("helix.cli.remote_pin_cid", _fake_remote_pin)
+    monkeypatch.setattr("seedbraid.cli.publish_seed", _fake_publish)
+    monkeypatch.setattr("seedbraid.cli.remote_pin_cid", _fake_remote_pin)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -156,11 +165,11 @@ def test_pin_remote_add_cli_reports_error_code(monkeypatch) -> None:
     def _fail_remote_pin(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
         raise ExternalToolError(
             "bad token",
-            code="HELIX_E_REMOTE_PIN_AUTH",
+            code="SB_E_REMOTE_PIN_AUTH",
             next_action="rotate token",
         )
 
-    monkeypatch.setattr("helix.cli.remote_pin_cid", _fail_remote_pin)
+    monkeypatch.setattr("seedbraid.cli.remote_pin_cid", _fail_remote_pin)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -177,5 +186,5 @@ def test_pin_remote_add_cli_reports_error_code(monkeypatch) -> None:
     )
 
     assert result.exit_code == 1
-    assert "error[HELIX_E_REMOTE_PIN_AUTH]" in result.output
+    assert "error[SB_E_REMOTE_PIN_AUTH]" in result.output
     assert "next_action: rotate token" in result.output

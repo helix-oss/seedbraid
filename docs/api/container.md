@@ -1,6 +1,6 @@
-# helix.container
+# seedbraid.container
 
-HLX1 binary seed container: serialization, parsing, encryption,
+SBD1 binary seed container: serialization, parsing, encryption,
 and signature operations.
 
-::: helix.container
+::: seedbraid.container

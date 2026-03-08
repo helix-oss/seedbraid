@@ -9,8 +9,8 @@ DVC_EXAMPLE_DIR = REPO_ROOT / "examples" / "dvc"
 DVC_SCRIPTS_DIR = DVC_EXAMPLE_DIR / "scripts"
 
 
-def _write_fake_helix(tmp_path: Path, body: str) -> Path:
-    fake = tmp_path / "fake_helix.sh"
+def _write_fake_seedbraid(tmp_path: Path, body: str) -> Path:
+    fake = tmp_path / "fake_seedbraid.sh"
     fake.write_text("#!/usr/bin/env bash\nset -euo pipefail\n" + body)
     fake.chmod(0o755)
     return fake
@@ -29,15 +29,15 @@ def test_dvc_pipeline_declares_encode_verify_fetch_stages() -> None:
 
 def test_readme_links_dvc_integration_section() -> None:
     root_readme = (REPO_ROOT / "README.md").read_text()
-    assert "## DVC Integration (HLX-ECO-003)" in root_readme
+    assert "## DVC Integration (SBD-ECO-003)" in root_readme
     assert "examples/dvc/README.md" in root_readme
 
 
 def test_dvc_example_documents_artifact_layout() -> None:
     dvc_readme = (DVC_EXAMPLE_DIR / "README.md").read_text()
     assert "Recommended Artifact Layout" in dvc_readme
-    assert "artifacts/seed/current.hlx" in dvc_readme
-    assert "artifacts/genome/snapshot.hgs" in dvc_readme
+    assert "artifacts/seed/current.sbd" in dvc_readme
+    assert "artifacts/genome/snapshot.sgs" in dvc_readme
     assert "artifacts/metadata/seed.cid" in dvc_readme
 
 
@@ -48,7 +48,7 @@ def test_dvc_verify_script_uses_strict_mode() -> None:
 
 
 def test_dvc_verify_script_failure_propagates(tmp_path: Path) -> None:
-    fake_helix = _write_fake_helix(
+    fake_seedbraid = _write_fake_seedbraid(
         tmp_path,
         """
 if [[ "$1" == "verify" ]]; then
@@ -59,8 +59,8 @@ exit 0
 """,
     )
 
-    seed_path = tmp_path / "seed.hlx"
-    seed_path.write_bytes(b"HLX1" + b"x" * 64)
+    seed_path = tmp_path / "seed.sbd"
+    seed_path.write_bytes(b"SBD1" + b"x" * 64)
     genome_path = tmp_path / "genome"
     genome_path.mkdir()
     verify_ok_path = tmp_path / "verify.ok"
@@ -68,10 +68,10 @@ exit 0
     env = os.environ.copy()
     env.update(
         {
-            "HELIX_DVC_HELIX_BIN": str(fake_helix),
-            "HELIX_DVC_SEED_PATH": str(seed_path),
-            "HELIX_DVC_GENOME_PATH": str(genome_path),
-            "HELIX_DVC_VERIFY_OK_PATH": str(verify_ok_path),
+            "SB_DVC_SEEDBRAID_BIN": str(fake_seedbraid),
+            "SB_DVC_SEED_PATH": str(seed_path),
+            "SB_DVC_GENOME_PATH": str(genome_path),
+            "SB_DVC_VERIFY_OK_PATH": str(verify_ok_path),
         }
     )
 
@@ -89,7 +89,7 @@ exit 0
 
 
 def test_dvc_fetch_script_bootstraps_cid_and_fetches(tmp_path: Path) -> None:
-    fake_helix = _write_fake_helix(
+    fake_seedbraid = _write_fake_seedbraid(
         tmp_path,
         """
 if [[ "$1" == "publish" ]]; then
@@ -119,7 +119,7 @@ if [[ "$1" == "fetch" ]]; then
   fi
 
   mkdir -p "$(dirname "$out_path")"
-  printf 'HLX1fetched' > "$out_path"
+  printf 'SBD1fetched' > "$out_path"
   exit 0
 fi
 
@@ -127,18 +127,18 @@ exit 0
 """,
     )
 
-    seed_path = tmp_path / "seed.hlx"
-    seed_path.write_bytes(b"HLX1" + b"z" * 32)
+    seed_path = tmp_path / "seed.sbd"
+    seed_path.write_bytes(b"SBD1" + b"z" * 32)
     cid_path = tmp_path / "seed.cid"
-    fetched_path = tmp_path / "fetched.hlx"
+    fetched_path = tmp_path / "fetched.sbd"
 
     env = os.environ.copy()
     env.update(
         {
-            "HELIX_DVC_HELIX_BIN": str(fake_helix),
-            "HELIX_DVC_SEED_PATH": str(seed_path),
-            "HELIX_DVC_CID_PATH": str(cid_path),
-            "HELIX_DVC_FETCHED_PATH": str(fetched_path),
+            "SB_DVC_SEEDBRAID_BIN": str(fake_seedbraid),
+            "SB_DVC_SEED_PATH": str(seed_path),
+            "SB_DVC_CID_PATH": str(cid_path),
+            "SB_DVC_FETCHED_PATH": str(fetched_path),
         }
     )
 
@@ -152,4 +152,4 @@ exit 0
 
     assert result.returncode == 0
     assert cid_path.read_text().strip() == "bafyfakecid"
-    assert fetched_path.read_bytes() == b"HLX1fetched"
+    assert fetched_path.read_bytes() == b"SBD1fetched"

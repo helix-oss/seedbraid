@@ -5,8 +5,8 @@ import os
 import sys
 from pathlib import Path
 
-from helix.errors import HelixError
-from helix.mlhooks import (
+from seedbraid.errors import SeedbraidError
+from seedbraid.mlhooks import (
     build_seed_metadata,
     log_seed_metadata_to_mlflow,
     upload_seed_and_metadata_to_hf,
@@ -20,18 +20,18 @@ def _default_metadata_path(seed_path: Path) -> Path:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=("Helix ML tooling hooks (MLflow / Hugging Face)"),
+        description=("Seedbraid ML tooling hooks (MLflow / Hugging Face)"),
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
     mlflow = sub.add_parser(
         "mlflow-log",
-        help="Log Helix seed metadata to MLflow",
+        help="Log Seedbraid seed metadata to MLflow",
     )
     mlflow.add_argument(
         "seed",
         type=Path,
-        help="Path to .hlx seed",
+        help="Path to .sbd seed",
     )
     mlflow.add_argument(
         "--tracking-uri",
@@ -40,7 +40,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     mlflow.add_argument(
         "--experiment",
-        default=os.environ.get("HELIX_MLFLOW_EXPERIMENT", "helix-seeds"),
+        default=os.environ.get("SB_MLFLOW_EXPERIMENT", "seedbraid-seeds"),
         help="MLflow experiment name",
     )
     mlflow.add_argument(
@@ -79,7 +79,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--encryption-key",
         default=None,
         help=(
-            "Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)"
+            "Passphrase for encrypted SBE1 seeds (or use SB_ENCRYPTION_KEY)"
         ),
     )
 
@@ -90,7 +90,7 @@ def _build_parser() -> argparse.ArgumentParser:
     hf.add_argument(
         "seed",
         type=Path,
-        help="Path to .hlx seed",
+        help="Path to .sbd seed",
     )
     hf.add_argument("repo_id", help="HF repo id")
     hf.add_argument(
@@ -105,7 +105,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     hf.add_argument(
         "--remote-prefix",
-        default="helix/seeds",
+        default="seedbraid/seeds",
         help="Remote folder prefix",
     )
     hf.add_argument(
@@ -139,7 +139,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--encryption-key",
         default=None,
         help=(
-            "Passphrase for encrypted HLE1 seeds (or use HELIX_ENCRYPTION_KEY)"
+            "Passphrase for encrypted SBE1 seeds (or use SB_ENCRYPTION_KEY)"
         ),
     )
 
@@ -147,13 +147,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _print_error(exc: Exception) -> int:
-    if isinstance(exc, HelixError):
+    if isinstance(exc, SeedbraidError):
         info = exc.as_info()
         print(f"error[{info.code}]: {info.message}", file=sys.stderr)
         if info.next_action:
             print(f"next_action: {info.next_action}", file=sys.stderr)
         return 1
-    print(f"error[HELIX_E_UNKNOWN]: {exc}", file=sys.stderr)
+    print(f"error[SB_E_UNKNOWN]: {exc}", file=sys.stderr)
     return 1
 
 
@@ -161,7 +161,7 @@ def _build_and_write_metadata(  # noqa: ANN001
     args,
 ) -> tuple[dict[str, object], Path]:
     encryption_key = args.encryption_key or os.environ.get(
-        "HELIX_ENCRYPTION_KEY"
+        "SB_ENCRYPTION_KEY"
     )
     metadata = build_seed_metadata(
         args.seed,
@@ -185,9 +185,9 @@ def main(argv: list[str] | None = None) -> int:
                 "MLFLOW_TRACKING_URI"
             )
             if not tracking_uri:
-                raise HelixError(
+                raise SeedbraidError(
                     "MLflow tracking URI is required.",
-                    code="HELIX_E_MLFLOW_CONFIG",
+                    code="SB_E_MLFLOW_CONFIG",
                     next_action=(
                         "Pass --tracking-uri or set MLFLOW_TRACKING_URI."
                     ),

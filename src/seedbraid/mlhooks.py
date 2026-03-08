@@ -72,7 +72,7 @@ def build_seed_metadata(
     IPFS CID and OCI reference.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         cid: IPFS CID to include in metadata.
         oci_reference: OCI reference to include.
         encryption_key: Passphrase to decrypt the
@@ -178,7 +178,7 @@ def _request_json(
             "MLflow API request failed"
             f" ({method} {url}):"
             f" HTTP {exc.code}. {detail}",
-            code="HELIX_E_MLFLOW_REQUEST",
+            code="SB_E_MLFLOW_REQUEST",
             next_action=(
                 "Verify MLFLOW_TRACKING_URI/token,"
                 " confirm server reachability,"
@@ -189,7 +189,7 @@ def _request_json(
     except urllib.error.URLError as exc:
         raise ExternalToolError(
             f"MLflow API request failed ({method} {url}): {exc}",
-            code="HELIX_E_MLFLOW_REQUEST",
+            code="SB_E_MLFLOW_REQUEST",
             next_action=(
                 "Check network access to"
                 " MLFLOW_TRACKING_URI and retry."
@@ -203,13 +203,13 @@ def _request_json(
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ExternalToolError(
             f"MLflow API returned invalid JSON for {method} {url}.",
-            code="HELIX_E_MLFLOW_REQUEST",
+            code="SB_E_MLFLOW_REQUEST",
             next_action="Inspect MLflow server/proxy response and retry.",
         ) from exc
     if not isinstance(decoded, dict):
         raise ExternalToolError(
             f"MLflow API response is not an object for {method} {url}.",
-            code="HELIX_E_MLFLOW_REQUEST",
+            code="SB_E_MLFLOW_REQUEST",
             next_action="Inspect MLflow server response and retry.",
         )
     return decoded
@@ -262,7 +262,7 @@ def log_seed_metadata_to_mlflow(
     if not tracking_uri:
         raise ExternalToolError(
             "MLflow tracking URI is required.",
-            code="HELIX_E_MLFLOW_CONFIG",
+            code="SB_E_MLFLOW_CONFIG",
             next_action="Pass --tracking-uri or set MLFLOW_TRACKING_URI.",
         )
 
@@ -301,7 +301,7 @@ def log_seed_metadata_to_mlflow(
                 "MLflow did not return"
                 " experiment_id when creating"
                 " experiment.",
-                code="HELIX_E_MLFLOW_REQUEST",
+                code="SB_E_MLFLOW_REQUEST",
                 next_action="Check MLflow server logs and retry.",
             )
         experiment_id = str(create_exp_resp["experiment_id"])
@@ -324,7 +324,7 @@ def log_seed_metadata_to_mlflow(
     if run_id is None:
         raise ExternalToolError(
             "MLflow did not return run_id when creating run.",
-            code="HELIX_E_MLFLOW_REQUEST",
+            code="SB_E_MLFLOW_REQUEST",
             next_action="Check MLflow server logs and retry.",
         )
 
@@ -335,8 +335,8 @@ def log_seed_metadata_to_mlflow(
             "run_id": run_id,
             "params": _mlflow_params(metadata),
             "tags": [
-                {"key": "helix.seed.metadata", "value": "true"},
-                {"key": "helix.seed.schema", "value": "v1"},
+                {"key": "seedbraid.seed.metadata", "value": "true"},
+                {"key": "seedbraid.seed.schema", "value": "v1"},
             ],
         },
         token=token,
@@ -356,7 +356,7 @@ def _resolve_hf_cli() -> list[str]:
     raise ExternalToolError(
         "Hugging Face CLI not found. Install `huggingface_hub` CLI and "
         "ensure `huggingface-cli` or `hf` is on PATH.",
-        code="HELIX_E_HF_CONFIG",
+        code="SB_E_HF_CONFIG",
         next_action=(
             "Install Hugging Face CLI and verify"
             " with `huggingface-cli --help`."
@@ -371,7 +371,7 @@ def upload_seed_and_metadata_to_hf(
     metadata_path: str | Path,
     repo_type: str = "dataset",
     revision: str = "main",
-    remote_prefix: str = "helix/seeds",
+    remote_prefix: str = "seedbraid/seeds",
     token: str | None = None,
 ) -> HuggingFaceUploadResult:
     """Upload a seed and its metadata sidecar to HF Hub.
@@ -385,7 +385,7 @@ def upload_seed_and_metadata_to_hf(
     Args:
         repo_id: Hugging Face repository identifier
             (e.g. ``"user/repo"``).
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         metadata_path: Path to the JSON sidecar.
         repo_type: One of ``"dataset"``,
             ``"model"``, ``"space"``.
@@ -406,7 +406,7 @@ def upload_seed_and_metadata_to_hf(
     if repo_type not in {"dataset", "model", "space"}:
         raise ExternalToolError(
             f"Unsupported Hugging Face repo type: {repo_type}",
-            code="HELIX_E_HF_CONFIG",
+            code="SB_E_HF_CONFIG",
             next_action="Use --repo-type dataset, model, or space.",
         )
 
@@ -415,13 +415,13 @@ def upload_seed_and_metadata_to_hf(
     if not seed_path.exists():
         raise ExternalToolError(
             f"Seed file not found: {seed_path}",
-            code="HELIX_E_SEED_NOT_FOUND",
-            next_action="Provide an existing `.hlx` seed file path.",
+            code="SB_E_SEED_NOT_FOUND",
+            next_action="Provide an existing `.sbd` seed file path.",
         )
     if not metadata_path.exists():
         raise ExternalToolError(
             f"Metadata sidecar not found: {metadata_path}",
-            code="HELIX_E_HF_CONFIG",
+            code="SB_E_HF_CONFIG",
             next_action="Generate metadata sidecar before upload.",
         )
 
@@ -434,7 +434,7 @@ def upload_seed_and_metadata_to_hf(
     if not resolved_token:
         raise ExternalToolError(
             "Hugging Face token is required for upload.",
-            code="HELIX_E_HF_CONFIG",
+            code="SB_E_HF_CONFIG",
             next_action="Set HF_TOKEN (or pass --token) and retry.",
         )
 
@@ -481,7 +481,7 @@ def upload_seed_and_metadata_to_hf(
             )
             raise ExternalToolError(
                 f"Hugging Face upload failed for {local_path.name}: {detail}",
-                code="HELIX_E_HF_REQUEST",
+                code="SB_E_HF_REQUEST",
                 next_action=(
                     "Verify repo permissions/token"
                     " scope and repository path,"

@@ -33,7 +33,7 @@ jobs:
         run: |
           INIT_VERSION=$(python3 -c "
           import ast, pathlib, sys
-          src = pathlib.Path('src/helix/__init__.py').read_text()
+          src = pathlib.Path('src/seedbraid/__init__.py').read_text()
           version = None
           for node in ast.walk(ast.parse(src)):
               if isinstance(node, ast.Assign):
@@ -48,7 +48,7 @@ jobs:
           TAG_VERSION="${{ steps.extract.outputs.version }}"
           if [ "${INIT_VERSION}" != "${TAG_VERSION}" ]; then
             echo "::error::Version mismatch! Tag=${TAG_VERSION} __version__=${INIT_VERSION}"
-            echo "next_action: Update src/helix/__init__.py to match the tag, or delete and recreate the tag."
+            echo "next_action: Update src/seedbraid/__init__.py to match the tag, or delete and recreate the tag."
             exit 1
           fi
           echo "Version verified: ${INIT_VERSION}"
