@@ -22,8 +22,8 @@ Working tree:
    - What has changed on this branch vs main
    - What the changes are trying to accomplish
    - Current state of work (complete, in-progress, blocked)
-2. Check for existing docs in `docs/plans/` and `docs/research/`
+2. Check for existing docs in `.docs/plans/` and `.docs/research/`
 3. Report a concise summary:
    - Current situation (branch, what's been done)
-   - Relevant docs/plans files to read
+   - Relevant .docs/plans files to read
    - What to do next

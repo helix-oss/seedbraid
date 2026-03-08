@@ -18,8 +18,8 @@ Current state:
 1. Summarize current work state briefly
 2. Guide the user based on next phase:
    - **investigate** → Use `/investigate <topic>` to start fresh exploration
-   - **plan** → Read `docs/research/` first, then use `/plan <feature>`
-   - **implement** → Read `docs/plans/` first, implement directly
+   - **plan** → Read `.docs/research/` first, then use `/plan <feature>`
+   - **implement** → Read `.docs/plans/` first, implement directly
    - **test** → Use `/test <changed files>` on modified code
    - **review** → Use `/review` to check all changes
    - **commit** → Use `/commit` to create a conventional commit

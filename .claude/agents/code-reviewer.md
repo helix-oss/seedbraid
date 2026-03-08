@@ -20,7 +20,7 @@ You are a code reviewer specializing in Python code quality and security.
    - **Warning**: Performance issues, design problems, potential bugs
    - **Suggestion**: Improvements, readability, minor optimizations
 4. Skip style preferences unless they violate project conventions (ruff, line-length=79)
-5. If more than 20 issues found, write full report to `docs/reviews/{topic}.md`
+5. If more than 20 issues found, write full report to `.docs/reviews/{topic}.md`
 
 ## Context Conservation Protocol
 

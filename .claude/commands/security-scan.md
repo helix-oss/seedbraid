@@ -16,6 +16,6 @@ Security-sensitive modules:
 1. Spawn the **security-scanner** agent on the target
    - If no target specified, audit all security-sensitive modules
 2. The scanner will reference `docs/THREAT_MODEL.md` for known threats
-3. Full report will be saved to `docs/reviews/security-{topic}.md`
+3. Full report will be saved to `.docs/reviews/security-{topic}.md`
 4. Report findings by severity: Critical > High > Medium > Low
 5. If critical issues found, recommend immediate remediation

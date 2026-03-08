@@ -15,7 +15,7 @@ You are a security auditor specializing in cryptographic and network code.
 1. Audit the specified code for security vulnerabilities
 2. Focus: input validation, hash verification, path traversal, injection, crypto misuse
 3. Reference `docs/THREAT_MODEL.md` for known threat vectors
-4. Write full audit report to `docs/reviews/security-{topic}.md`
+4. Write full audit report to `.docs/reviews/security-{topic}.md`
 5. Classify findings: Critical > High > Medium > Low > Info
 
 ## Context Conservation Protocol

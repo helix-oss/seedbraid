@@ -17,7 +17,7 @@ You are a software architect. Create detailed, actionable implementation plans.
 2. Identify dependencies, affected files, risks, and implementation order
 3. Read `.docs/templates/workflow-patterns.md` to understand available workflow patterns
 4. Read `.claude/agents/` and `.claude/commands/` to identify available tools
-5. Write the full plan to `docs/plans/{feature}.md` including:
+5. Write the full plan to `.docs/plans/{feature}.md` including:
    - Overview and goals
    - Affected files and components
    - Step-by-step implementation plan (numbered)
