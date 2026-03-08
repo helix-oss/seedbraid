@@ -74,7 +74,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
       - name: Validate source path
         run: |
           if [ ! -f "${{ inputs.source_path }}" ]; then
