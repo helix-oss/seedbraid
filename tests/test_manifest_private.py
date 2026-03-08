@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from helix.chunking import ChunkerConfig
-from helix.codec import encode_file, verify_seed
-from helix.container import read_seed
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import encode_file, verify_seed
+from seedbraid.container import read_seed
 
 
 def test_manifest_private_minimizes_metadata_and_preserves_verify(
     tmp_path: Path,
 ) -> None:
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     genome = tmp_path / "genome"
     src.write_bytes((b"manifest-private" * 3000) + bytes(range(64)))
 

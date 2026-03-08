@@ -1,9 +1,9 @@
-"""HLX1 binary seed container.
+"""SBD1 binary seed container.
 
 Handles serialization, parsing, encryption, and signature for the
 TLV section format defined in FORMAT.md, including manifest
 compression, recipe encoding, raw payloads, integrity checks, and
-the HLE1 encrypted envelope.
+the SBE1 encrypted envelope.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from .errors import (
     ACTION_REFETCH_SEED,
     ACTION_REGENERATE_SEED,
     ACTION_REPORT_BUG,
-    ACTION_UPGRADE_HELIX,
+    ACTION_UPGRADE_SEEDBRAID,
     ACTION_VERIFY_ENCRYPTION,
     ACTION_VERIFY_SEED,
     SeedFormatError,
@@ -44,13 +44,13 @@ try:
 except ImportError:
     _HAS_CRYPTOGRAPHY = False
 
-MAGIC = b"HLX1"
+MAGIC = b"SBD1"
 VERSION = 1
-ENC_MAGIC = b"HLE1"
+ENC_MAGIC = b"SBE1"
 ENC_VERSION = 2
 
 SCRYPT_N_DEFAULT = 32768
-SCRYPT_N_V1 = 16384  # fixed n for HLE1 v1 header
+SCRYPT_N_V1 = 16384  # fixed n for SBE1 v1 header
 SCRYPT_N_MIN = 16384
 SCRYPT_R_DEFAULT = 8
 SCRYPT_P_DEFAULT = 1
@@ -66,7 +66,7 @@ ALGO_CHACHA20_POLY1305 = 0x02
 AEAD_NONCE_LEN = 12
 AEAD_TAG_LEN = 16
 
-_HKDF_INFO = b"helix-hle1-v3-aead-key"
+_HKDF_INFO = b"seedbraid-sbe1-v3-aead-key"
 
 SECTION_MANIFEST = 1
 SECTION_RECIPE = 2
@@ -431,7 +431,7 @@ def _xor_bytes(a: bytes, b: bytes) -> bytes:
 
 
 def is_encrypted_seed_data(data: bytes) -> bool:
-    """Check whether raw bytes begin with the HLE1 magic.
+    """Check whether raw bytes begin with the SBE1 magic.
 
     Only inspects the first four bytes; does not
     validate the full envelope.
@@ -440,7 +440,7 @@ def is_encrypted_seed_data(data: bytes) -> bool:
         data: Raw seed bytes to inspect.
 
     Returns:
-        ``True`` if ``data`` starts with the HLE1
+        ``True`` if ``data`` starts with the SBE1
         encrypted seed magic bytes.
     """
     return len(data) >= 4 and data[:4] == ENC_MAGIC
@@ -462,7 +462,7 @@ class EncryptedEnvelopeInfo:
 def validate_encrypted_seed_envelope(
     blob: bytes,
 ) -> EncryptedEnvelopeInfo:
-    """Validate the structure of an HLE1 envelope.
+    """Validate the structure of an SBE1 envelope.
 
     Checks magic, version, header fields, scrypt
     parameter minimums (v2+), and overall length
@@ -491,7 +491,7 @@ def validate_encrypted_seed_envelope(
     if magic != ENC_MAGIC:
         raise SeedFormatError(
             "Encrypted seed magic mismatch."
-            " Expected HLE1.",
+            " Expected SBE1.",
             next_action=ACTION_REFETCH_SEED,
         )
 
@@ -525,7 +525,7 @@ def validate_encrypted_seed_envelope(
             raise SeedFormatError(
                 "Reserved field in encrypted"
                 " seed header is non-zero.",
-                next_action=ACTION_UPGRADE_HELIX,
+                next_action=ACTION_UPGRADE_SEEDBRAID,
             )
         header_len = 24
     elif version == 3:
@@ -548,26 +548,26 @@ def validate_encrypted_seed_envelope(
             raise SeedFormatError(
                 "Unknown encryption algorithm"
                 f" id: {algo_id}",
-                next_action=ACTION_UPGRADE_HELIX,
+                next_action=ACTION_UPGRADE_SEEDBRAID,
             )
         if res_a != 0 or res_b != 0 or res_c != 0:
             raise SeedFormatError(
                 "Reserved field in encrypted"
                 " seed v3 header is non-zero.",
-                next_action=ACTION_UPGRADE_HELIX,
+                next_action=ACTION_UPGRADE_SEEDBRAID,
             )
         if reserved2 != 0:
             raise SeedFormatError(
                 "Reserved field in encrypted"
                 " seed v3 header is non-zero.",
-                next_action=ACTION_UPGRADE_HELIX,
+                next_action=ACTION_UPGRADE_SEEDBRAID,
             )
         header_len = _V3_HEADER_SIZE
     else:
         raise SeedFormatError(
             "Unsupported encrypted seed"
             f" version: {version}",
-            next_action=ACTION_UPGRADE_HELIX,
+            next_action=ACTION_UPGRADE_SEEDBRAID,
         )
 
     if version >= 2 and scrypt_n < SCRYPT_N_MIN:
@@ -619,7 +619,7 @@ def _build_signature_payload(
 
 
 def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
-    """Encrypt seed bytes into an HLE1 envelope.
+    """Encrypt seed bytes into an SBE1 envelope.
 
     When the ``cryptography`` package is available,
     produces a v3 envelope using AES-256-GCM with
@@ -627,11 +627,11 @@ def encrypt_seed_bytes(seed_bytes: bytes, passphrase: str) -> bytes:
     v2 format with the legacy stream cipher.
 
     Args:
-        seed_bytes: Plaintext HLX1 seed bytes.
+        seed_bytes: Plaintext SBD1 seed bytes.
         passphrase: Passphrase for key derivation.
 
     Returns:
-        HLE1 envelope bytes (v3 or v2 depending on
+        SBE1 envelope bytes (v3 or v2 depending on
         ``cryptography`` availability).
     """
     if _HAS_CRYPTOGRAPHY:
@@ -691,19 +691,19 @@ def _encrypt_v3(
 
 
 def decrypt_seed_bytes(blob: bytes, passphrase: str) -> bytes:
-    """Decrypt an HLE1 envelope back to plaintext.
+    """Decrypt an SBE1 envelope back to plaintext.
 
     Validates the envelope structure, then decrypts
     using the appropriate version path (v1/v2 legacy
     stream cipher or v3 AEAD).
 
     Args:
-        blob: Complete HLE1 envelope bytes.
+        blob: Complete SBE1 envelope bytes.
         passphrase: Passphrase used during
             encryption.
 
     Returns:
-        Decrypted plaintext HLX1 seed bytes.
+        Decrypted plaintext SBD1 seed bytes.
 
     Raises:
         SeedFormatError: If authentication fails
@@ -759,7 +759,7 @@ def _decrypt_v3(
 ) -> bytes:
     if not _HAS_CRYPTOGRAPHY:
         raise SeedFormatError(
-            "HLE1 v3 decryption requires the"
+            "SBE1 v3 decryption requires the"
             " cryptography package.",
             next_action=ACTION_INSTALL_CRYPTO,
         )
@@ -767,7 +767,7 @@ def _decrypt_v3(
         raise SeedFormatError(
             "Unsupported AEAD algorithm"
             f" id: {info.algo_id}",
-            next_action=ACTION_UPGRADE_HELIX,
+            next_action=ACTION_UPGRADE_SEEDBRAID,
         )
     aad = blob[: info.header_len]
     salt_off = info.header_len
@@ -796,7 +796,7 @@ def serialize_seed(
     signature_key: str | None = None,
     signature_key_id: str = "default",
 ) -> bytes:
-    """Assemble a complete HLX1 seed binary.
+    """Assemble a complete SBD1 seed binary.
 
     Builds sections in order: manifest, recipe,
     optional RAW payloads, optional signature, and
@@ -816,7 +816,7 @@ def serialize_seed(
             the signature section.
 
     Returns:
-        Complete HLX1 binary seed bytes.
+        Complete SBD1 binary seed bytes.
 
     Raises:
         SeedFormatError: If ``manifest_compression``
@@ -889,7 +889,7 @@ def serialize_seed(
     )
 
 
-def _parse_hlx1_header(data: bytes) -> int:
+def _parse_sbd1_header(data: bytes) -> int:
     if len(data) < 8:
         raise SeedFormatError(
             "Seed file too short.",
@@ -900,18 +900,18 @@ def _parse_hlx1_header(data: bytes) -> int:
     )
     if magic != MAGIC:
         raise SeedFormatError(
-            "Invalid seed magic; expected HLX1.",
+            "Invalid seed magic; expected SBD1.",
             next_action=ACTION_VERIFY_SEED,
         )
     if version != VERSION:
         raise SeedFormatError(
             f"Unsupported seed version: {version}",
-            next_action=ACTION_UPGRADE_HELIX,
+            next_action=ACTION_UPGRADE_SEEDBRAID,
         )
     return int(section_count)
 
 
-def _scan_hlx1_sections(
+def _scan_sbd1_sections(
     data: bytes, section_count: int,
 ) -> tuple[dict[int, bytes], dict[int, int]]:
     offset = 8
@@ -962,7 +962,7 @@ def _check_required_sections(
         )
 
 
-def _verify_hlx1_integrity(
+def _verify_sbd1_integrity(
     data: bytes,
     payloads: dict[int, bytes],
     section_starts: dict[int, int],
@@ -1114,7 +1114,7 @@ def _decode_signature_section(
 
 
 def parse_seed(data: bytes) -> Seed:
-    """Parse an HLX1 binary seed into its components.
+    """Parse an SBD1 binary seed into its components.
 
     Validates the header, scans TLV sections,
     verifies CRC32/SHA-256 integrity, and decodes
@@ -1122,7 +1122,7 @@ def parse_seed(data: bytes) -> Seed:
     signature.
 
     Args:
-        data: Complete HLX1 seed bytes (unencrypted).
+        data: Complete SBD1 seed bytes (unencrypted).
 
     Returns:
         Parsed ``Seed`` dataclass.
@@ -1131,12 +1131,12 @@ def parse_seed(data: bytes) -> Seed:
         SeedFormatError: If the seed is malformed,
             truncated, or integrity checks fail.
     """
-    section_count = _parse_hlx1_header(data)
-    payloads, section_starts = _scan_hlx1_sections(
+    section_count = _parse_sbd1_header(data)
+    payloads, section_starts = _scan_sbd1_sections(
         data, section_count,
     )
     _check_required_sections(payloads)
-    _verify_hlx1_integrity(
+    _verify_sbd1_integrity(
         data, payloads, section_starts,
     )
 
@@ -1172,12 +1172,12 @@ def parse_seed(data: bytes) -> Seed:
 def read_seed(path: str | Path, *, encryption_key: str | None = None) -> Seed:
     """Read and parse a seed file from disk.
 
-    Automatically detects HLE1 encryption and
+    Automatically detects SBE1 encryption and
     decrypts before parsing when an encryption key
     is provided.
 
     Args:
-        path: Path to the ``.hlx`` seed file.
+        path: Path to the ``.sbd`` seed file.
         encryption_key: Passphrase for decryption.
             Required if the seed is encrypted.
 
@@ -1195,7 +1195,7 @@ def read_seed(path: str | Path, *, encryption_key: str | None = None) -> Seed:
             raise SeedFormatError(
                 "Encrypted seed requires decryption"
                 " key. Provide --encryption-key"
-                " or set HELIX_ENCRYPTION_KEY.",
+                " or set SB_ENCRYPTION_KEY.",
                 next_action=ACTION_PROVIDE_ENCRYPTION_KEY,
             )
         blob = decrypt_seed_bytes(blob, encryption_key)
@@ -1212,10 +1212,10 @@ def write_seed(
     signature_key_id: str = "default",
     encryption_key: str | None = None,
 ) -> None:
-    """Serialize and write an HLX1 seed to disk.
+    """Serialize and write an SBD1 seed to disk.
 
     Assembles the seed binary, optionally wraps it
-    in HLE1 encryption, and writes to ``path``.
+    in SBE1 encryption, and writes to ``path``.
 
     Args:
         path: Destination file path.
@@ -1229,7 +1229,7 @@ def write_seed(
             ``None`` skips the signature.
         signature_key_id: Key identifier stored in
             the signature section.
-        encryption_key: Passphrase for HLE1
+        encryption_key: Passphrase for SBE1
             encryption.  ``None`` skips encryption.
 
     Raises:

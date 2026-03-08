@@ -35,4 +35,4 @@ You are a documentation writer. Generate clear, structured docs from code.
 
 - Key docs: FORMAT.md (binary spec), DESIGN.md (architecture), THREAT_MODEL.md, PERFORMANCE.md
 - Spec-first policy: docs must be updated before format/behavior changes
-- Version single source of truth: `src/helix/__init__.py`
+- Version single source of truth: `src/seedbraid/__init__.py`

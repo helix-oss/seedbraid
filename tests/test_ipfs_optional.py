@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from helix.chunking import ChunkerConfig
-from helix.codec import encode_file
-from helix.ipfs import fetch_seed, publish_seed
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import encode_file
+from seedbraid.ipfs import fetch_seed, publish_seed
 
 
 def test_publish_fetch_if_ipfs_installed(
@@ -28,8 +28,8 @@ def test_publish_fetch_if_ipfs_installed(
         )
 
     src = tmp_path / "s.bin"
-    seed = tmp_path / "s.hlx"
-    fetched = tmp_path / "fetched.hlx"
+    seed = tmp_path / "s.sbd"
+    fetched = tmp_path / "fetched.sbd"
     genome = tmp_path / "genome"
     src.write_bytes(b"hello ipfs" * 1000)
 

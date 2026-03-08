@@ -15,7 +15,7 @@ Generate a structured refactoring ticket from the given ticket description.
 
 Use the researcher agent to investigate:
 
-1. Source code related to the ticket description (`src/helix/`, `tests/`)
+1. Source code related to the ticket description (`src/seedbraid/`, `tests/`)
 2. Affected files and line ranges
 3. Existing test coverage
 4. Related documentation (`docs/`)

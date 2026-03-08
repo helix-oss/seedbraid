@@ -1,4 +1,7 @@
-"""Helix package root. Exports the single-source-of-truth version string."""
+"""Seedbraid package root.
+
+Exports the single-source-of-truth version string.
+"""
 
 __all__ = ["__version__"]
 

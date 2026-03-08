@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from helix.perf import (
+from seedbraid.perf import (
     BenchCaseResult,
     ShiftedDedupBenchmark,
     evaluate_benchmark_gates,

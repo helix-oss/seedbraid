@@ -5,7 +5,7 @@ WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${WORK_DIR}/../.." && pwd)"
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <seed.hlx> [extra args...]" >&2
+  echo "usage: $0 <seed.sbd> [extra args...]" >&2
   exit 1
 fi
 

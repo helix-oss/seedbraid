@@ -1,19 +1,19 @@
-# Helix Implementation Plan
+# Seedbraid Implementation Plan
 
 ## Goal
 Implement reference-based reconstruction + shift-robust dedup with lossless reconstruction and IPFS seed transport.
 
 ## Current Repository State (Step 0)
 - Existing code: none (repository initialized but empty).
-- Migration policy: no legacy code to preserve; implement fresh layout under `src/helix`.
+- Migration policy: no legacy code to preserve; implement fresh layout under `src/seedbraid`.
 
 ## Task Breakdown
 1. Spec-first docs
 - Create `docs/FORMAT.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`, and this plan.
-- Freeze HLX1 container and recipe semantics before coding.
+- Freeze SBD1 container and recipe semantics before coding.
 
 2. Core package skeleton
-- `src/helix` package with CLI (`typer`) and modules for chunking, storage, container, codec, IPFS.
+- `src/seedbraid` package with CLI (`typer`) and modules for chunking, storage, container, codec, IPFS.
 
 3. CDC implementation
 - Provide deterministic `cdc_buzhash` and `cdc_rabin` plus `fixed`.
@@ -23,7 +23,7 @@ Implement reference-based reconstruction + shift-robust dedup with lossless reco
 - SQLite backend with interface abstraction.
 - Keys: SHA-256 chunk hash (32 bytes), values: chunk bytes.
 
-5. HLX1 container
+5. SBD1 container
 - Binary container with magic/version + TLV sections.
 - Manifest (JSON + compression), recipe (binary), optional RAW payloads, integrity section.
 
@@ -43,7 +43,7 @@ Implement reference-based reconstruction + shift-robust dedup with lossless reco
 - Python 3.12+ runtime.
 - `ipfs` CLI may be absent; publish/fetch must fail clearly and tests should skip.
 - No encryption in initial baseline; security posture documented in threat model.
-  *(Initial plan note: HLE1 encryption was added in subsequent iterations; see
+  *(Initial plan note: SBE1 encryption was added in subsequent iterations; see
   THREAT_MODEL.md and FORMAT.md for current encryption support.)*
 
 ## Change Log

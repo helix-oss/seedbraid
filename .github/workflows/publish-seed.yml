@@ -11,7 +11,7 @@ on:
         description: "Output path for generated seed"
         required: true
         type: string
-        default: ".artifacts/publish/seed.hlx"
+        default: ".artifacts/publish/seed.sbd"
       genome_path:
         description: "Genome path used during encode/verify"
         required: true
@@ -37,7 +37,7 @@ on:
         type: boolean
         default: true
       encrypt:
-        description: "Enable --encrypt (requires HELIX_ENCRYPTION_KEY secret)"
+        description: "Enable --encrypt (requires SB_ENCRYPTION_KEY secret)"
         required: true
         type: boolean
         default: false
@@ -87,11 +87,11 @@ jobs:
       - name: Validate encryption key
         if: ${{ inputs.encrypt }}
         env:
-          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+          SB_ENCRYPTION_KEY: ${{ secrets.SB_ENCRYPTION_KEY }}
         run: |
-          if [ -z "${HELIX_ENCRYPTION_KEY}" ]; then
-            echo "::error::encrypt=true but secret HELIX_ENCRYPTION_KEY is missing."
-            echo "next_action: configure HELIX_ENCRYPTION_KEY secret, or rerun with encrypt=false."
+          if [ -z "${SB_ENCRYPTION_KEY}" ]; then
+            echo "::error::encrypt=true but secret SB_ENCRYPTION_KEY is missing."
+            echo "next_action: configure SB_ENCRYPTION_KEY secret, or rerun with encrypt=false."
             exit 1
           fi
       - name: Prepare output paths
@@ -104,7 +104,7 @@ jobs:
           echo "genome_path=${{ inputs.genome_path }}" >> "$GITHUB_OUTPUT"
       - name: Encode seed
         env:
-          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+          SB_ENCRYPTION_KEY: ${{ secrets.SB_ENCRYPTION_KEY }}
         run: |
           portable_flag="--portable"
           if [ "${{ inputs.portable }}" != "true" ]; then
@@ -112,7 +112,7 @@ jobs:
           fi
 
           cmd=(
-            uv run --no-sync --no-editable helix encode "${{ inputs.source_path }}"
+            uv run --no-sync --no-editable seedbraid encode "${{ inputs.source_path }}"
             --genome "${{ steps.prep.outputs.genome_path }}"
             --out "${{ steps.prep.outputs.seed_path }}"
             --chunker "${{ inputs.chunker }}"
@@ -133,15 +133,15 @@ jobs:
           "${cmd[@]}"
       - name: Verify generated seed (strict)
         env:
-          HELIX_ENCRYPTION_KEY: ${{ secrets.HELIX_ENCRYPTION_KEY }}
+          SB_ENCRYPTION_KEY: ${{ secrets.SB_ENCRYPTION_KEY }}
         run: |
           cmd=(
-            uv run --no-sync --no-editable helix verify "${{ steps.prep.outputs.seed_path }}"
+            uv run --no-sync --no-editable seedbraid verify "${{ steps.prep.outputs.seed_path }}"
             --genome "${{ steps.prep.outputs.genome_path }}"
             --strict
           )
           if [ "${{ inputs.encrypt }}" = "true" ]; then
-            cmd+=(--encryption-key "${HELIX_ENCRYPTION_KEY}")
+            cmd+=(--encryption-key "${SB_ENCRYPTION_KEY}")
           fi
 
           printf 'verify_command='
@@ -169,7 +169,7 @@ jobs:
           tag_ref = f"v{version}"
           headers = {
               "Accept": "application/vnd.github+json",
-              "User-Agent": "helix-ci-kubo-verifier",
+              "User-Agent": "seedbraid-ci-kubo-verifier",
           }
 
           def fetch(url: str) -> dict:
@@ -290,7 +290,7 @@ jobs:
           echo "dry_run=true"
           echo "encode_and_verify=completed"
           echo "Would run:"
-          echo "uv run --no-sync --no-editable helix publish \"${{ steps.prep.outputs.seed_path }}\" ${pin_flag}"
+          echo "uv run --no-sync --no-editable seedbraid publish \"${{ steps.prep.outputs.seed_path }}\" ${pin_flag}"
       - name: Publish to IPFS
         id: publish
         if: ${{ !inputs.dry_run }}
@@ -306,7 +306,7 @@ jobs:
             pin_flag="--pin"
           fi
 
-          cid="$(uv run --no-sync --no-editable helix publish "${{ steps.prep.outputs.seed_path }}" ${pin_flag})"
+          cid="$(uv run --no-sync --no-editable seedbraid publish "${{ steps.prep.outputs.seed_path }}" ${pin_flag})"
           echo "cid=${cid}" >> "$GITHUB_OUTPUT"
       - name: Publish result
         if: ${{ !inputs.dry_run }}

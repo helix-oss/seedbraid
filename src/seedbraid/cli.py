@@ -1,4 +1,4 @@
-"""Typer-based CLI for all Helix operations.
+"""Typer-based CLI for all Seedbraid operations.
 
 Exposes encode, decode, verify, prime, doctor, IPFS publish/fetch,
 and seed management commands.
@@ -26,10 +26,10 @@ from .codec import (
 )
 from .container import is_encrypted_seed_data, sign_seed_file
 from .diagnostics import run_doctor
-from .errors import ExternalToolError, HelixError
+from .errors import ExternalToolError, SeedbraidError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
 
-app = typer.Typer(help="Helix CLI")
+app = typer.Typer(help="Seedbraid CLI")
 genome_app = typer.Typer(help="Genome backup and restore operations")
 pin_app = typer.Typer(help="IPFS pin operations")
 app.add_typer(genome_app, name="genome")
@@ -76,37 +76,37 @@ def encode(
     encryption_key: str | None = typer.Option(
         None,
         "--encryption-key",
-        help="Passphrase for HLE1 encrypted seed output.",
+        help="Passphrase for SBE1 encrypted seed output.",
     ),
 ) -> None:
-    """Encode a file into HLX1 seed."""
+    """Encode a file into SBD1 seed."""
     if encrypt and not encryption_key:
         raise typer.Exit(
             code=_print_error(
-                HelixError(
+                SeedbraidError(
                     "Encryption key is required when --encrypt is enabled. "
-                    "Use --encryption-key or HELIX_ENCRYPTION_KEY.",
-                    code="HELIX_E_ENCRYPTION_KEY_MISSING",
+                    "Use --encryption-key or SB_ENCRYPTION_KEY.",
+                    code="SB_E_ENCRYPTION_KEY_MISSING",
                     next_action=(
                         "Pass `--encryption-key <secret>`"
-                        " or set HELIX_ENCRYPTION_KEY."
+                        " or set SB_ENCRYPTION_KEY."
                     ),
                 )
             )
         )
     effective_encryption_key = (
         encryption_key
-        or os.environ.get("HELIX_ENCRYPTION_KEY")
+        or os.environ.get("SB_ENCRYPTION_KEY")
     )
     if encrypt and not effective_encryption_key:
         raise typer.Exit(
             code=_print_error(
-                HelixError(
-                    "HELIX_ENCRYPTION_KEY is not set. "
-                    "Provide --encryption-key or set HELIX_ENCRYPTION_KEY.",
-                    code="HELIX_E_ENCRYPTION_KEY_MISSING",
+                SeedbraidError(
+                    "SB_ENCRYPTION_KEY is not set. "
+                    "Provide --encryption-key or set SB_ENCRYPTION_KEY.",
+                    code="SB_E_ENCRYPTION_KEY_MISSING",
                     next_action=(
-                        "Export HELIX_ENCRYPTION_KEY"
+                        "Export SB_ENCRYPTION_KEY"
                         " or pass `--encryption-key`"
                         " directly."
                     ),
@@ -133,7 +133,7 @@ def encode(
             f"raw={stats.raw_chunks} "
             f"unique={stats.unique_hashes}"
         )
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
 
 
@@ -145,7 +145,7 @@ def decode(
     encryption_key: str | None = typer.Option(
         None,
         "--encryption-key",
-        help="Passphrase for encrypted HLE1 seed input.",
+        help="Passphrase for encrypted SBE1 seed input.",
     ),
 ) -> None:
     """Decode a seed into original file."""
@@ -156,11 +156,11 @@ def decode(
             out,
             encryption_key=(
                 encryption_key
-                or os.environ.get("HELIX_ENCRYPTION_KEY")
+                or os.environ.get("SB_ENCRYPTION_KEY")
             ),
         )
         typer.echo(f"decoded sha256={digest}")
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
 
 
@@ -186,7 +186,7 @@ def verify(
     encryption_key: str | None = typer.Option(
         None,
         "--encryption-key",
-        help="Passphrase for encrypted HLE1 seed input.",
+        help="Passphrase for encrypted SBE1 seed input.",
     ),
 ) -> None:
     """Verify seed integrity and reconstructability."""
@@ -199,10 +199,10 @@ def verify(
             signature_key=signature_key,
             encryption_key=(
                 encryption_key
-                or os.environ.get("HELIX_ENCRYPTION_KEY")
+                or os.environ.get("SB_ENCRYPTION_KEY")
             ),
         )
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
 
     if report.ok:
@@ -252,7 +252,7 @@ def prime(
             f"dedup_ratio="
             f"{stats['dedup_ratio_bps']/100:.2f}%"
         )
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
 
 
@@ -273,12 +273,12 @@ def publish(
     remote_endpoint: str | None = typer.Option(
         None,
         "--remote-endpoint",
-        help="Remote pin API endpoint. Defaults to HELIX_PINNING_ENDPOINT.",
+        help="Remote pin API endpoint. Defaults to SB_PINNING_ENDPOINT.",
     ),
     remote_token: str | None = typer.Option(
         None,
         "--remote-token",
-        help="Remote pin API bearer token. Defaults to HELIX_PINNING_TOKEN.",
+        help="Remote pin API bearer token. Defaults to SB_PINNING_TOKEN.",
     ),
     remote_name: str | None = typer.Option(
         None,
@@ -313,7 +313,7 @@ def publish(
             if not is_encrypted_seed_data(f.read(4)):
                 typer.echo(
                     "warning: publishing unencrypted seed. "
-                    "Consider `helix encode --encrypt"
+                    "Consider `seedbraid encode --encrypt"
                     " --manifest-private`"
                     " for sensitive data.",
                     err=True,
@@ -324,7 +324,7 @@ def publish(
         pass
     try:
         cid = publish_seed(seed, pin=pin)
-    except (HelixError, ExternalToolError) as exc:
+    except (SeedbraidError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
 
     if remote_pin:
@@ -339,7 +339,7 @@ def publish(
                 retries=remote_retries,
                 backoff_ms=remote_backoff_ms,
             )
-        except (HelixError, ExternalToolError) as exc:
+        except (SeedbraidError, ExternalToolError) as exc:
             raise typer.Exit(code=_print_error(exc))
         typer.echo(
             "remote_pin "
@@ -383,7 +383,7 @@ def fetch(
             backoff_ms=backoff_ms,
             gateway=gateway,
         )
-    except (HelixError, ExternalToolError) as exc:
+    except (SeedbraidError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"fetched {cid} -> {out}")
 
@@ -393,7 +393,7 @@ def pin_health(cid: str) -> None:
     """Check local pin status and block availability for CID."""
     try:
         report = pin_health_status(cid)
-    except (HelixError, ExternalToolError) as exc:
+    except (SeedbraidError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
 
     typer.echo(
@@ -422,12 +422,12 @@ def pin_remote_add(
     endpoint: str | None = typer.Option(
         None,
         "--endpoint",
-        help="Remote pin API endpoint. Defaults to HELIX_PINNING_ENDPOINT.",
+        help="Remote pin API endpoint. Defaults to SB_PINNING_ENDPOINT.",
     ),
     token: str | None = typer.Option(
         None,
         "--token",
-        help="Remote pin API bearer token. Defaults to HELIX_PINNING_TOKEN.",
+        help="Remote pin API bearer token. Defaults to SB_PINNING_TOKEN.",
     ),
     name: str | None = typer.Option(
         None,
@@ -465,7 +465,7 @@ def pin_remote_add(
             retries=retries,
             backoff_ms=backoff_ms,
         )
-    except (HelixError, ExternalToolError) as exc:
+    except (SeedbraidError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
 
     typer.echo(
@@ -485,7 +485,7 @@ def doctor(
     """Run environment and dependency diagnostics."""
     try:
         report = run_doctor(genome)
-    except (HelixError, ExternalToolError) as exc:
+    except (SeedbraidError, ExternalToolError) as exc:
         raise typer.Exit(code=_print_error(exc))
 
     for check in report.checks:
@@ -517,7 +517,7 @@ def gen_encryption_key(
         help="Output in shell export format.",
     ),
     env_var: str = typer.Option(
-        "HELIX_ENCRYPTION_KEY",
+        "SB_ENCRYPTION_KEY",
         "--env-var",
         help="Environment variable name used with --shell output.",
     ),
@@ -526,9 +526,9 @@ def gen_encryption_key(
     if shell and ENV_VAR_NAME_RE.fullmatch(env_var) is None:
         raise typer.Exit(
             code=_print_error(
-                HelixError(
+                SeedbraidError(
                     f"Invalid environment variable name: {env_var}",
-                    code="HELIX_E_INVALID_OPTION",
+                    code="SB_E_INVALID_OPTION",
                     next_action=(
                         "Use --env-var with"
                         " letters/digits/underscores"
@@ -551,7 +551,7 @@ def sign(
     seed: Path,
     out: Path = typer.Option(..., "--out"),
     key_env: str = typer.Option(
-        "HELIX_SIGNING_KEY",
+        "SB_SIGNING_KEY",
         "--key-env",
         help="Environment variable name that holds signing key.",
     ),
@@ -562,10 +562,10 @@ def sign(
     if not key:
         raise typer.Exit(
             code=_print_error(
-                HelixError(
+                SeedbraidError(
                     f"Signing key env var is not set: {key_env}. "
-                    "Set it before running `helix sign`.",
-                    code="HELIX_E_SIGNING_KEY_MISSING",
+                    "Set it before running `seedbraid sign`.",
+                    code="SB_E_SIGNING_KEY_MISSING",
                     next_action=(
                         f"Export `{key_env}` with your"
                         " HMAC signing key and retry."
@@ -575,7 +575,7 @@ def sign(
         )
     try:
         sign_seed_file(seed, out, signature_key=key, signature_key_id=key_id)
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(f"signed {seed} -> {out} key_id={key_id}")
 
@@ -589,7 +589,7 @@ def export_genes_cmd(
     """Export seed-related chunk payloads from genome into genes pack."""
     try:
         stats = export_genes(seed, genome, out)
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(
         f"exported total={stats['total']} "
@@ -606,7 +606,7 @@ def import_genes_cmd(
     """Import chunk payloads from genes pack into genome."""
     try:
         stats = import_genes(pack, genome)
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(
         f"imported inserted={stats['inserted']} "
@@ -622,7 +622,7 @@ def genome_snapshot(
     """Export all genome chunks into a portable snapshot file."""
     try:
         stats = snapshot_genome(genome, out)
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(
         f"snapshot chunks={stats['chunks']} "
@@ -646,7 +646,7 @@ def genome_restore(
     """Restore genome chunks from snapshot file."""
     try:
         stats = restore_genome(snapshot, genome, replace=replace)
-    except HelixError as exc:
+    except SeedbraidError as exc:
         raise typer.Exit(code=_print_error(exc))
     typer.echo(
         f"restored entries={stats['entries']} inserted={stats['inserted']} "
@@ -655,11 +655,11 @@ def genome_restore(
 
 
 def _print_error(exc: Exception) -> int:
-    if isinstance(exc, HelixError):
+    if isinstance(exc, SeedbraidError):
         info = exc.as_info()
         typer.echo(f"error[{info.code}]: {info.message}", err=True)
         if info.next_action:
             typer.echo(f"next_action: {info.next_action}", err=True)
         return 1
-    typer.echo(f"error[HELIX_E_UNKNOWN]: {exc}", err=True)
+    typer.echo(f"error[SB_E_UNKNOWN]: {exc}", err=True)
     return 1

@@ -5,7 +5,7 @@ WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_DIR="$(cd "${WORK_DIR}/../.." && pwd)"
 
 if [[ $# -lt 2 ]]; then
-  echo "usage: $0 <registry/repository:tag> <out.hlx>" >&2
+  echo "usage: $0 <registry/repository:tag> <out.sbd>" >&2
   exit 1
 fi
 

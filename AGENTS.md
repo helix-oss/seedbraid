@@ -1,7 +1,7 @@
-# Helix Project Guardrails
+# Seedbraid Project Guardrails
 
 ## Scope and Priorities
-- Keep this repository focused on Helix deliverables only.
+- Keep this repository focused on Seedbraid deliverables only.
 - Prioritize lossless (bit-perfect) encode/decode before optimization.
 - Treat Web3 scope as IPFS publish/fetch first; registry layers are design-only unless explicitly requested.
 
@@ -9,7 +9,7 @@
 - Spec-first: update `docs/FORMAT.md` and `docs/DESIGN.md` before format or behavior changes.
 - Determinism: CDC boundaries must be deterministic for same input and params.
 - Streaming-first: avoid loading large files fully into memory in encode/decode/prime paths.
-- Backward compatibility: do not silently change HLX1 semantics; bump version and document migration.
+- Backward compatibility: do not silently change SBD1 semantics; bump version and document migration.
 
 ## Error Handling
 - Errors must explain likely cause and next action.

@@ -218,13 +218,13 @@ def test_prerelease_detects_beta_segment() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Actual __version__ in src/helix/__init__.py
+# Actual __version__ in src/seedbraid/__init__.py
 # ---------------------------------------------------------------------------
 
 
 def test_actual_version_is_extractable() -> None:
     """The real __init__.py must yield a valid string via AST extraction."""
-    init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
+    init = Path(__file__).parent.parent / "src" / "seedbraid" / "__init__.py"
     src = init.read_text()
     version = extract_version_from_source(src)
     assert isinstance(version, str), "__version__ must be a string"
@@ -237,7 +237,7 @@ def test_actual_version_is_pep440_compliant() -> None:
     Pattern covers: N.N.N, N.N.Na#, N.N.Nb#, N.N.Nrc#,
     N.N.N.devN, N.N.N.postN.
     """
-    init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
+    init = Path(__file__).parent.parent / "src" / "seedbraid" / "__init__.py"
     version = extract_version_from_source(init.read_text())
     assert version is not None
     pep440 = re.compile(
@@ -252,7 +252,7 @@ def test_actual_version_is_pep440_compliant() -> None:
 
 def test_actual_version_tag_roundtrip() -> None:
     """v-prefix roundtrip must recover __version__."""
-    init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
+    init = Path(__file__).parent.parent / "src" / "seedbraid" / "__init__.py"
     version = extract_version_from_source(init.read_text())
     assert version is not None
     reconstructed_tag = f"v{version}"
@@ -261,7 +261,7 @@ def test_actual_version_tag_roundtrip() -> None:
 
 def test_actual_version_prerelease_classification() -> None:
     """is_prerelease() is consistent with PEP 440."""
-    init = Path(__file__).parent.parent / "src" / "helix" / "__init__.py"
+    init = Path(__file__).parent.parent / "src" / "seedbraid" / "__init__.py"
     version = extract_version_from_source(init.read_text())
     assert version is not None
     # 1.0.0a1 is a pre-release; 1.0.0 is not. Just assert no exception.

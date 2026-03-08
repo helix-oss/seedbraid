@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "helix"
+name = "seedbraid"
 dynamic = ["version"]
-description = "Helix reference-based reconstruction with CDC and IPFS seed transport"
+description = "Seedbraid reference-based reconstruction with CDC and IPFS seed transport"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -29,7 +29,7 @@ docs = [
 ]
 
 [project.scripts]
-helix = "helix.cli:app"
+seedbraid = "seedbraid.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -38,10 +38,10 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.dynamic]
-version = {attr = "helix.__version__"}
+version = {attr = "seedbraid.__version__"}
 
 [tool.pytest.ini_options]
-addopts = "-q --cov=helix --cov-report=term-missing"
+addopts = "-q --cov=seedbraid --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.ruff]

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from helix.chunking import ChunkerConfig
-from helix.codec import encode_file, verify_seed
-from helix.container import read_seed, write_seed
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import encode_file, verify_seed
+from seedbraid.container import read_seed, write_seed
 
 
 def test_verify_strict_detects_manifest_hash_mismatch(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
     genome = tmp_path / "genome"
-    seed = tmp_path / "seed.hlx"
-    tampered = tmp_path / "tampered.hlx"
+    seed = tmp_path / "seed.sbd"
+    tampered = tmp_path / "tampered.sbd"
 
     src.write_bytes((b"strict-mode" * 5000) + b"!" * 128)
     cfg = ChunkerConfig(

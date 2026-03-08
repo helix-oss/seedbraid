@@ -1,7 +1,7 @@
-# HLX1 Seed Container Format
+# SBD1 Seed Container Format
 
 ## Overview
-HLX1 is a binary seed container used by Helix. It stores:
+SBD1 is a binary seed container used by Seedbraid. It stores:
 - manifest metadata (JSON)
 - binary reconstruction recipe
 - optional RAW payloads (portable mode)
@@ -11,7 +11,7 @@ The DNA-style ACGT representation is debug-only and out of scope for container s
 
 ## Binary Layout
 - Header:
-  - magic: 4 bytes, ASCII `HLX1`
+  - magic: 4 bytes, ASCII `SBD1`
   - version: uint16 big-endian (`1`)
   - section_count: uint16 big-endian
 - Sections (`section_count` entries):
@@ -39,7 +39,7 @@ Compression IDs:
 - `2`: zstd
 
 Manifest JSON fields (v1 baseline):
-- `format`: `"HLX1"`
+- `format`: `"SBD1"`
 - `version`: `1`
 - `source_size`: int
 - `source_sha256`: hex string
@@ -110,50 +110,50 @@ Signed payload definition:
 - Verify must report missing required chunk hashes when genome/raw are insufficient.
 
 ## IPFS Remote Pinning (Operational, No Wire-Format Change)
-- HLX-ECO-002 adds remote pin operations for published CIDs via provider adapters.
-- Remote pin integration is operational metadata only and does not modify HLX1/HLE1
+- SBD-ECO-002 adds remote pin operations for published CIDs via provider adapters.
+- Remote pin integration is operational metadata only and does not modify SBD1/SBE1
   bytes, section layout, or integrity/signature semantics.
-- `helix publish` may optionally trigger remote pin registration after CID creation.
-- `helix pin remote-add` (or equivalent) may register an existing CID with a remote
+- `seedbraid publish` may optionally trigger remote pin registration after CID creation.
+- `seedbraid pin remote-add` (or equivalent) may register an existing CID with a remote
   pinning provider.
 
 ## DVC Workflow Bridge (Operational, No Wire-Format Change)
-- HLX-ECO-003 adds DVC integration recipes/scripts under `examples/dvc/` for
+- SBD-ECO-003 adds DVC integration recipes/scripts under `examples/dvc/` for
   `encode -> verify -> fetch` workflows.
 - The bridge reuses existing artifact formats only:
-  - seed: `*.hlx` (`HLX1`/`HLE1`)
-  - genome snapshot: `*.hgs` (`HGS1`)
+  - seed: `*.sbd` (`SBD1`/`SBE1`)
+  - genome snapshot: `*.sgs` (`SGS1`)
   - metadata sidecars: UTF-8 text/JSON files (for example CID and verify marker)
 - DVC tracking metadata does not modify seed/genome bytes.
-- Integrity enforcement remains `helix verify --strict`; verification failure is
+- Integrity enforcement remains `seedbraid verify --strict`; verification failure is
   expected to fail the corresponding pipeline stage.
 
 ## OCI/ORAS Artifact Distribution (Operational, No Wire-Format Change)
-- HLX-ECO-004 adds ORAS push/pull scripts for distributing `*.hlx` seeds through
+- SBD-ECO-004 adds ORAS push/pull scripts for distributing `*.sbd` seeds through
   OCI registries.
-- Distribution uses OCI transport metadata only; HLX1/HLE1 bytes are unchanged.
+- Distribution uses OCI transport metadata only; SBD1/SBE1 bytes are unchanged.
 - Defined media/metadata conventions:
-  - OCI artifact type: `application/vnd.helix.seed.v1`
-  - seed layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+  - OCI artifact type: `application/vnd.seedbraid.seed.v1`
+  - seed layer media type: `application/vnd.seedbraid.seed.layer.v1+sbd`
   - annotations:
-    - `io.helix.seed.source-sha256`
-    - `io.helix.seed.chunker`
-    - `io.helix.seed.manifest-private`
+    - `io.seedbraid.seed.source-sha256`
+    - `io.seedbraid.seed.chunker`
+    - `io.seedbraid.seed.manifest-private`
     - `org.opencontainers.image.title`
 - Annotation values come from seed manifest fields and are serialized as strings.
 - `oras push`/`oras pull` must preserve seed bytes exactly; post-pull integrity is
-  enforced by running `helix verify` against the pulled seed.
+  enforced by running `seedbraid verify` against the pulled seed.
 
 ## ML Tooling Hooks (Operational, No Wire-Format Change)
-- HLX-ECO-005 adds optional scripts for logging Helix seed metadata to MLflow and
+- SBD-ECO-005 adds optional scripts for logging Seedbraid seed metadata to MLflow and
   uploading seed + metadata sidecars to Hugging Face Hub.
-- Added metadata is sidecar JSON only and does not mutate HLX1/HLE1 bytes.
+- Added metadata is sidecar JSON only and does not mutate SBD1/SBE1 bytes.
 - Sidecar metadata is derived from seed manifest + seed file digest and may include
   optional transport pointers (for example IPFS CID or OCI reference).
-- Reproducible restore still depends on `helix verify --strict` using:
+- Reproducible restore still depends on `seedbraid verify --strict` using:
   - retrieved seed bytes
   - matching genome path (or portable RAW coverage)
-  - optional encryption key for HLE1 seeds
+  - optional encryption key for SBE1 seeds
 - Security requirement: metadata can expose provenance fields (`source_sha256`,
   chunker profile, transport references); public uploads should use
   `--manifest-private` and encrypted seeds when needed.
@@ -163,14 +163,14 @@ Signed payload definition:
 - New optional sections may be added via TLV without changing version.
 
 ## Compatibility Policy
-- Helix keeps fixture seeds under `tests/fixtures/compat/v1/` as the canonical
-  compatibility corpus for HLX1 v1.
+- Seedbraid keeps fixture seeds under `tests/fixtures/compat/v1/` as the canonical
+  compatibility corpus for SBD1 v1.
 - CI must parse and strictly verify these fixtures on every change.
 - Repository CI baseline is defined in `.github/workflows/ci.yml` and includes
   lint (`ruff check .`), full tests (`python -m pytest`), fixture compatibility
   tests (`python -m pytest tests/test_compat_fixtures.py`), and benchmark gates.
 - Optional publish workflow (`.github/workflows/publish-seed.yml`) is manual and
-  runs `helix encode` + strict `helix verify` before optional IPFS publish
+  runs `seedbraid encode` + strict `seedbraid verify` before optional IPFS publish
   (`dry_run=true` by default) to prevent publishing unverified seeds.
 - In real publish mode, workflow verifies upstream Kubo release tag signature
   (GitHub verification API) and archive checksum before installing `ipfs` CLI.
@@ -183,12 +183,12 @@ Signed payload definition:
 - Fixture regeneration is allowed only when behavior change is intentional and
   the compatibility policy above is followed.
 
-## Encrypted Seed Wrapper (HLE1)
-For optional at-rest encryption, Helix wraps HLX1 bytes in `HLE1` format.
+## Encrypted Seed Wrapper (SBE1)
+For optional at-rest encryption, Seedbraid wraps SBD1 bytes in `SBE1` format.
 
-### HLE1 v1 Layout (16-byte header)
+### SBE1 v1 Layout (16-byte header)
 
-- magic: 4 bytes, ASCII `HLE1`
+- magic: 4 bytes, ASCII `SBE1`
 - version: uint16 (`1`)
 - salt_len: uint8 (`16`)
 - nonce_len: uint8 (`16`)
@@ -200,9 +200,9 @@ For optional at-rest encryption, Helix wraps HLX1 bytes in `HLE1` format.
 
 KDF parameters for v1 are implicit: scrypt n=16384, r=8, p=1.
 
-### HLE1 v2 Layout (24-byte header)
+### SBE1 v2 Layout (24-byte header)
 
-- magic: 4 bytes, ASCII `HLE1`
+- magic: 4 bytes, ASCII `SBE1`
 - version: uint16 (`2`)
 - salt_len: uint8 (`16`)
 - nonce_len: uint8 (`16`)
@@ -216,9 +216,9 @@ KDF parameters for v1 are implicit: scrypt n=16384, r=8, p=1.
 - ciphertext: `ciphertext_len` bytes
 - mac: 32 bytes (`HMAC-SHA256`)
 
-### HLE1 v3 Layout (28-byte header, AEAD)
+### SBE1 v3 Layout (28-byte header, AEAD)
 
-- magic: 4 bytes, ASCII `HLE1`
+- magic: 4 bytes, ASCII `SBE1`
 - version: uint16 (`3`)
 - algo_id: uint8 (`0x01` = AES-256-GCM, `0x02` = ChaCha20-Poly1305)
 - salt_len: uint8 (`16`)
@@ -244,7 +244,7 @@ Algorithm IDs:
 | `0x02` | ChaCha20-Poly1305 | RFC 8439 |
 
 Key derivation: scrypt produces 32-byte base key, then HKDF-SHA256 Expand
-(RFC 5869) with `info=b"helix-hle1-v3-aead-key"` produces the 32-byte
+(RFC 5869) with `info=b"seedbraid-sbe1-v3-aead-key"` produces the 32-byte
 AEAD key. No separate MAC key is needed.
 
 ### Version Negotiation
@@ -256,7 +256,7 @@ AEAD key. No separate MAC key is needed.
 - Reserved fields must be 0; non-zero values are rejected until semantics are defined.
 
 ### Semantics
-- Plain HLX1 payload is encrypted with a key derived from passphrase + salt.
+- Plain SBD1 payload is encrypted with a key derived from passphrase + salt.
 - **v1/v2**: MAC covers the full payload (header + salt + nonce + ciphertext),
   so header parameters including scrypt_n/r/p are MAC-authenticated.
   MAC is validated before decryption output is accepted.
@@ -264,13 +264,13 @@ AEAD key. No separate MAC key is needed.
   Data (AAD). The header — including algorithm, KDF parameters, and nonce — is
   bound to the ciphertext by the AEAD auth tag. No external HMAC-SHA256 MAC.
 - On authentication failure, parser must fail with explicit tamper/wrong-key error.
-- Helix CLI provides `helix gen-encryption-key` to generate a high-entropy
-  passphrase for `HELIX_ENCRYPTION_KEY` usage; this helper does not change
-  HLE1 wire format.
-- Existing unencrypted HLX1 files remain valid and unchanged.
+- Seedbraid CLI provides `seedbraid gen-encryption-key` to generate a high-entropy
+  passphrase for `SB_ENCRYPTION_KEY` usage; this helper does not change
+  SBE1 wire format.
+- Existing unencrypted SBD1 files remain valid and unchanged.
 
 ## Genes Pack (Optional Utility Format)
-For `helix export-genes` / `helix import-genes`, Helix defines a small sidecar binary format:
+For `seedbraid export-genes` / `seedbraid import-genes`, Seedbraid defines a small sidecar binary format:
 - magic: 5 bytes, ASCII `GENE1`
 - count: uint32
 - repeated `count` times:
@@ -280,9 +280,9 @@ For `helix export-genes` / `helix import-genes`, Helix defines a small sidecar b
 
 If `size == 0`, payload is absent (export side could not find this chunk in genome).
 
-## Genome Snapshot Format (HGS1)
-For `helix genome snapshot` / `helix genome restore`, Helix defines a binary snapshot format:
-- magic: 4 bytes, ASCII `HGS1`
+## Genome Snapshot Format (SGS1)
+For `seedbraid genome snapshot` / `seedbraid genome restore`, Seedbraid defines a binary snapshot format:
+- magic: 4 bytes, ASCII `SGS1`
 - version: uint16 (`1`)
 - chunk_count: uint64
 - repeated `chunk_count` times:

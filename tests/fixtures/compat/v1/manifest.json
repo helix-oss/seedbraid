@@ -2,20 +2,20 @@
   "fixtures": [
     {
       "compression": "zlib",
-      "decoded_sha256": "0bccb10dcae0db5cbfb8537e3f914006cf2f59ae28a49a231c797d8649234a9e",
-      "decoded_size": 45,
-      "filename": "portable_raw_v1.hlx",
-      "seed_sha256": "9ecffce0e2fe41ddd6d50893b3ac3303c7bd691e35f7ad66e6d8605f17db7d7a",
+      "decoded_sha256": "0610ff9916a4063a0ddcd58063cd7cd26a9a5d56a583907b6124f9a2f5fab5a7",
+      "decoded_size": 42,
+      "filename": "portable_raw_v1.sbd",
+      "seed_sha256": "b4dcca195e562e1f2f265ec05a47bb4583b58fdff1ed7ae6e0325ef8ada62dbf",
       "signature_key": null,
       "signature_key_id": null,
       "signed": false
     },
     {
       "compression": "none",
-      "decoded_sha256": "3fa245267bd3009674bd0295272e58a4ac6936fd538a17f4e0dcb3e4d8105005",
-      "decoded_size": 52,
-      "filename": "portable_raw_signed_v1.hlx",
-      "seed_sha256": "0659f9d3f01d9d3aaa015019c7b4cbc1e5a822a9dc704a3a54362f9972a9f54e",
+      "decoded_sha256": "134f4c10226af35c0cb415db34af06211dd0442ea9a609a735bd5b2286296bcb",
+      "decoded_size": 49,
+      "filename": "portable_raw_signed_v1.sbd",
+      "seed_sha256": "3bea34e16b6544a73a10c0744ca395a39968ff27e4bb011a23974d95b287488f",
       "signature_key": "fixture-sign-key-v1",
       "signature_key_id": "compat-v1-sign",
       "signed": true

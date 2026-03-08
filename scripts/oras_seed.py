@@ -5,10 +5,10 @@ import os
 import sys
 from pathlib import Path
 
-from helix.errors import HelixError
-from helix.oci import (
-    HELIX_OCI_ARTIFACT_TYPE,
-    HELIX_OCI_SEED_MEDIA_TYPE,
+from seedbraid.errors import SeedbraidError
+from seedbraid.oci import (
+    SB_OCI_ARTIFACT_TYPE,
+    SB_OCI_SEED_MEDIA_TYPE,
     pull_seed_oras,
     push_seed_oras,
 )
@@ -16,15 +16,18 @@ from helix.oci import (
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Push/pull Helix seed files via OCI registries using ORAS."
+        description=(
+            "Push/pull Seedbraid seed files"
+            " via OCI registries using ORAS."
+        )
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    push = sub.add_parser("push", help="Push a .hlx seed to OCI reference")
+    push = sub.add_parser("push", help="Push a .sbd seed to OCI reference")
     push.add_argument(
         "seed",
         type=Path,
-        help="Path to .hlx seed file",
+        help="Path to .sbd seed file",
     )
     push.add_argument(
         "reference",
@@ -32,26 +35,26 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     push.add_argument(
         "--artifact-type",
-        default=HELIX_OCI_ARTIFACT_TYPE,
-        help="OCI artifact type for Helix seeds.",
+        default=SB_OCI_ARTIFACT_TYPE,
+        help="OCI artifact type for Seedbraid seeds.",
     )
     push.add_argument(
         "--media-type",
-        default=HELIX_OCI_SEED_MEDIA_TYPE,
-        help="Layer media type for Helix seed payload.",
+        default=SB_OCI_SEED_MEDIA_TYPE,
+        help="Layer media type for Seedbraid seed payload.",
     )
     push.add_argument(
         "--encryption-key",
         default=None,
         help=(
             "Passphrase when reading encrypted"
-            " HLE1 seed for annotation extraction."
+            " SBE1 seed for annotation extraction."
         ),
     )
 
     pull = sub.add_parser(
         "pull",
-        help="Pull a .hlx seed from OCI ref",
+        help="Pull a .sbd seed from OCI ref",
     )
     pull.add_argument(
         "reference",
@@ -60,20 +63,20 @@ def _build_parser() -> argparse.ArgumentParser:
     pull.add_argument(
         "out",
         type=Path,
-        help="Output path for pulled .hlx seed",
+        help="Output path for pulled .sbd seed",
     )
 
     return parser
 
 
 def _print_error(exc: Exception) -> int:
-    if isinstance(exc, HelixError):
+    if isinstance(exc, SeedbraidError):
         info = exc.as_info()
         print(f"error[{info.code}]: {info.message}", file=sys.stderr)
         if info.next_action:
             print(f"next_action: {info.next_action}", file=sys.stderr)
         return 1
-    print(f"error[HELIX_E_UNKNOWN]: {exc}", file=sys.stderr)
+    print(f"error[SB_E_UNKNOWN]: {exc}", file=sys.stderr)
     return 1
 
 
@@ -90,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
                 media_type=args.media_type,
                 encryption_key=(
                     args.encryption_key
-                    or os.environ.get("HELIX_ENCRYPTION_KEY")
+                    or os.environ.get("SB_ENCRYPTION_KEY")
                 ),
             )
             print(

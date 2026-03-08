@@ -138,19 +138,19 @@ class PinningServiceAPIProvider:
         if retries < 1:
             raise ExternalToolError(
                 "Remote pin retries must be >= 1.",
-                code="HELIX_E_INVALID_OPTION",
+                code="SB_E_INVALID_OPTION",
                 next_action="Use --retries with value >= 1.",
             )
         if timeout_ms < 1:
             raise ExternalToolError(
                 "Remote pin timeout must be >= 1ms.",
-                code="HELIX_E_INVALID_OPTION",
+                code="SB_E_INVALID_OPTION",
                 next_action="Use --timeout-ms with value >= 1.",
             )
         if backoff_ms < 0:
             raise ExternalToolError(
                 "Remote pin backoff must be >= 0ms.",
-                code="HELIX_E_INVALID_OPTION",
+                code="SB_E_INVALID_OPTION",
                 next_action="Use --backoff-ms with value >= 0.",
             )
 
@@ -185,7 +185,7 @@ class PinningServiceAPIProvider:
                     )
                     raise ExternalToolError(
                         msg,
-                        code="HELIX_E_REMOTE_PIN_AUTH",
+                        code="SB_E_REMOTE_PIN_AUTH",
                         next_action=(
                             "Verify remote pin API "
                             "token/permissions and retry."
@@ -208,7 +208,7 @@ class PinningServiceAPIProvider:
                     )
                     raise ExternalToolError(
                         msg,
-                        code="HELIX_E_REMOTE_PIN_REQUEST",
+                        code="SB_E_REMOTE_PIN_REQUEST",
                         next_action=(
                             "Check CID/provider options"
                             " and retry."
@@ -221,7 +221,7 @@ class PinningServiceAPIProvider:
                 )
                 raise ExternalToolError(
                     msg,
-                    code="HELIX_E_REMOTE_PIN",
+                    code="SB_E_REMOTE_PIN",
                     next_action=(
                         "Retry remote pin or verify"
                         " provider availability."
@@ -243,7 +243,7 @@ class PinningServiceAPIProvider:
                     )
                     raise ExternalToolError(
                         msg,
-                        code="HELIX_E_REMOTE_PIN_TIMEOUT",
+                        code="SB_E_REMOTE_PIN_TIMEOUT",
                         next_action=(
                             "Increase timeout/retries"
                             " or verify provider"
@@ -258,7 +258,7 @@ class PinningServiceAPIProvider:
                 )
                 raise ExternalToolError(
                     msg,
-                    code="HELIX_E_REMOTE_PIN",
+                    code="SB_E_REMOTE_PIN",
                     next_action=(
                         "Verify provider endpoint/"
                         "network connectivity"
@@ -276,7 +276,7 @@ class PinningServiceAPIProvider:
                 )
                 raise ExternalToolError(
                     msg,
-                    code="HELIX_E_REMOTE_PIN",
+                    code="SB_E_REMOTE_PIN",
                     next_action=(
                         "Verify local network path"
                         " to provider and retry."
@@ -286,7 +286,7 @@ class PinningServiceAPIProvider:
         raise ExternalToolError(
             "Remote pin request failed unexpectedly"
             " without explicit error context.",
-            code="HELIX_E_REMOTE_PIN",
+            code="SB_E_REMOTE_PIN",
             next_action=(
                 "Retry remote pin and inspect"
                 " provider/API logs."
@@ -310,7 +310,7 @@ class PinningServiceAPIProvider:
             raise ExternalToolError(
                 "Remote pin response is not"
                 f" valid JSON: {exc}",
-                code="HELIX_E_REMOTE_PIN",
+                code="SB_E_REMOTE_PIN",
                 next_action=(
                     "Retry request or verify"
                     " provider API compatibility."
@@ -321,7 +321,7 @@ class PinningServiceAPIProvider:
             raise ExternalToolError(
                 "Remote pin response JSON"
                 " must be an object.",
-                code="HELIX_E_REMOTE_PIN",
+                code="SB_E_REMOTE_PIN",
                 next_action=(
                     "Verify provider API"
                     " compatibility with"
@@ -390,7 +390,7 @@ def build_remote_pin_provider(
 
     raise ExternalToolError(
         f"Unsupported remote pin provider: {provider}",
-        code="HELIX_E_INVALID_OPTION",
+        code="SB_E_INVALID_OPTION",
         next_action=(
             "Use --provider psa for Pinning"
             " Services API-compatible providers."

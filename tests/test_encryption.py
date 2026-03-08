@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from helix.chunking import ChunkerConfig
-from helix.codec import decode_file, encode_file, verify_seed
-from helix.errors import SeedFormatError
+from seedbraid.chunking import ChunkerConfig
+from seedbraid.codec import decode_file, encode_file, verify_seed
+from seedbraid.errors import SeedFormatError
 
 
 def test_encrypted_seed_roundtrip_requires_key(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     out = tmp_path / "decoded.bin"
     genome = tmp_path / "genome"
 
@@ -33,7 +33,7 @@ def test_encrypted_seed_roundtrip_requires_key(tmp_path: Path) -> None:
         encryption_key="correct-key",
     )
 
-    assert seed.read_bytes().startswith(b"HLE1")
+    assert seed.read_bytes().startswith(b"SBE1")
 
     with pytest.raises(
         SeedFormatError, match="Encrypted seed requires decryption key"
@@ -49,7 +49,7 @@ def test_encrypted_seed_roundtrip_requires_key(tmp_path: Path) -> None:
 
 def test_verify_strict_with_encrypted_seed(tmp_path: Path) -> None:
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     genome = tmp_path / "genome"
 
     src.write_bytes((b"verify-encrypted" * 2500) + b"tail")
@@ -83,7 +83,7 @@ def test_verify_strict_with_encrypted_seed(tmp_path: Path) -> None:
 def test_encrypted_v3_roundtrip(tmp_path: Path) -> None:
     """New encryptions use v3 AEAD format with n=32768."""
     src = tmp_path / "source.bin"
-    seed = tmp_path / "seed.hlx"
+    seed = tmp_path / "seed.sbd"
     out = tmp_path / "decoded.bin"
     genome = tmp_path / "genome"
 
@@ -108,7 +108,7 @@ def test_encrypted_v3_roundtrip(tmp_path: Path) -> None:
     )
 
     blob = seed.read_bytes()
-    assert blob[:4] == b"HLE1"
+    assert blob[:4] == b"SBE1"
     version = struct.unpack_from(">H", blob, 4)[0]
     assert version == 3
     scrypt_n = struct.unpack_from(">I", blob, 20)[0]

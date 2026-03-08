@@ -1,4 +1,4 @@
-"""Entry point for ``python -m helix``."""
+"""Entry point for ``python -m seedbraid``."""
 
 from .cli import app
 

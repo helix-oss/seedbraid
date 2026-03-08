@@ -1,4 +1,4 @@
-"""OCI registry integration for Helix seed push/pull via ORAS CLI."""
+"""OCI registry integration for Seedbraid seed push/pull via ORAS CLI."""
 
 from __future__ import annotations
 
@@ -10,12 +10,12 @@ from pathlib import Path
 from .container import read_seed
 from .errors import ExternalToolError
 
-HELIX_OCI_ARTIFACT_TYPE = "application/vnd.helix.seed.v1"
-HELIX_OCI_SEED_MEDIA_TYPE = "application/vnd.helix.seed.layer.v1+hlx"
+SB_OCI_ARTIFACT_TYPE = "application/vnd.seedbraid.seed.v1"
+SB_OCI_SEED_MEDIA_TYPE = "application/vnd.seedbraid.seed.layer.v1+hlx"
 
-ANNOTATION_SOURCE_SHA256 = "io.helix.seed.source-sha256"
-ANNOTATION_CHUNKER = "io.helix.seed.chunker"
-ANNOTATION_MANIFEST_PRIVATE = "io.helix.seed.manifest-private"
+ANNOTATION_SOURCE_SHA256 = "io.seedbraid.seed.source-sha256"
+ANNOTATION_CHUNKER = "io.seedbraid.seed.chunker"
+ANNOTATION_MANIFEST_PRIVATE = "io.seedbraid.seed.manifest-private"
 ANNOTATION_TITLE = "org.opencontainers.image.title"
 
 
@@ -41,7 +41,7 @@ def build_oras_annotations(
     privacy flag, and title from the seed manifest.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         encryption_key: Passphrase to decrypt the
             seed if encrypted.  ``None`` for
             unencrypted seeds.
@@ -75,8 +75,8 @@ def push_seed_oras(
     seed_path: str | Path,
     reference: str,
     *,
-    artifact_type: str = HELIX_OCI_ARTIFACT_TYPE,
-    media_type: str = HELIX_OCI_SEED_MEDIA_TYPE,
+    artifact_type: str = SB_OCI_ARTIFACT_TYPE,
+    media_type: str = SB_OCI_SEED_MEDIA_TYPE,
     encryption_key: str | None = None,
 ) -> dict[str, str]:
     """Push a seed to an OCI registry via ORAS CLI.
@@ -85,7 +85,7 @@ def push_seed_oras(
     manifest.
 
     Args:
-        seed_path: Path to the ``.hlx`` seed file.
+        seed_path: Path to the ``.sbd`` seed file.
         reference: OCI reference in the format
             ``<registry>/<repo>:<tag>``.
         artifact_type: OCI artifact type string.
@@ -106,8 +106,8 @@ def push_seed_oras(
     if not seed_path.exists():
         raise ExternalToolError(
             f"Seed file not found: {seed_path}",
-            code="HELIX_E_SEED_NOT_FOUND",
-            next_action="Provide an existing seed path ending in `.hlx`.",
+            code="SB_E_SEED_NOT_FOUND",
+            next_action="Provide an existing seed path ending in `.sbd`.",
         )
 
     oras = _require_oras_cli()
@@ -150,7 +150,7 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
     """Pull a seed from an OCI registry via ORAS CLI.
 
     Downloads the artifact into a temporary directory,
-    verifies that exactly one ``.hlx`` file is
+    verifies that exactly one ``.sbd`` file is
     present, and copies it to ``out_path``.
 
     Args:
@@ -165,13 +165,13 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
     Raises:
         ExternalToolError: If the ``oras`` CLI is
             missing, the pull fails, or the artifact
-            does not contain exactly one ``.hlx``
+            does not contain exactly one ``.sbd``
             file.
     """
     out_path = Path(out_path)
     oras = _require_oras_cli()
 
-    with tempfile.TemporaryDirectory(prefix="helix-oras-pull-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="seedbraid-oras-pull-") as tmp:
         cmd = [oras, "pull", reference, "-o", tmp]
         proc = subprocess.run(cmd, check=False, text=True, capture_output=True)
         if proc.returncode != 0:
@@ -194,7 +194,7 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
         hlx_files = sorted(
             p
             for p in tmp_path.rglob("*")
-            if p.is_file() and p.suffix.lower() == ".hlx"
+            if p.is_file() and p.suffix.lower() == ".sbd"
         )
         if len(hlx_files) != 1:
             found = (
@@ -207,11 +207,11 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
             raise ExternalToolError(
                 "Pulled OCI artifact does not"
                 " contain exactly one"
-                " `.hlx` payload "
+                " `.sbd` payload "
                 f"(found: {found}).",
                 next_action=(
-                    "Push a single Helix seed payload with media type "
-                    f"`{HELIX_OCI_SEED_MEDIA_TYPE}` and retry pull."
+                    "Push a single Seedbraid seed payload with media type "
+                    f"`{SB_OCI_SEED_MEDIA_TYPE}` and retry pull."
                 ),
             )
 

@@ -29,7 +29,7 @@ Adapt ALL steps below to these project-specific settings.
 When reusing this command for another project, update this section AND the allowed-tools in the frontmatter.
 
 - **Language/Tooling**: Python, uv, ruff, pytest
-- **Version file**: `src/helix/__init__.py` (`__version__` variable)
+- **Version file**: `src/seedbraid/__init__.py` (`__version__` variable)
 - **Versioning scheme**: PEP 440 (e.g. `1.0.0`, `1.0.0b1`, `1.0.0rc1`)
 - **Changelog**: `CHANGELOG.md` (Keep a Changelog format)
 - **Commit convention**: Conventional Commits (feat/fix/improve/chore/docs/test/perf)
@@ -44,7 +44,7 @@ When reusing this command for another project, update this section AND the allow
 ## Pre-computed Context
 
 Current version:
-!`grep -m1 '__version__' src/helix/__init__.py`
+!`grep -m1 '__version__' src/seedbraid/__init__.py`
 
 Last tag:
 !`git describe --tags --abbrev=0 2>/dev/null || echo "(no tags)"`

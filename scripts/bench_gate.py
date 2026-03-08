@@ -3,7 +3,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from helix.perf import evaluate_benchmark_gates, run_shifted_dedup_benchmark
+from seedbraid.perf import (
+    evaluate_benchmark_gates,
+    run_shifted_dedup_benchmark,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:

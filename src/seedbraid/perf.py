@@ -76,7 +76,7 @@ def _run_case(
     compression: str,
 ) -> BenchCaseResult:
     genome = workspace / f"genome-{chunker}"
-    seed = workspace / f"shifted-{chunker}.hlx"
+    seed = workspace / f"shifted-{chunker}.sbd"
 
     start_prime = time.perf_counter()
     prime_genome(base, genome, chunker=chunker, cfg=cfg)

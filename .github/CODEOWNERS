@@ -1,4 +1,4 @@
-# Helix CODEOWNERS
+# Seedbraid CODEOWNERS
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 #
 # Rules are evaluated bottom-to-top; the LAST matching pattern takes precedence.
@@ -6,13 +6,13 @@
 # automatically requested for review.
 #
 # NOTE: When the project gains multiple contributors, replace individual
-# usernames with GitHub teams (e.g., @helix-oss/maintainers,
-# @helix-oss/security-reviewers, @helix-oss/devops, @helix-oss/qa).
+# usernames with GitHub teams (e.g., @kytk-03/maintainers,
+# @kytk-03/security-reviewers, @kytk-03/devops, @kytk-03/qa).
 
 # ============================================================================
 # Default: all files require maintainer review
 # ============================================================================
-*                                @helix-oss
+*                                @kytk-03
 
 # ============================================================================
 # Security-Critical Paths
@@ -20,41 +20,41 @@
 # data integrity verification, and network transport. Changes require
 # security-focused review.
 # ============================================================================
-src/helix/container.py           @helix-oss
-src/helix/codec.py               @helix-oss
-src/helix/ipfs.py                @helix-oss
-src/helix/storage.py             @helix-oss
-src/helix/pinning.py             @helix-oss
-src/helix/errors.py              @helix-oss
+src/seedbraid/container.py           @kytk-03
+src/seedbraid/codec.py               @kytk-03
+src/seedbraid/ipfs.py                @kytk-03
+src/seedbraid/storage.py             @kytk-03
+src/seedbraid/pinning.py             @kytk-03
+src/seedbraid/errors.py              @kytk-03
 
 # ============================================================================
 # Specification & Security Documentation
 # Format/design changes require both architecture and security sign-off.
 # ============================================================================
-docs/FORMAT.md                   @helix-oss
-docs/THREAT_MODEL.md             @helix-oss
-SECURITY.md                      @helix-oss
+docs/FORMAT.md                   @kytk-03
+docs/THREAT_MODEL.md             @kytk-03
+SECURITY.md                      @kytk-03
 
 # ============================================================================
 # CI / DevOps
 # Workflow, build, and infrastructure changes require DevOps review.
 # ============================================================================
-.github/                         @helix-oss
-scripts/                         @helix-oss
-pyproject.toml                   @helix-oss
+.github/                         @kytk-03
+scripts/                         @kytk-03
+pyproject.toml                   @kytk-03
 
 # ============================================================================
 # Test Suite
 # Security-critical tests require security reviewer.
 # ============================================================================
-tests/test_signature.py          @helix-oss
-tests/test_encryption.py         @helix-oss
-tests/test_container.py          @helix-oss
-tests/                           @helix-oss
+tests/test_signature.py          @kytk-03
+tests/test_encryption.py         @kytk-03
+tests/test_container.py          @kytk-03
+tests/                           @kytk-03
 
 # ============================================================================
 # Governance Documentation
 # ============================================================================
-CONTRIBUTING.md                  @helix-oss
-CODE_OF_CONDUCT.md               @helix-oss
-README.md                        @helix-oss
+CONTRIBUTING.md                  @kytk-03
+CODE_OF_CONDUCT.md               @kytk-03
+README.md                        @kytk-03

@@ -5,15 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from helix.container import (
+from seedbraid.container import (
     OP_RAW,
     Recipe,
     RecipeOp,
     encrypt_seed_bytes,
     serialize_seed,
 )
-from helix.errors import ExternalToolError
-from helix.ipfs import fetch_seed
+from seedbraid.errors import ExternalToolError
+from seedbraid.ipfs import fetch_seed
 
 
 @dataclass
@@ -25,7 +25,7 @@ class _Proc:
 
 def _minimal_seed_bytes() -> bytes:
     manifest = {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "manifest_private": True,
         "source_size": None,
@@ -46,13 +46,13 @@ def test_fetch_accepts_encrypted_seed_without_key(
     tmp_path: Path, monkeypatch
 ) -> None:
     encrypted = encrypt_seed_bytes(_minimal_seed_bytes(), "fetch-key")
-    out = tmp_path / "fetched.hlx"
+    out = tmp_path / "fetched.sbd"
 
     monkeypatch.setattr(
-        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
     )
     monkeypatch.setattr(
-        "helix.ipfs.subprocess.run",
+        "seedbraid.ipfs.subprocess.run",
         lambda *_args, **_kwargs: _Proc(
             returncode=0, stdout=encrypted, stderr=b""
         ),
@@ -65,14 +65,14 @@ def test_fetch_accepts_encrypted_seed_without_key(
 def test_fetch_rejects_malformed_encrypted_seed(
     tmp_path: Path, monkeypatch
 ) -> None:
-    out = tmp_path / "fetched.hlx"
-    malformed = b"HLE1" + b"\x00" * 8
+    out = tmp_path / "fetched.sbd"
+    malformed = b"SBE1" + b"\x00" * 8
 
     monkeypatch.setattr(
-        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
     )
     monkeypatch.setattr(
-        "helix.ipfs.subprocess.run",
+        "seedbraid.ipfs.subprocess.run",
         lambda *_args, **_kwargs: _Proc(
             returncode=0, stdout=malformed, stderr=b""
         ),

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from helix.cli import app
+from seedbraid.cli import app
 
 
 def test_gen_encryption_key_prints_token(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.secrets.token_urlsafe", lambda _n: "generated-token"
+        "seedbraid.cli.secrets.token_urlsafe", lambda _n: "generated-token"
     )
 
     runner = CliRunner()
@@ -19,19 +19,19 @@ def test_gen_encryption_key_prints_token(monkeypatch) -> None:
 
 def test_gen_encryption_key_shell_output(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.secrets.token_urlsafe", lambda _n: "shell-token"
+        "seedbraid.cli.secrets.token_urlsafe", lambda _n: "shell-token"
     )
 
     runner = CliRunner()
     result = runner.invoke(app, ["gen-encryption-key", "--shell"])
 
     assert result.exit_code == 0
-    assert result.output.strip() == "export HELIX_ENCRYPTION_KEY='shell-token'"
+    assert result.output.strip() == "export SB_ENCRYPTION_KEY='shell-token'"
 
 
 def test_gen_encryption_key_rejects_invalid_env_var(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.secrets.token_urlsafe", lambda _n: "ignored-token"
+        "seedbraid.cli.secrets.token_urlsafe", lambda _n: "ignored-token"
     )
 
     runner = CliRunner()
@@ -41,7 +41,7 @@ def test_gen_encryption_key_rejects_invalid_env_var(monkeypatch) -> None:
     )
 
     assert result.exit_code == 1
-    assert "error[HELIX_E_INVALID_OPTION]" in result.output
+    assert "error[SB_E_INVALID_OPTION]" in result.output
     assert "next_action:" in result.output
 
 
@@ -52,7 +52,10 @@ def test_gen_encryption_key_forwards_bytes_value(monkeypatch) -> None:
         captured["bytes"] = n
         return "bytes-token"
 
-    monkeypatch.setattr("helix.cli.secrets.token_urlsafe", _fake_token_urlsafe)
+    monkeypatch.setattr(
+        "seedbraid.cli.secrets.token_urlsafe",
+        _fake_token_urlsafe,
+    )
 
     runner = CliRunner()
     result = runner.invoke(app, ["gen-encryption-key", "--bytes", "48"])

@@ -4,9 +4,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from helix.cli import app
-from helix.codec import EncodeStats, VerifyReport
-from helix.errors import ExternalToolError, HelixError
+from seedbraid.cli import app
+from seedbraid.codec import EncodeStats, VerifyReport
+from seedbraid.errors import ExternalToolError, SeedbraidError
 
 runner = CliRunner()
 
@@ -27,7 +27,7 @@ def test_cfg_rejects_negative_sizes(tmp_path: Path) -> None:
             "--genome",
             str(tmp_path / "g"),
             "--out",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--avg",
             "-1",
         ],
@@ -46,7 +46,7 @@ def test_cfg_rejects_invalid_ordering(tmp_path: Path) -> None:
             "--genome",
             str(tmp_path / "g"),
             "--out",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--min",
             "1000",
             "--avg",
@@ -68,7 +68,7 @@ def test_encode_success_output(tmp_path: Path, monkeypatch) -> None:
     src.write_bytes(b"x" * 100)
 
     monkeypatch.setattr(
-        "helix.cli.encode_file",
+        "seedbraid.cli.encode_file",
         lambda **kw: EncodeStats(
             total_chunks=10,
             reused_chunks=5,
@@ -86,7 +86,7 @@ def test_encode_success_output(tmp_path: Path, monkeypatch) -> None:
             "--genome",
             str(tmp_path / "g"),
             "--out",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
         ],
     )
     assert result.exit_code == 0
@@ -100,9 +100,9 @@ def test_encode_error_handling(tmp_path: Path, monkeypatch) -> None:
     src.write_bytes(b"x")
 
     def _fail(**kw):
-        raise HelixError("encode boom", code="HELIX_E_TEST")
+        raise SeedbraidError("encode boom", code="SB_E_TEST")
 
-    monkeypatch.setattr("helix.cli.encode_file", _fail)
+    monkeypatch.setattr("seedbraid.cli.encode_file", _fail)
 
     result = runner.invoke(
         app,
@@ -112,11 +112,11 @@ def test_encode_error_handling(tmp_path: Path, monkeypatch) -> None:
             "--genome",
             str(tmp_path / "g"),
             "--out",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
         ],
     )
     assert result.exit_code == 1
-    assert "error[HELIX_E_TEST]" in result.output
+    assert "error[SB_E_TEST]" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -125,13 +125,16 @@ def test_encode_error_handling(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_decode_success_output(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("helix.cli.decode_file", lambda *a, **kw: "abcd1234")
+    monkeypatch.setattr(
+        "seedbraid.cli.decode_file",
+        lambda *a, **kw: "abcd1234",
+    )
 
     result = runner.invoke(
         app,
         [
             "decode",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--genome",
             str(tmp_path / "g"),
             "--out",
@@ -144,15 +147,15 @@ def test_decode_success_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_decode_error_handling(tmp_path: Path, monkeypatch) -> None:
     def _fail(*a, **kw):
-        raise HelixError("decode boom", code="HELIX_E_TEST")
+        raise SeedbraidError("decode boom", code="SB_E_TEST")
 
-    monkeypatch.setattr("helix.cli.decode_file", _fail)
+    monkeypatch.setattr("seedbraid.cli.decode_file", _fail)
 
     result = runner.invoke(
         app,
         [
             "decode",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--genome",
             str(tmp_path / "g"),
             "--out",
@@ -160,7 +163,7 @@ def test_decode_error_handling(tmp_path: Path, monkeypatch) -> None:
         ],
     )
     assert result.exit_code == 1
-    assert "error[HELIX_E_TEST]" in result.output
+    assert "error[SB_E_TEST]" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +173,7 @@ def test_decode_error_handling(tmp_path: Path, monkeypatch) -> None:
 
 def test_verify_ok_quick_mode(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.verify_seed",
+        "seedbraid.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
             ok=True,
             missing_hashes=[],
@@ -183,7 +186,7 @@ def test_verify_ok_quick_mode(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["verify", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g")],
+        ["verify", str(tmp_path / "s.sbd"), "--genome", str(tmp_path / "g")],
     )
     assert result.exit_code == 0
     assert "verify ok mode=quick" in result.output
@@ -192,7 +195,7 @@ def test_verify_ok_quick_mode(tmp_path: Path, monkeypatch) -> None:
 
 def test_verify_ok_strict_mode(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.verify_seed",
+        "seedbraid.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
             ok=True,
             missing_hashes=[],
@@ -207,7 +210,7 @@ def test_verify_ok_strict_mode(tmp_path: Path, monkeypatch) -> None:
         app,
         [
             "verify",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--genome",
             str(tmp_path / "g"),
             "--strict",
@@ -219,7 +222,7 @@ def test_verify_ok_strict_mode(tmp_path: Path, monkeypatch) -> None:
 
 def test_verify_failed_with_missing(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.verify_seed",
+        "seedbraid.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
             ok=False,
             missing_hashes=["h1", "h2"],
@@ -232,7 +235,7 @@ def test_verify_failed_with_missing(tmp_path: Path, monkeypatch) -> None:
 
     result = runner.invoke(
         app,
-        ["verify", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g")],
+        ["verify", str(tmp_path / "s.sbd"), "--genome", str(tmp_path / "g")],
     )
     assert result.exit_code == 1
     assert "verify failed" in result.output
@@ -244,7 +247,7 @@ def test_verify_failed_with_sha256_mismatch(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(
-        "helix.cli.verify_seed",
+        "seedbraid.cli.verify_seed",
         lambda *a, **kw: VerifyReport(
             ok=False,
             missing_hashes=[],
@@ -257,7 +260,7 @@ def test_verify_failed_with_sha256_mismatch(
 
     result = runner.invoke(
         app,
-        ["verify", str(tmp_path / "s.hlx"), "--genome", str(tmp_path / "g")],
+        ["verify", str(tmp_path / "s.sbd"), "--genome", str(tmp_path / "g")],
     )
     assert result.exit_code == 1
     assert "expected_sha256=aaa" in result.output
@@ -271,7 +274,7 @@ def test_verify_failed_with_sha256_mismatch(
 
 def test_prime_success_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.prime_genome",
+        "seedbraid.cli.prime_genome",
         lambda **kw: {
             "files": 3,
             "total_chunks": 20,
@@ -293,16 +296,16 @@ def test_prime_success_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_prime_error_handling(tmp_path: Path, monkeypatch) -> None:
     def _fail(**kw):
-        raise HelixError("prime boom", code="HELIX_E_TEST")
+        raise SeedbraidError("prime boom", code="SB_E_TEST")
 
-    monkeypatch.setattr("helix.cli.prime_genome", _fail)
+    monkeypatch.setattr("seedbraid.cli.prime_genome", _fail)
 
     result = runner.invoke(
         app,
         ["prime", str(tmp_path), "--genome", str(tmp_path / "g")],
     )
     assert result.exit_code == 1
-    assert "error[HELIX_E_TEST]" in result.output
+    assert "error[SB_E_TEST]" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -311,11 +314,11 @@ def test_prime_error_handling(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_fetch_success_output(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("helix.cli.fetch_seed", lambda *a, **kw: None)
+    monkeypatch.setattr("seedbraid.cli.fetch_seed", lambda *a, **kw: None)
 
     result = runner.invoke(
         app,
-        ["fetch", "QmTest123", "--out", str(tmp_path / "seed.hlx")],
+        ["fetch", "QmTest123", "--out", str(tmp_path / "seed.sbd")],
     )
     assert result.exit_code == 0
     assert "fetched QmTest123" in result.output
@@ -323,16 +326,16 @@ def test_fetch_success_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_fetch_error_handling(tmp_path: Path, monkeypatch) -> None:
     def _fail(*a, **kw):
-        raise ExternalToolError("ipfs down", code="HELIX_E_IPFS")
+        raise ExternalToolError("ipfs down", code="SB_E_IPFS")
 
-    monkeypatch.setattr("helix.cli.fetch_seed", _fail)
+    monkeypatch.setattr("seedbraid.cli.fetch_seed", _fail)
 
     result = runner.invoke(
         app,
-        ["fetch", "QmTest123", "--out", str(tmp_path / "seed.hlx")],
+        ["fetch", "QmTest123", "--out", str(tmp_path / "seed.sbd")],
     )
     assert result.exit_code == 1
-    assert "error[HELIX_E_IPFS]" in result.output
+    assert "error[SB_E_IPFS]" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -341,32 +344,32 @@ def test_fetch_error_handling(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_sign_missing_key(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.delenv("HELIX_SIGNING_KEY", raising=False)
+    monkeypatch.delenv("SB_SIGNING_KEY", raising=False)
 
     result = runner.invoke(
         app,
         [
             "sign",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--out",
-            str(tmp_path / "signed.hlx"),
+            str(tmp_path / "signed.sbd"),
         ],
     )
     assert result.exit_code == 1
-    assert "error[HELIX_E_SIGNING_KEY_MISSING]" in result.output
+    assert "error[SB_E_SIGNING_KEY_MISSING]" in result.output
 
 
 def test_sign_success(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("HELIX_SIGNING_KEY", "test-key-123")
-    monkeypatch.setattr("helix.cli.sign_seed_file", lambda *a, **kw: None)
+    monkeypatch.setenv("SB_SIGNING_KEY", "test-key-123")
+    monkeypatch.setattr("seedbraid.cli.sign_seed_file", lambda *a, **kw: None)
 
     result = runner.invoke(
         app,
         [
             "sign",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--out",
-            str(tmp_path / "signed.hlx"),
+            str(tmp_path / "signed.sbd"),
         ],
     )
     assert result.exit_code == 0
@@ -381,7 +384,7 @@ def test_sign_success(tmp_path: Path, monkeypatch) -> None:
 
 def test_export_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.export_genes",
+        "seedbraid.cli.export_genes",
         lambda *a, **kw: {"total": 10, "exported": 8, "missing": 2},
     )
 
@@ -389,7 +392,7 @@ def test_export_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
         app,
         [
             "export-genes",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
             "--genome",
             str(tmp_path / "g"),
             "--out",
@@ -402,7 +405,7 @@ def test_export_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_import_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.import_genes",
+        "seedbraid.cli.import_genes",
         lambda *a, **kw: {"inserted": 7, "skipped": 3},
     )
 
@@ -426,7 +429,7 @@ def test_import_genes_cli_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_genome_snapshot_cli_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.snapshot_genome",
+        "seedbraid.cli.snapshot_genome",
         lambda *a, **kw: {"chunks": 50, "bytes": 102400},
     )
 
@@ -447,7 +450,7 @@ def test_genome_snapshot_cli_output(tmp_path: Path, monkeypatch) -> None:
 
 def test_genome_restore_cli_output(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.restore_genome",
+        "seedbraid.cli.restore_genome",
         lambda *a, **kw: {"entries": 50, "inserted": 45, "skipped": 5},
     )
 
@@ -466,7 +469,7 @@ def test_genome_restore_cli_output(tmp_path: Path, monkeypatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# _print_error non-HelixError fallback
+# _print_error non-SeedbraidError fallback
 # ---------------------------------------------------------------------------
 
 
@@ -474,7 +477,7 @@ def test_print_error_unknown_exception(tmp_path: Path, monkeypatch) -> None:
     def _fail(**kw):
         raise RuntimeError("unexpected")
 
-    monkeypatch.setattr("helix.cli.encode_file", _fail)
+    monkeypatch.setattr("seedbraid.cli.encode_file", _fail)
 
     src = tmp_path / "f.bin"
     src.write_bytes(b"x")
@@ -486,10 +489,10 @@ def test_print_error_unknown_exception(tmp_path: Path, monkeypatch) -> None:
             "--genome",
             str(tmp_path / "g"),
             "--out",
-            str(tmp_path / "s.hlx"),
+            str(tmp_path / "s.sbd"),
         ],
     )
-    # RuntimeError is not caught by the except HelixError
+    # RuntimeError is not caught by the except SeedbraidError
     # clause, so it propagates. The CLI runner captures
     # the traceback.
     assert result.exit_code != 0

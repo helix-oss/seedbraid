@@ -1,4 +1,4 @@
-# Helix Design
+# Seedbraid Design
 
 ## Step 0 Findings and Migration Policy
 Repository scan on 2026-02-08 found no application source files. Only Git metadata existed.
@@ -6,12 +6,12 @@ Repository scan on 2026-02-08 found no application source files. Only Git metada
 Migration policy:
 - Keep: none (no legacy implementation present).
 - Replace: n/a.
-- New baseline: implement Helix from scratch under `src/helix` with spec-first docs.
+- New baseline: implement Seedbraid from scratch under `src/seedbraid` with spec-first docs.
 
 ## Goals
 - Bit-perfect reconstruction (`encode -> decode` SHA-256 match).
 - Better dedup under shifted edits using CDC.
-- Binary seed portability and machine-readability (HLX1 container).
+- Binary seed portability and machine-readability (SBD1 container).
 - Web3 transport via IPFS CLI publish/fetch.
 
 ## Non-Goals (This Iteration)
@@ -22,7 +22,7 @@ Migration policy:
 ## Architecture
 - `chunking.py`: deterministic `fixed`, `cdc_buzhash`, `cdc_rabin` chunkers.
 - `storage.py`: pluggable storage interface, SQLite implementation for genome.
-- `container.py`: HLX1 binary TLV serialization/parsing + integrity checks.
+- `container.py`: SBD1 binary TLV serialization/parsing + integrity checks.
 - `codec.py`: encode/decode/verify/prime workflows and genome snapshot/restore.
 - `ipfs.py`: subprocess wrapper for `ipfs add/cat/pin`.
 - `cli.py`: Typer command surface.
@@ -47,26 +47,26 @@ Migration policy:
 - Default `zlib` avoids optional dependency friction; `zstd` supported when installed.
 - Portable seeds can be larger because unknown chunks are embedded.
 - Integrity uses CRC32 + SHA-256 digests.
-- Optional seed signatures use HMAC-SHA256 in this iteration (`helix sign` and `verify --require-signature`).
-- Optional encryption uses HLE1 wrapper around HLX1 payload for backward-compatible rollout.
-- HLE1 encryption wrapper uses versioned headers (v1 fixed scrypt params, v2 embedded
+- Optional seed signatures use HMAC-SHA256 in this iteration (`seedbraid sign` and `verify --require-signature`).
+- Optional encryption uses SBE1 wrapper around SBD1 payload for backward-compatible rollout.
+- SBE1 encryption wrapper uses versioned headers (v1 fixed scrypt params, v2 embedded
   params, v3 AEAD with algorithm identifier) to enable crypto evolution without
   breaking backward read compatibility.
-- HLE1 v3 uses AES-256-GCM (NIST SP 800-38D) with HKDF-SHA256 key derivation,
+- SBE1 v3 uses AES-256-GCM (NIST SP 800-38D) with HKDF-SHA256 key derivation,
   replacing the custom SHA-256 counter-mode cipher and external HMAC-SHA256 MAC.
   Requires optional `cryptography` package; falls back to v2 when unavailable.
 - Optional `manifest-private` mode reduces metadata leakage at the cost of weaker post-restore provenance metadata.
-- `helix publish` warns on unencrypted seed publication to reduce accidental public leakage.
+- `seedbraid publish` warns on unencrypted seed publication to reduce accidental public leakage.
 - IPFS fetch path includes retry/backoff and optional HTTP gateway fallback for resilience.
-- `helix pin-health` provides operator-visible local pin and block availability checks.
-- `helix doctor` provides preflight diagnostics for IPFS, genome path, and compression support.
-- Error output is standardized with stable `HELIX_E_*` codes and next-action hints.
+- `seedbraid pin-health` provides operator-visible local pin and block availability checks.
+- `seedbraid doctor` provides preflight diagnostics for IPFS, genome path, and compression support.
+- Error output is standardized with stable `SB_E_*` codes and next-action hints.
 - Compatibility governance uses committed fixture seeds and regression tests as
   release gates; format evolution must preserve read compatibility or bump version.
 - Performance governance adds benchmark gates for CDC reuse gain, seed-size ratio,
   and encode throughput (`scripts/bench_gate.py`).
 
-## CI Integration Pack (HLX-ECO-001)
+## CI Integration Pack (SBD-ECO-001)
 - Primary workflow lives at `.github/workflows/ci.yml`.
 - CI jobs are separated into lint (`ruff check .`), full tests
   (`python -m pytest`), compatibility fixtures
@@ -81,47 +81,47 @@ Migration policy:
   on runner before publish, verifies release tag signature state via GitHub API,
   and verifies archive checksum before extraction so hosted runners can execute
   IPFS operations safely.
-- CLI includes `helix gen-encryption-key` for operator-safe generation of
-  `HELIX_ENCRYPTION_KEY` secrets from command line workflows.
+- CLI includes `seedbraid gen-encryption-key` for operator-safe generation of
+  `SB_ENCRYPTION_KEY` secrets from command line workflows.
 
-## Remote Pinning Adapter (HLX-ECO-002)
+## Remote Pinning Adapter (SBD-ECO-002)
 - Add provider-agnostic remote pin adapter interface for CID durability workflows.
 - First provider implementation targets Pinning Services API-compatible endpoints.
-- `helix publish` can optionally trigger remote pin after local CID creation.
+- `seedbraid publish` can optionally trigger remote pin after local CID creation.
 - CLI adds explicit remote-pin options for provider, endpoint/token, timeout, and retries.
-- `helix pin remote-add` allows pinning an existing CID without re-publishing seed bytes.
-- Remote pin failures use dedicated `HELIX_E_*` operator codes with actionable hints.
+- `seedbraid pin remote-add` allows pinning an existing CID without re-publishing seed bytes.
+- Remote pin failures use dedicated `SB_E_*` operator codes with actionable hints.
 
-## DVC Workflow Bridge (HLX-ECO-003)
+## DVC Workflow Bridge (SBD-ECO-003)
 - Add `examples/dvc/` as a minimal, script-driven DVC pipeline for
-  `encode -> verify --strict -> fetch` Helix seed workflows.
+  `encode -> verify --strict -> fetch` Seedbraid seed workflows.
 - DVC bridge is operational glue only. It does not change chunking, genome storage,
-  HLX1/HLE1 serialization, or integrity semantics.
+  SBD1/SBE1 serialization, or integrity semantics.
 - Recommended pipeline artifact layout:
-  - `artifacts/seed/current.hlx`: encoded seed tracked by DVC.
-  - `artifacts/genome/snapshot.hgs`: reproducible genome snapshot for handoff/backup.
+  - `artifacts/seed/current.sbd`: encoded seed tracked by DVC.
+  - `artifacts/genome/snapshot.sgs`: reproducible genome snapshot for handoff/backup.
   - `artifacts/metadata/*`: sidecar metadata (`seed.cid`, `verify.ok`, digest files).
-  - `artifacts/fetched/current.hlx`: fetched seed for downstream stages.
-- Verify stage must call `helix verify --strict` so integrity mismatch (or missing
+  - `artifacts/fetched/current.sbd`: fetched seed for downstream stages.
+- Verify stage must call `seedbraid verify --strict` so integrity mismatch (or missing
   chunks) fails DVC reproduction early.
 - Out of scope remains custom DVC plugin/registry integration.
 
-## OCI/ORAS Artifact Distribution (HLX-ECO-004)
-- Add ORAS bridge scripts for pushing/pulling Helix seed artifacts via OCI
+## OCI/ORAS Artifact Distribution (SBD-ECO-004)
+- Add ORAS bridge scripts for pushing/pulling Seedbraid seed artifacts via OCI
   registry references (`registry/repository:tag`).
-- Define and document Helix media/annotation conventions so registry metadata is
+- Define and document Seedbraid media/annotation conventions so registry metadata is
   machine-readable across providers:
-  - artifact type: `application/vnd.helix.seed.v1`
-  - layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+  - artifact type: `application/vnd.seedbraid.seed.v1`
+  - layer media type: `application/vnd.seedbraid.seed.layer.v1+sbd`
   - annotations: source SHA-256, chunker name, manifest-private flag.
 - Push flow extracts manifest metadata from seed and writes OCI annotations.
 - Pull flow restores the seed file from registry artifact payload without changing
-  seed bytes; verification remains `helix verify --strict`.
+  seed bytes; verification remains `seedbraid verify --strict`.
 - Provider usage docs cover GHCR/ECR/GAR authentication entry points only.
 - Out of scope remains provider-specific IAM automation.
 
-## ML Tooling Hooks (HLX-ECO-005)
-- Add optional MLflow logging script for registering Helix seed metadata per run.
+## ML Tooling Hooks (SBD-ECO-005)
+- Add optional MLflow logging script for registering Seedbraid seed metadata per run.
 - Add optional Hugging Face upload script for seed file + metadata sidecar.
 - Metadata model is intentionally minimal and reproducible:
   - seed filename + seed SHA-256
@@ -130,8 +130,8 @@ Migration policy:
 - Restore workflow is documented from logged metadata:
   1. fetch referenced seed artifact,
   2. ensure required genome availability (or portable seed),
-  3. run strict `helix verify`,
-  4. decode with encryption key only when seed is HLE1.
+  3. run strict `seedbraid verify`,
+  4. decode with encryption key only when seed is SBE1.
 - Security caveat is explicit: avoid public leakage of provenance metadata unless
   seed is prepared with `--manifest-private` and access controls are appropriate.
 - Out of scope remains managed production inference/deployment automation.
@@ -156,6 +156,6 @@ Migration policy:
 - Trade-off: no compression/encryption in initial format; can be layered later if needed.
 
 ## Genome Snapshot/Restore (R-01)
-- Add `helix genome snapshot` to export all stored chunks as `HGS1` binary snapshot.
-- Add `helix genome restore` to import chunk payloads into a target genome.
+- Add `seedbraid genome snapshot` to export all stored chunks as `SGS1` binary snapshot.
+- Add `seedbraid genome restore` to import chunk payloads into a target genome.
 - Goal: operational DR workflow so non-portable seeds remain recoverable.

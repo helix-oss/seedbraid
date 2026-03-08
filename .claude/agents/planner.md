@@ -45,8 +45,8 @@ You are a software architect. Create detailed, actionable implementation plans.
 
 ## Project Context
 
-- Python >=3.12, CDC chunking, HLX1 binary format, IPFS transport
+- Python >=3.12, CDC chunking, SBD1 binary format, IPFS transport
 - Spec-first: update FORMAT.md/DESIGN.md before format changes
 - Streaming-first: no full-file buffering in encode/decode/prime
-- HLX1 backward compat required; version bump for breaking changes
-- Source: `src/helix/`, Tests: `tests/`, Docs: `docs/`
+- SBD1 backward compat required; version bump for breaking changes
+- Source: `src/seedbraid/`, Tests: `tests/`, Docs: `docs/`

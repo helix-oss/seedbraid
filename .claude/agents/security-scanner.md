@@ -37,5 +37,5 @@ You are a security auditor specializing in cryptographic and network code.
 
 - Security-sensitive modules: container.py, codec.py, ipfs.py, pinning.py
 - Threat model: docs/THREAT_MODEL.md
-- HLX1 binary format with TLV sections
+- SBD1 binary format with TLV sections
 - IPFS content-addressed storage with hash verification

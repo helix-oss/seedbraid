@@ -1,4 +1,4 @@
-# Contributing to Helix
+# Contributing to Seedbraid
 
 Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating.
 
@@ -63,7 +63,7 @@ Only maintainers can create releases.
    git checkout -b release/vX.Y.Z main
    ```
 2. Update `CHANGELOG.md`: move `[Unreleased]` items to a new version section.
-3. Update `src/helix/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
+3. Update `src/seedbraid/__init__.py` with the new version (PEP 440, e.g., `1.0.0` or `1.1.0a1`).
 4. Commit: `git commit -m "chore: bump version to X.Y.Z"`
 5. Push and create a PR:
    ```bash
@@ -83,7 +83,7 @@ Only maintainers can create releases.
    - Builds sdist + wheel
    - Publishes to PyPI (Trusted Publishing / OIDC)
    - Creates GitHub Release with artifacts and auto-generated notes
-9. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/helix/).
+9. Verify the [GitHub Release](../../releases) and [PyPI page](https://pypi.org/project/seedbraid/).
 
 > **Note**: Direct push to `main` is not allowed. All changes must go through a PR.
 > PyPI uses Trusted Publishing (OIDC). No API token is needed.

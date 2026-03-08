@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Helix. For security issues, see SECURITY.md instead.
+description: Report a bug in Seedbraid. For security issues, see SECURITY.md instead.
 title: "[BUG] "
 labels: ["bug", "triage"]
 body:
@@ -12,8 +12,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Helix Version
-      description: Output of `helix --version`
+      label: Seedbraid Version
+      description: Output of `seedbraid --version`
       placeholder: "1.0.0a1"
     validations:
       required: true
@@ -36,8 +36,8 @@ body:
       label: Reproduction Steps
       description: Steps to reproduce the behavior
       placeholder: |
-        1. Run `helix encode input.bin --genome ./genome`
-        2. Run `helix verify seed.hlx`
+        1. Run `seedbraid encode input.bin --genome ./genome`
+        2. Run `seedbraid verify seed.sbd`
         3. See error
     validations:
       required: true
@@ -73,4 +73,4 @@ body:
       placeholder: |
         - Chunker: buzhash (default)
         - Compression: zstd
-        - Seed format: HLX1
+        - Seed format: SBD1

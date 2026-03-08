@@ -30,7 +30,7 @@ jobs:
       - name: Ruff lint
         run: uv run --no-sync --no-editable ruff check .
       - name: Mypy type check
-        run: PYTHONPATH=src uv run --no-sync --no-editable mypy src/helix/
+        run: PYTHONPATH=src uv run --no-sync --no-editable mypy src/seedbraid/
 
   test:
     runs-on: ubuntu-latest

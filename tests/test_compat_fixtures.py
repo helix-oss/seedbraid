@@ -4,8 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from helix.codec import decode_file, verify_seed
-from helix.container import read_seed, verify_signature
+from seedbraid.codec import decode_file, verify_seed
+from seedbraid.container import read_seed, verify_signature
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "compat" / "v1"
 
@@ -34,7 +34,7 @@ def test_compat_fixtures_parse_verify_and_decode(tmp_path: Path) -> None:
         seed_path = FIXTURE_DIR / str(entry["filename"])
         seed = read_seed(seed_path)
 
-        assert seed.manifest["format"] == "HLX1"
+        assert seed.manifest["format"] == "SBD1"
         assert seed.manifest["version"] == 1
         assert seed.manifest["portable"] is True
 

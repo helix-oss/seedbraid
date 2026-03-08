@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from helix.chunking import ChunkerConfig, chunk_bytes
+from seedbraid.chunking import ChunkerConfig, chunk_bytes
 
 
 def test_cdc_buzhash_deterministic_boundaries() -> None:

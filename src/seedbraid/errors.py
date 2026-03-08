@@ -1,6 +1,6 @@
-"""Helix exception hierarchy and reusable next-action constants.
+"""Seedbraid exception hierarchy and reusable next-action constants.
 
-All domain errors derive from ``HelixError`` and carry structured
+All domain errors derive from ``SeedbraidError`` and carry structured
 error codes plus actionable recovery hints.
 """
 
@@ -16,14 +16,14 @@ class ErrorCodeInfo:
     next_action: str | None = None
 
 
-class HelixError(Exception):
-    """Base error for Helix operations."""
+class SeedbraidError(Exception):
+    """Base error for Seedbraid operations."""
 
     def __init__(
         self,
         message: str,
         *,
-        code: str = "HELIX_E_UNKNOWN",
+        code: str = "SB_E_UNKNOWN",
         next_action: str | None = None,
     ) -> None:
         super().__init__(message)
@@ -38,40 +38,40 @@ class HelixError(Exception):
         )
 
 
-class SeedFormatError(HelixError):
-    """Raised when HLX1 seed structure or integrity checks fail."""
+class SeedFormatError(SeedbraidError):
+    """Raised when SBD1 seed structure or integrity checks fail."""
 
     def __init__(
         self,
         message: str,
         *,
-        code: str = "HELIX_E_SEED_FORMAT",
+        code: str = "SB_E_SEED_FORMAT",
         next_action: str | None = None,
     ) -> None:
         super().__init__(message, code=code, next_action=next_action)
 
 
-class DecodeError(HelixError):
+class DecodeError(SeedbraidError):
     """Raised when reconstruction cannot proceed."""
 
     def __init__(
         self,
         message: str,
         *,
-        code: str = "HELIX_E_DECODE",
+        code: str = "SB_E_DECODE",
         next_action: str | None = None,
     ) -> None:
         super().__init__(message, code=code, next_action=next_action)
 
 
-class ExternalToolError(HelixError):
+class ExternalToolError(SeedbraidError):
     """Raised when external tools (e.g., ipfs) are unavailable or fail."""
 
     def __init__(
         self,
         message: str,
         *,
-        code: str = "HELIX_E_EXTERNAL_TOOL",
+        code: str = "SB_E_EXTERNAL_TOOL",
         next_action: str | None = None,
     ) -> None:
         super().__init__(message, code=code, next_action=next_action)
@@ -80,23 +80,23 @@ class ExternalToolError(HelixError):
 # -- next_action templates -----------------------------------------
 ACTION_VERIFY_SEED = (
     "Verify seed file integrity or regenerate"
-    " with `helix encode`."
+    " with `seedbraid encode`."
 )
 ACTION_REGENERATE_SEED = (
-    "Regenerate the seed file with `helix encode`."
+    "Regenerate the seed file with `seedbraid encode`."
 )
 ACTION_REFETCH_SEED = (
     "Re-download or re-transfer the seed file."
 )
-ACTION_UPGRADE_HELIX = (
-    "Upgrade Helix to the latest version."
+ACTION_UPGRADE_SEEDBRAID = (
+    "Upgrade Seedbraid to the latest version."
 )
 ACTION_VERIFY_ENCRYPTION = (
     "Verify encryption key/password is correct."
 )
 ACTION_PROVIDE_ENCRYPTION_KEY = (
     "Provide --encryption-key"
-    " or set HELIX_ENCRYPTION_KEY."
+    " or set SB_ENCRYPTION_KEY."
 )
 ACTION_INSTALL_ZSTD = (
     "Run `uv sync --extra zstd`"
@@ -110,15 +110,15 @@ ACTION_REPORT_BUG = (
 )
 ACTION_CHECK_GENOME = (
     "Check genome database,"
-    " or run `helix prime` to rebuild."
+    " or run `seedbraid prime` to rebuild."
 )
 ACTION_VERIFY_SNAPSHOT = (
     "Verify the snapshot file or regenerate"
-    " with `helix genome-snapshot`."
+    " with `seedbraid genome-snapshot`."
 )
 ACTION_VERIFY_GENES_PACK = (
     "Verify the genes pack file or regenerate"
-    " with `helix export-genes`."
+    " with `seedbraid export-genes`."
 )
 ACTION_CHECK_DISK = (
     "Check directory permissions"

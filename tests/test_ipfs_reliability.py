@@ -5,9 +5,9 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from helix.cli import app
-from helix.container import OP_RAW, Recipe, RecipeOp, serialize_seed
-from helix.ipfs import fetch_seed, pin_health_status
+from seedbraid.cli import app
+from seedbraid.container import OP_RAW, Recipe, RecipeOp, serialize_seed
+from seedbraid.ipfs import fetch_seed, pin_health_status
 
 
 @dataclass
@@ -19,7 +19,7 @@ class _Proc:
 
 def _minimal_seed_bytes() -> bytes:
     manifest = {
-        "format": "HLX1",
+        "format": "SBD1",
         "version": 1,
         "manifest_private": True,
         "source_size": None,
@@ -39,7 +39,7 @@ def _minimal_seed_bytes() -> bytes:
 def test_fetch_retries_and_succeeds_on_second_attempt(
     tmp_path: Path, monkeypatch
 ) -> None:
-    out = tmp_path / "fetched.hlx"
+    out = tmp_path / "fetched.sbd"
     seed_blob = _minimal_seed_bytes()
     calls: list[list[str]] = []
     sleeps: list[float] = []
@@ -53,10 +53,13 @@ def test_fetch_retries_and_succeeds_on_second_attempt(
         return _Proc(returncode=0, stdout=seed_blob, stderr=b"")
 
     monkeypatch.setattr(
-        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
     )
-    monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
-    monkeypatch.setattr("helix.ipfs.time.sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr(
+        "seedbraid.ipfs.time.sleep",
+        lambda s: sleeps.append(s),
+    )
 
     fetch_seed("bafy-retry", out, retries=2, backoff_ms=10)
 
@@ -67,7 +70,7 @@ def test_fetch_retries_and_succeeds_on_second_attempt(
 def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
     tmp_path: Path, monkeypatch
 ) -> None:
-    out = tmp_path / "fetched.hlx"
+    out = tmp_path / "fetched.sbd"
     seed_blob = _minimal_seed_bytes()
     requested_urls: list[str] = []
 
@@ -93,10 +96,10 @@ def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
         return _Resp(seed_blob)
 
     monkeypatch.setattr(
-        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
     )
-    monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
-    monkeypatch.setattr("helix.ipfs.urllib.request.urlopen", _fake_urlopen)
+    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr("seedbraid.ipfs.urllib.request.urlopen", _fake_urlopen)
 
     fetch_seed(
         "bafy-gw",
@@ -121,9 +124,9 @@ def test_pin_health_status_reports_ok_and_not_ok(monkeypatch) -> None:
         return queued.pop(0)
 
     monkeypatch.setattr(
-        "helix.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
+        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
     )
-    monkeypatch.setattr("helix.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
 
     ok_report = pin_health_status("bafy-ok")
     miss_report = pin_health_status("bafy-miss")
@@ -142,7 +145,7 @@ def test_pin_health_status_reports_ok_and_not_ok(monkeypatch) -> None:
 
 def test_pin_health_cli_exit_codes(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.pin_health_status",
+        "seedbraid.cli.pin_health_status",
         lambda cid: {
             "cid": cid,
             "pinned": True,
@@ -158,7 +161,7 @@ def test_pin_health_cli_exit_codes(monkeypatch) -> None:
     assert "pinned=True" in ok.output
 
     monkeypatch.setattr(
-        "helix.cli.pin_health_status",
+        "seedbraid.cli.pin_health_status",
         lambda cid: {
             "cid": cid,
             "pinned": False,

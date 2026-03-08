@@ -1,18 +1,18 @@
-# Helix OCI/ORAS Distribution (HLX-ECO-004)
+# Seedbraid OCI/ORAS Distribution (SBD-ECO-004)
 
-This example provides scripts for pushing and pulling Helix `*.hlx` seeds via
+This example provides scripts for pushing and pulling Seedbraid `*.sbd` seeds via
 OCI registries with ORAS.
 
 ## Media Type and Annotation Convention
 
-Helix uses the following OCI metadata convention:
+Seedbraid uses the following OCI metadata convention:
 
-- Artifact type: `application/vnd.helix.seed.v1`
-- Layer media type: `application/vnd.helix.seed.layer.v1+hlx`
+- Artifact type: `application/vnd.seedbraid.seed.v1`
+- Layer media type: `application/vnd.seedbraid.seed.layer.v1+sbd`
 - Annotations:
-  - `io.helix.seed.source-sha256`
-  - `io.helix.seed.chunker`
-  - `io.helix.seed.manifest-private`
+  - `io.seedbraid.seed.source-sha256`
+  - `io.seedbraid.seed.chunker`
+  - `io.seedbraid.seed.manifest-private`
   - `org.opencontainers.image.title`
 
 ## Prerequisites
@@ -31,14 +31,14 @@ oras version
 
 ```bash
 # from repository root
-examples/oci/scripts/push_seed.sh ./seed.hlx ghcr.io/<owner>/<repo>/helix-seed:latest
-examples/oci/scripts/pull_seed.sh ghcr.io/<owner>/<repo>/helix-seed:latest ./pulled.hlx
+examples/oci/scripts/push_seed.sh ./seed.sbd ghcr.io/<owner>/<repo>/seedbraid-seed:latest
+examples/oci/scripts/pull_seed.sh ghcr.io/<owner>/<repo>/seedbraid-seed:latest ./pulled.sbd
 ```
 
 Verify pulled seed integrity:
 
 ```bash
-uv run --no-sync --no-editable helix verify ./pulled.hlx --genome ./genome --strict
+uv run --no-sync --no-editable seedbraid verify ./pulled.sbd --genome ./genome --strict
 ```
 
 ## Registry Usage Notes
@@ -50,7 +50,7 @@ echo "$GITHUB_TOKEN" | oras login ghcr.io -u <github-user> --password-stdin
 ```
 
 Reference format:
-`ghcr.io/<owner>/<repo>/helix-seed:<tag>`
+`ghcr.io/<owner>/<repo>/seedbraid-seed:<tag>`
 
 ### Amazon ECR
 
@@ -70,17 +70,17 @@ gcloud auth print-access-token \
 ```
 
 Reference format:
-`<region>-docker.pkg.dev/<project>/<repository>/helix-seed:<tag>`
+`<region>-docker.pkg.dev/<project>/<repository>/seedbraid-seed:<tag>`
 
 ## Troubleshooting
 
 - Auth failures (`401`/`403`): rerun `oras login`, then verify push/pull permission.
 - Reference errors (`name unknown`, `manifest unknown`): confirm repository path/tag.
-- Media type mismatch: repush with Helix defaults or pass explicit
-  `--artifact-type application/vnd.helix.seed.v1`
-  `--media-type application/vnd.helix.seed.layer.v1+hlx`.
+- Media type mismatch: repush with Seedbraid defaults or pass explicit
+  `--artifact-type application/vnd.seedbraid.seed.v1`
+  `--media-type application/vnd.seedbraid.seed.layer.v1+sbd`.
 - Encrypted seed push fails metadata extraction: provide `--encryption-key` or set
-  `HELIX_ENCRYPTION_KEY` before running push script.
+  `SB_ENCRYPTION_KEY` before running push script.
 
 ## Out of Scope
 

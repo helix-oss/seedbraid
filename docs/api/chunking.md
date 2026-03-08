@@ -1,6 +1,6 @@
-# helix.chunking
+# seedbraid.chunking
 
 Content-Defined Chunking (CDC) algorithms: fixed, BuzHash, and Rabin
 fingerprint-based chunkers.
 
-::: helix.chunking
+::: seedbraid.chunking

@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from helix.cli import app
-from helix.diagnostics import (
+from seedbraid.cli import app
+from seedbraid.diagnostics import (
     DoctorCheck,
     DoctorReport,
     _check_compression,
@@ -15,12 +15,12 @@ from helix.diagnostics import (
     _check_ipfs_path,
     run_doctor,
 )
-from helix.errors import ExternalToolError, HelixError
+from seedbraid.errors import ExternalToolError, SeedbraidError
 
 
 def test_doctor_cli_exit_zero_with_only_warn(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.run_doctor",
+        "seedbraid.cli.run_doctor",
         lambda _genome: DoctorReport(
             checks=[
                 DoctorCheck(check="python", status="ok", detail="python=3.12"),
@@ -44,7 +44,7 @@ def test_doctor_cli_exit_zero_with_only_warn(monkeypatch) -> None:
 
 def test_doctor_cli_exit_one_on_fail(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.cli.run_doctor",
+        "seedbraid.cli.run_doctor",
         lambda _genome: DoctorReport(
             checks=[
                 DoctorCheck(
@@ -66,7 +66,10 @@ def test_doctor_cli_exit_one_on_fail(monkeypatch) -> None:
 
 def test_run_doctor_flags_missing_ipfs(tmp_path: Path, monkeypatch) -> None:
     genome = tmp_path / "genome"
-    monkeypatch.setattr("helix.diagnostics.shutil.which", lambda _name: None)
+    monkeypatch.setattr(
+        "seedbraid.diagnostics.shutil.which",
+        lambda _name: None,
+    )
     monkeypatch.delenv("IPFS_PATH", raising=False)
 
     report = run_doctor(genome)
@@ -81,7 +84,7 @@ def test_error_output_includes_code_and_next_action(
 ) -> None:
     src = tmp_path / "input.bin"
     src.write_bytes(b"x")
-    monkeypatch.delenv("HELIX_ENCRYPTION_KEY", raising=False)
+    monkeypatch.delenv("SB_ENCRYPTION_KEY", raising=False)
 
     runner = CliRunner()
     result = runner.invoke(
@@ -92,13 +95,13 @@ def test_error_output_includes_code_and_next_action(
             "--genome",
             str(tmp_path / "genome"),
             "--out",
-            str(tmp_path / "seed.hlx"),
+            str(tmp_path / "seed.sbd"),
             "--encrypt",
         ],
     )
 
     assert result.exit_code == 1
-    assert "error[HELIX_E_ENCRYPTION_KEY_MISSING]" in result.output
+    assert "error[SB_E_ENCRYPTION_KEY_MISSING]" in result.output
     assert "next_action:" in result.output
 
 
@@ -109,10 +112,10 @@ def test_error_output_includes_code_and_next_action(
 
 def test_check_ipfs_cli_success(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
+        "seedbraid.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
     )
     monkeypatch.setattr(
-        "helix.diagnostics.subprocess.run",
+        "seedbraid.diagnostics.subprocess.run",
         lambda cmd, **kw: subprocess.CompletedProcess(
             cmd,
             returncode=0,
@@ -127,10 +130,10 @@ def test_check_ipfs_cli_success(monkeypatch) -> None:
 
 def test_check_ipfs_cli_fails_on_returncode(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
+        "seedbraid.diagnostics.shutil.which", lambda _: "/usr/bin/ipfs"
     )
     monkeypatch.setattr(
-        "helix.diagnostics.subprocess.run",
+        "seedbraid.diagnostics.subprocess.run",
         lambda cmd, **kw: subprocess.CompletedProcess(
             cmd,
             returncode=1,
@@ -180,7 +183,7 @@ def test_check_ipfs_path_valid_dir(tmp_path: Path, monkeypatch) -> None:
 
 def test_check_compression_zstandard_available(monkeypatch) -> None:
     monkeypatch.setattr(
-        "helix.diagnostics.importlib.util.find_spec",
+        "seedbraid.diagnostics.importlib.util.find_spec",
         lambda name: object(),  # non-None → available
     )
     checks = _check_compression()
@@ -194,12 +197,14 @@ def test_check_compression_zstandard_available(monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_run_doctor_reraises_helix_error(tmp_path: Path, monkeypatch) -> None:
+def test_run_doctor_reraises_seedbraid_error(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr(
-        "helix.diagnostics._check_python_version",
-        lambda: (_ for _ in ()).throw(HelixError("test", code="TEST")),
+        "seedbraid.diagnostics._check_python_version",
+        lambda: (_ for _ in ()).throw(SeedbraidError("test", code="TEST")),
     )
-    with pytest.raises(HelixError, match="test"):
+    with pytest.raises(SeedbraidError, match="test"):
         run_doctor(tmp_path)
 
 
@@ -207,7 +212,7 @@ def test_run_doctor_wraps_unexpected_exception(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.setattr(
-        "helix.diagnostics._check_ipfs_cli",
+        "seedbraid.diagnostics._check_ipfs_cli",
         lambda: (_ for _ in ()).throw(ValueError("unexpected")),
     )
     with pytest.raises(ExternalToolError, match="doctor failed unexpectedly"):
