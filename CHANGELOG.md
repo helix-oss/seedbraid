@@ -7,6 +7,21 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [1.0.0b2] - 2026-03-08
+
+### Documentation
+- THREAT_MODEL.md の HLE1 v3 AEAD KDF セクションを拡充 (#17)
+
+### Maintenance
+- 内部開発ドキュメントを `.docs/` に整理し、`docs/` を公開ドキュメントのみに統一 (#16)
+
+### CI
+- `actions/checkout` v4 → v6 (#4)
+- `actions/setup-python` v5 → v6 (#3)
+- `astral-sh/setup-uv` v5 → v7 (#5)
+- `actions/upload-artifact` v4 → v7 (#1)
+- `actions/download-artifact` v4 → v8 (#2)
+
 ## [1.0.0b1] - 2026-03-08
 
 ### Added
@@ -60,6 +75,7 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/helix-oss/helix/compare/v1.0.0b1...HEAD
+[Unreleased]: https://github.com/helix-oss/helix/compare/v1.0.0b2...HEAD
+[1.0.0b2]: https://github.com/helix-oss/helix/compare/v1.0.0b1...v1.0.0b2
 [1.0.0b1]: https://github.com/helix-oss/helix/compare/v1.0.0...v1.0.0b1
 [1.0.0]: https://github.com/helix-oss/helix/releases/tag/v1.0.0
