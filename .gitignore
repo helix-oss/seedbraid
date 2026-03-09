@@ -38,9 +38,9 @@ CLAUDE.local.md
 # Local docs
 .docs/
 
-# Helix runtime artifacts
-*.hlx
-!tests/fixtures/compat/**/*.hlx
+# Seedbraid runtime artifacts
+*.sbd
+!tests/fixtures/compat/**/*.sbd
 *.cid
 *.pack
 *.genes
