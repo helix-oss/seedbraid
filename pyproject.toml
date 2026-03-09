@@ -7,7 +7,19 @@ name = "seedbraid"
 dynamic = ["version"]
 description = "Seedbraid reference-based reconstruction with CDC and IPFS seed transport"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.12"
+authors = [
+  {name = "aimsise"},
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: System :: Archiving",
+  "Typing :: Typed",
+]
 dependencies = [
   "typer>=0.12",
 ]
@@ -30,6 +42,13 @@ docs = [
 
 [project.scripts]
 seedbraid = "seedbraid.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/aimsise/seedbraid"
+Repository = "https://github.com/aimsise/seedbraid"
+Documentation = "https://github.com/aimsise/seedbraid#readme"
+Issues = "https://github.com/aimsise/seedbraid/issues"
+Changelog = "https://github.com/aimsise/seedbraid/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
