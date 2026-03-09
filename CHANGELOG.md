@@ -7,6 +7,11 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-03-10
+
+### Maintenance
+- PyPI パッケージメタデータ追加: license, authors, classifiers, project URLs (#27)
+
 ## [1.1.0] - 2026-03-10
 
 ### Changed
@@ -97,7 +102,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/aimsise/seedbraid/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aimsise/seedbraid/compare/v1.0.0b2...v1.1.0
 [1.0.0b2]: https://github.com/aimsise/seedbraid/compare/v1.0.0b1...v1.0.0b2
 [1.0.0b1]: https://github.com/aimsise/seedbraid/compare/v1.0.0...v1.0.0b1
