@@ -11,7 +11,7 @@ from .container import read_seed
 from .errors import ExternalToolError
 
 SB_OCI_ARTIFACT_TYPE = "application/vnd.seedbraid.seed.v1"
-SB_OCI_SEED_MEDIA_TYPE = "application/vnd.seedbraid.seed.layer.v1+hlx"
+SB_OCI_SEED_MEDIA_TYPE = "application/vnd.seedbraid.seed.layer.v1+sbd"
 
 ANNOTATION_SOURCE_SHA256 = "io.seedbraid.seed.source-sha256"
 ANNOTATION_CHUNKER = "io.seedbraid.seed.chunker"
@@ -191,16 +191,16 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
             )
 
         tmp_path = Path(tmp)
-        hlx_files = sorted(
+        sbd_files = sorted(
             p
             for p in tmp_path.rglob("*")
             if p.is_file() and p.suffix.lower() == ".sbd"
         )
-        if len(hlx_files) != 1:
+        if len(sbd_files) != 1:
             found = (
                 ", ".join(
                     str(p.relative_to(tmp_path))
-                    for p in hlx_files
+                    for p in sbd_files
                 )
                 or "none"
             )
@@ -216,6 +216,6 @@ def pull_seed_oras(reference: str, out_path: str | Path) -> Path:
             )
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_bytes(hlx_files[0].read_bytes())
+        out_path.write_bytes(sbd_files[0].read_bytes())
 
     return out_path
