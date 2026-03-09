@@ -7,6 +7,28 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-10
+
+### Changed
+- **BREAKING**: プロジェクト名を helix から seedbraid に完全リネーム (#21)
+  - パッケージ: `helix` → `seedbraid`、CLI: `helix` → `seedbraid`
+  - バイナリマジック: HLX1→SBD1, HLE1→SBE1, HGS1→SGS1
+  - HKDF info: `helix-hle1-v3-aead-key` → `seedbraid-sbe1-v3-aead-key`
+  - ファイル拡張子: `.hlx`→`.sbd`, `.hgs`→`.sgs`
+  - エラーコード: `HELIX_E_*` → `SB_E_*`、環境変数: `HELIX_*` → `SB_*`
+  - OCI メディアタイプ: `vnd.helix.*` → `vnd.seedbraid.*`
+- GitHub リポジトリを `aimsise/seedbraid` に移行
+
+### Fixed
+- OCI メディアタイプサフィックスを `+hlx` → `+sbd` に修正 (#24)
+
+### Documentation
+- T-012 ヘルパー関数に Google-style docstring を追加 (#23)
+
+### Maintenance
+- GitHub 参照を `aimsise/seedbraid` に更新 (#22)
+- `.gitignore` のパターンを `.sbd` 拡張子に更新 (#25)
+
 ## [1.0.0b2] - 2026-03-08
 
 ### Documentation
@@ -75,7 +97,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.0.0b2...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/aimsise/seedbraid/compare/v1.0.0b2...v1.1.0
 [1.0.0b2]: https://github.com/aimsise/seedbraid/compare/v1.0.0b1...v1.0.0b2
 [1.0.0b1]: https://github.com/aimsise/seedbraid/compare/v1.0.0...v1.0.0b1
 [1.0.0]: https://github.com/aimsise/seedbraid/releases/tag/v1.0.0

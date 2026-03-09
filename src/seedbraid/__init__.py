@@ -5,4 +5,4 @@ Exports the single-source-of-truth version string.
 
 __all__ = ["__version__"]
 
-__version__ = "1.0.0b2"
+__version__ = "1.1.0"
