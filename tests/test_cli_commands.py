@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
+from seedbraid import __version__
 from seedbraid.cli import app
 from seedbraid.codec import EncodeStats, VerifyReport
 from seedbraid.errors import ExternalToolError, SeedbraidError
@@ -496,3 +498,15 @@ def test_print_error_unknown_exception(tmp_path: Path, monkeypatch) -> None:
     # clause, so it propagates. The CLI runner captures
     # the traceback.
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# --version flag
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("flag", ["--version", "-V"])
+def test_version_flag_shows_version(flag: str) -> None:
+    result = runner.invoke(app, [flag])
+    assert result.exit_code == 0
+    assert __version__ in result.output

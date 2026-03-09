@@ -13,6 +13,7 @@ from pathlib import Path
 
 import typer
 
+from . import __version__
 from .chunking import ChunkerConfig
 from .codec import (
     decode_file,
@@ -30,6 +31,28 @@ from .errors import ExternalToolError, SeedbraidError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
 
 app = typer.Typer(help="Seedbraid CLI")
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"seedbraid {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _main(
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show version and exit.",
+    ),
+) -> None:
+    pass
+
+
 genome_app = typer.Typer(help="Genome backup and restore operations")
 pin_app = typer.Typer(help="IPFS pin operations")
 app.add_typer(genome_app, name="genome")
