@@ -76,10 +76,36 @@ PYTHONPATH=src UV_CACHE_DIR=.uv-cache uv run --no-sync --no-editable python -m p
 
 ## Installation
 
-> **Note**: PyPI publishing is currently on hold. `pip install seedbraid` is not yet available.
-> Please install from source.
+### pip (PyPI)
+```bash
+pip install seedbraid
+```
 
-## Quick Start
+### pipx (isolated global install)
+```bash
+pipx install seedbraid
+seedbraid --help
+```
+
+### uvx (ephemeral, no install needed)
+```bash
+uvx seedbraid --help
+uvx seedbraid doctor
+```
+
+### With optional extras
+```bash
+# pip
+pip install "seedbraid[zstd]"
+
+# pipx
+pipx install "seedbraid[zstd]"
+
+# uvx
+uvx --from "seedbraid[zstd]" seedbraid doctor
+```
+
+## Development Setup
 ```bash
 uv sync --no-editable --extra dev
 ```
