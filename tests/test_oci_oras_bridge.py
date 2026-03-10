@@ -193,7 +193,7 @@ def test_push_seed_oras_requires_existing_seed(
 
 def test_readme_links_oci_integration_section() -> None:
     readme = (REPO_ROOT / "README.md").read_text()
-    assert "## OCI Integration (SBD-ECO-004)" in readme
+    assert "### OCI Integration" in readme
     assert "examples/oci/README.md" in readme
 
 

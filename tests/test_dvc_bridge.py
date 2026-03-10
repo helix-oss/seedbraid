@@ -29,7 +29,7 @@ def test_dvc_pipeline_declares_encode_verify_fetch_stages() -> None:
 
 def test_readme_links_dvc_integration_section() -> None:
     root_readme = (REPO_ROOT / "README.md").read_text()
-    assert "## DVC Integration (SBD-ECO-003)" in root_readme
+    assert "### DVC Integration" in root_readme
     assert "examples/dvc/README.md" in root_readme
 
 

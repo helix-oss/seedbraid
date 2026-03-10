@@ -171,7 +171,7 @@ def test_upload_seed_and_metadata_to_hf_requires_token(
 
 def test_readme_links_ml_hooks_section() -> None:
     readme = (REPO_ROOT / "README.md").read_text()
-    assert "## ML Tooling Hooks (SBD-ECO-005)" in readme
+    assert "### ML Tooling Hooks" in readme
     assert "examples/ml/README.md" in readme
 
 
