@@ -7,6 +7,15 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-03-10
+
+### Documentation
+- README を「価値提案 → Quick Start → 詳細」の順に再構成し、ユーザーオンボーディングを改善 (#31)
+- Quick Start の encode コマンドを `--portable` のみに簡素化 (#31)
+- CLI Reference を Core Commands / Advanced Commands に分割 (#31)
+- ユーザー向けセクションと開発者セクションを水平線で分離 (#31)
+- 全 CLI コマンド例を bare `seedbraid` に統一 (#31)
+
 ## [1.1.2] - 2026-03-10
 
 ### Added
@@ -111,7 +120,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/aimsise/seedbraid/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/aimsise/seedbraid/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/aimsise/seedbraid/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aimsise/seedbraid/compare/v1.0.0b2...v1.1.0
