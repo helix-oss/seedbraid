@@ -132,3 +132,7 @@ ACTION_INSTALL_CRYPTO = (
     "Run `uv sync --extra crypto`"
     " to install cryptography."
 )
+ACTION_REGENERATE_MANIFEST = (
+    "Regenerate manifest with"
+    " `seedbraid publish-chunks`."
+)
