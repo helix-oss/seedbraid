@@ -23,14 +23,18 @@ from seedbraid.chunk_manifest import (
     write_chunk_manifest,
 )
 from seedbraid.chunking import ChunkerConfig
-from seedbraid.codec import encode_file, sha256_file
+from seedbraid.cid import sha256_to_cidv1_raw
+from seedbraid.codec import (
+    EncodeStats,
+    encode_file,
+    sha256_file,
+)
 from seedbraid.ipfs_chunks import (
     fetch_decode_from_ipfs,
     publish_chunks_from_genome,
 )
 from seedbraid.storage import open_genome
 
-# Fixed chunk size for deterministic tests
 _CFG = ChunkerConfig(
     min_size=1024,
     avg_size=1024,
@@ -38,6 +42,8 @@ _CFG = ChunkerConfig(
     window_size=16,
 )
 _CHUNKER = "fixed"
+_RETRIES = 2
+_BACKOFF_MS = 50
 
 
 def _deterministic_data(size: int) -> bytes:
@@ -47,6 +53,24 @@ def _deterministic_data(size: int) -> bytes:
     ).digest()
     repeats = (size // len(pattern)) + 1
     return (pattern * repeats)[:size]
+
+
+def _encode(
+    src: Path,
+    genome_path: Path,
+    seed: Path,
+) -> EncodeStats:
+    """Encode with standard test parameters."""
+    return encode_file(
+        in_path=src,
+        genome_path=genome_path,
+        out_seed_path=seed,
+        chunker=_CHUNKER,
+        cfg=_CFG,
+        learn=True,
+        portable=False,
+        manifest_compression="zlib",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -74,42 +98,39 @@ def ipfs_repo(tmp_path_factory):
     return repo
 
 
-def test_publish_fetch_roundtrip_small(
-    tmp_path: Path,
+@pytest.fixture(autouse=True)
+def _set_ipfs_env(
     ipfs_repo: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """E2E: encode -> publish -> fetch-decode
-    produces bit-perfect output."""
+    """Point IPFS_PATH to the isolated repo."""
     monkeypatch.setenv(
         "IPFS_PATH", str(ipfs_repo),
     )
 
+
+def test_publish_fetch_roundtrip_small(
+    tmp_path: Path,
+    ipfs_repo: Path,
+) -> None:
+    """E2E: encode -> publish -> fetch-decode
+    produces bit-perfect output."""
     src = tmp_path / "input.bin"
     data = _deterministic_data(10 * 1024)
     src.write_bytes(data)
-    expected_sha = hashlib.sha256(data).hexdigest()
+    expected_sha = sha256_file(src)
 
     seed = tmp_path / "output.sbd"
     genome_path = tmp_path / "genome"
-    encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    _encode(src, genome_path, seed)
 
     with open_genome(genome_path) as genome:
         manifest = publish_chunks_from_genome(
             seed_path=seed,
             genome=genome,
             max_workers=4,
-            retries=2,
-            backoff_ms=50,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
         )
     assert len(manifest.chunks) > 0
 
@@ -123,8 +144,8 @@ def test_publish_fetch_roundtrip_small(
         out_path=decoded,
         max_workers=4,
         batch_size=100,
-        retries=2,
-        backoff_ms=50,
+        retries=_RETRIES,
+        backoff_ms=_BACKOFF_MS,
     )
 
     assert actual_sha == expected_sha
@@ -134,32 +155,18 @@ def test_publish_fetch_roundtrip_small(
 def test_publish_fetch_roundtrip_with_dedup(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Duplicate chunks are deduped on publish while
     roundtrip stays bit-perfect."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-
     chunk = _deterministic_data(1024)
     data = chunk * 10
     src = tmp_path / "dup.bin"
     src.write_bytes(data)
-    expected_sha = hashlib.sha256(data).hexdigest()
+    expected_sha = sha256_file(src)
 
     seed = tmp_path / "dup.sbd"
     genome_path = tmp_path / "genome-dup"
-    stats = encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    stats = _encode(src, genome_path, seed)
     assert stats.total_chunks == 10
     assert stats.unique_hashes == 1
 
@@ -168,6 +175,8 @@ def test_publish_fetch_roundtrip_with_dedup(
             seed_path=seed,
             genome=genome,
             max_workers=4,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
         )
     assert len(manifest.chunks) == 1
 
@@ -177,6 +186,8 @@ def test_publish_fetch_roundtrip_with_dedup(
         out_path=decoded,
         max_workers=4,
         batch_size=100,
+        retries=_RETRIES,
+        backoff_ms=_BACKOFF_MS,
     )
     assert actual_sha == expected_sha
     assert decoded.read_bytes() == data
@@ -185,36 +196,25 @@ def test_publish_fetch_roundtrip_with_dedup(
 def test_manifest_sidecar_roundtrip(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Manifest written by publish matches when
     read back from disk."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-
     src = tmp_path / "mf.bin"
     src.write_bytes(_deterministic_data(5 * 1024))
 
     seed = tmp_path / "mf.sbd"
     genome_path = tmp_path / "genome-mf"
-    encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    _encode(src, genome_path, seed)
 
     with open_genome(genome_path) as genome:
         manifest = publish_chunks_from_genome(
             seed_path=seed,
             genome=genome,
             max_workers=4,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
         )
+    assert len(manifest.chunks) > 0
 
     mf_path = manifest_path_for_seed(seed)
     write_chunk_manifest(manifest, mf_path)
@@ -232,43 +232,34 @@ def test_manifest_sidecar_roundtrip(
 def test_fetch_decode_sha256_verification(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Returned SHA-256 from fetch_decode matches
     sha256_file on the reconstructed output."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-
     src = tmp_path / "sha.bin"
     data = _deterministic_data(8 * 1024)
     src.write_bytes(data)
 
     seed = tmp_path / "sha.sbd"
     genome_path = tmp_path / "genome-sha"
-    encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    _encode(src, genome_path, seed)
 
     with open_genome(genome_path) as genome:
-        publish_chunks_from_genome(
+        manifest = publish_chunks_from_genome(
             seed_path=seed,
             genome=genome,
             max_workers=4,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
         )
+    assert len(manifest.chunks) > 0
 
     decoded = tmp_path / "sha-decoded.bin"
     returned_sha = fetch_decode_from_ipfs(
         seed_path=seed,
         out_path=decoded,
         max_workers=4,
+        retries=_RETRIES,
+        backoff_ms=_BACKOFF_MS,
     )
     assert returned_sha == sha256_file(decoded)
     assert returned_sha == sha256_file(src)
@@ -277,38 +268,27 @@ def test_fetch_decode_sha256_verification(
 def test_e2e_with_batch_size_1(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """batch_size=1 forces every op into its own
     batch, exercising all boundary conditions."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-
     src = tmp_path / "batch.bin"
     data = _deterministic_data(3 * 1024)
     src.write_bytes(data)
-    expected_sha = hashlib.sha256(data).hexdigest()
+    expected_sha = sha256_file(src)
 
     seed = tmp_path / "batch.sbd"
     genome_path = tmp_path / "genome-batch"
-    encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    _encode(src, genome_path, seed)
 
     with open_genome(genome_path) as genome:
-        publish_chunks_from_genome(
+        manifest = publish_chunks_from_genome(
             seed_path=seed,
             genome=genome,
             max_workers=4,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
         )
+    assert len(manifest.chunks) > 0
 
     decoded = tmp_path / "batch-decoded.bin"
     actual_sha = fetch_decode_from_ipfs(
@@ -316,6 +296,8 @@ def test_e2e_with_batch_size_1(
         out_path=decoded,
         max_workers=1,
         batch_size=1,
+        retries=_RETRIES,
+        backoff_ms=_BACKOFF_MS,
     )
     assert actual_sha == expected_sha
     assert decoded.read_bytes() == data
@@ -324,29 +306,15 @@ def test_e2e_with_batch_size_1(
 def test_progress_callback_invoked(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Progress callbacks fire for both publish
     and fetch-decode phases."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-
     src = tmp_path / "prog.bin"
     src.write_bytes(_deterministic_data(3 * 1024))
 
     seed = tmp_path / "prog.sbd"
     genome_path = tmp_path / "genome-prog"
-    encode_file(
-        in_path=src,
-        genome_path=genome_path,
-        out_seed_path=seed,
-        chunker=_CHUNKER,
-        cfg=_CFG,
-        learn=True,
-        portable=False,
-        manifest_compression="zlib",
-    )
+    _encode(src, genome_path, seed)
 
     pub_calls: list[tuple[int, int]] = []
     with open_genome(genome_path) as genome:
@@ -354,6 +322,8 @@ def test_progress_callback_invoked(
             seed_path=seed,
             genome=genome,
             max_workers=4,
+            retries=_RETRIES,
+            backoff_ms=_BACKOFF_MS,
             progress_callback=lambda d, t: (
                 pub_calls.append((d, t))
             ),
@@ -367,6 +337,8 @@ def test_progress_callback_invoked(
         seed_path=seed,
         out_path=decoded,
         max_workers=4,
+        retries=_RETRIES,
+        backoff_ms=_BACKOFF_MS,
         progress_callback=lambda d, t: (
             fetch_calls.append((d, t))
         ),
@@ -378,15 +350,9 @@ def test_progress_callback_invoked(
 def test_cid_matches_ipfs_block_put(
     tmp_path: Path,
     ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Python-computed CID matches ipfs block put
     output for raw codec blocks."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
-    from seedbraid.cid import sha256_to_cidv1_raw
-
     data = b"cid verification test payload"
     expected_cid = sha256_to_cidv1_raw(data)
 
