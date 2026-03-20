@@ -14,6 +14,10 @@ from pathlib import Path
 import typer
 
 from . import __version__
+from .chunk_manifest import (
+    manifest_path_for_seed,
+    write_chunk_manifest,
+)
 from .chunking import ChunkerConfig
 from .codec import (
     decode_file,
@@ -29,6 +33,8 @@ from .container import is_encrypted_seed_data, sign_seed_file
 from .diagnostics import run_doctor
 from .errors import ExternalToolError, SeedbraidError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
+from .ipfs_chunks import publish_chunks_from_genome
+from .storage import open_genome
 
 app = typer.Typer(help="Seedbraid CLI")
 
@@ -374,6 +380,75 @@ def publish(
         )
 
     typer.echo(cid)
+
+
+@app.command("publish-chunks")
+def publish_chunks_cmd(
+    seed: Path,
+    genome: Path = typer.Option(
+        ..., "--genome",
+        help="Genome database path.",
+    ),
+    max_workers: int = typer.Option(
+        16, "--workers", min=1, max=128,
+        help="Parallel publish threads.",
+    ),
+    retries: int = typer.Option(
+        3, "--retries", min=1,
+        help="Retry attempts per chunk.",
+    ),
+    backoff_ms: int = typer.Option(
+        200, "--backoff-ms", min=0,
+        help="Initial backoff in milliseconds.",
+    ),
+    manifest_out: Path | None = typer.Option(
+        None, "--manifest-out",
+        help=(
+            "Output path for chunk manifest."
+            " Defaults to <seed>.sbd.chunks.json"
+        ),
+    ),
+) -> None:
+    """Publish all seed chunks to IPFS."""
+    typer.echo(
+        "warning: publishing chunks to public IPFS."
+        " Chunk content is unencrypted.",
+        err=True,
+    )
+
+    def _progress(
+        done: int, total: int,
+    ) -> None:
+        typer.echo(
+            f"published {done}/{total} chunks",
+            err=True,
+        )
+
+    try:
+        with open_genome(genome) as genome_storage:
+            manifest = publish_chunks_from_genome(
+                seed_path=seed,
+                genome=genome_storage,
+                max_workers=max_workers,
+                retries=retries,
+                backoff_ms=backoff_ms,
+                progress_callback=_progress,
+            )
+    except (
+        SeedbraidError, ExternalToolError,
+    ) as exc:
+        raise typer.Exit(code=_print_error(exc))
+
+    out_path = (
+        manifest_out
+        if manifest_out is not None
+        else manifest_path_for_seed(seed)
+    )
+    write_chunk_manifest(manifest, out_path)
+    typer.echo(
+        f"published {len(manifest.chunks)} chunks"
+        f" manifest={out_path}"
+    )
 
 
 @app.command()

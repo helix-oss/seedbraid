@@ -14,14 +14,26 @@ import time
 import types
 import urllib.error
 import urllib.request
+from collections.abc import Callable
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
+from pathlib import Path
 from typing import Self
 
+from .chunk_manifest import ChunkEntry, ChunkManifest
 from .cid import cidv1_raw_to_sha256, sha256_to_cidv1_raw
+from .codec import sha256_file
+from .container import read_seed
 from .errors import (
+    ACTION_CHECK_GENOME,
     ACTION_CHECK_IPFS_DAEMON,
     ACTION_CHECK_IPFS_NETWORK,
+    DecodeError,
     ExternalToolError,
 )
+from .storage import GenomeStorage
 
 
 def _require_ipfs() -> str:
@@ -268,6 +280,108 @@ def publish_chunk(
     )
     storage.put_chunk(chunk_hash, data)
     return cid
+
+
+def publish_chunks_from_genome(
+    seed_path: Path,
+    genome: GenomeStorage,
+    *,
+    max_workers: int = 16,
+    retries: int = 3,
+    backoff_ms: int = 200,
+    progress_callback: (
+        Callable[[int, int], None] | None
+    ) = None,
+) -> ChunkManifest:
+    """Publish all chunks referenced by a seed to IPFS.
+
+    Reads chunk data from the genome and publishes
+    each as a raw IPFS block using ThreadPoolExecutor
+    for parallelism. Deduplicates digests before
+    publishing.
+
+    Args:
+        seed_path: Path to the SBD1 seed file.
+        genome: Opened GenomeStorage instance.
+        max_workers: Thread pool size for parallel
+            publish (default 16).
+        retries: Retry count per chunk publish.
+        backoff_ms: Initial backoff in milliseconds.
+        progress_callback: Called with
+            (completed, total) after each chunk
+            publishes.
+
+    Returns:
+        Populated ChunkManifest with all chunk CID
+        mappings.
+
+    Raises:
+        ExternalToolError: If any chunk publish fails
+            after all retries.
+        DecodeError: If a chunk referenced by the seed
+            is missing from genome.
+    """
+    seed = read_seed(seed_path)
+    unique_digests = list(
+        dict.fromkeys(seed.recipe.hash_table),
+    )
+
+    chunks: dict[bytes, bytes] = {}
+    for digest in unique_digests:
+        data = genome.get_chunk(digest)
+        if data is None:
+            raise DecodeError(
+                "Chunk "
+                f"{digest.hex()} missing"
+                " from genome",
+                code="SB_E_DECODE",
+                next_action=ACTION_CHECK_GENOME,
+            )
+        chunks[digest] = data
+
+    storage = IPFSChunkStorage(
+        retries=retries,
+        backoff_ms=backoff_ms,
+    )
+    total = len(chunks)
+
+    with ThreadPoolExecutor(
+        max_workers=max_workers,
+    ) as executor:
+        futures = {
+            executor.submit(
+                storage.put_chunk, digest, data,
+            ): digest
+            for digest, data in chunks.items()
+        }
+        completed = 0
+        try:
+            for future in as_completed(futures):
+                future.result()
+                completed += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        completed, total,
+                    )
+        except ExternalToolError:
+            for f in futures:
+                f.cancel()
+            raise
+
+    seed_sha256 = sha256_file(seed_path)
+    entries = tuple(
+        ChunkEntry(
+            hash_hex=digest.hex(),
+            cid=sha256_to_cidv1_raw(
+                digest, is_digest=True,
+            ),
+        )
+        for digest in unique_digests
+    )
+    return ChunkManifest(
+        seed_sha256=seed_sha256,
+        chunks=entries,
+    )
 
 
 def fetch_chunk(
