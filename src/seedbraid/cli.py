@@ -33,7 +33,10 @@ from .container import is_encrypted_seed_data, sign_seed_file
 from .diagnostics import run_doctor
 from .errors import ExternalToolError, SeedbraidError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
-from .ipfs_chunks import publish_chunks_from_genome
+from .ipfs_chunks import (
+    fetch_decode_from_ipfs,
+    publish_chunks_from_genome,
+)
 from .storage import open_genome
 
 app = typer.Typer(help="Seedbraid CLI")
@@ -449,6 +452,75 @@ def publish_chunks_cmd(
         f"published {len(manifest.chunks)} chunks"
         f" manifest={out_path}"
     )
+
+
+@app.command("fetch-decode")
+def fetch_decode_cmd(
+    seed: Path,
+    out: Path = typer.Option(
+        ..., "--out",
+        help="Output file path for decoded data.",
+    ),
+    max_workers: int = typer.Option(
+        64, "--workers", min=1, max=256,
+        help="Parallel fetch threads.",
+    ),
+    batch_size: int = typer.Option(
+        100, "--batch-size", min=1,
+        help="Chunks per parallel batch.",
+    ),
+    retries: int = typer.Option(
+        3, "--retries", min=1,
+        help="Per-chunk fetch retries.",
+    ),
+    backoff_ms: int = typer.Option(
+        200, "--backoff-ms", min=0,
+        help="Exponential backoff base (ms).",
+    ),
+    gateway: str | None = typer.Option(
+        None, "--gateway",
+        help=(
+            "HTTP gateway fallback URL"
+            " (e.g. https://ipfs.io/ipfs)"
+        ),
+    ),
+    encryption_key: str | None = typer.Option(
+        None, "--encryption-key",
+        help="Passphrase for encrypted seeds.",
+    ),
+) -> None:
+    """Decode seed by fetching chunks from IPFS."""
+    def _progress(
+        done: int, total: int,
+    ) -> None:
+        typer.echo(
+            f"fetched {done}/{total} chunks",
+            err=True,
+        )
+
+    try:
+        digest = fetch_decode_from_ipfs(
+            seed_path=seed,
+            out_path=out,
+            max_workers=max_workers,
+            batch_size=batch_size,
+            retries=retries,
+            backoff_ms=backoff_ms,
+            gateway=gateway,
+            encryption_key=(
+                encryption_key
+                or os.environ.get(
+                    "SB_ENCRYPTION_KEY",
+                )
+            ),
+            progress_callback=_progress,
+        )
+    except (
+        SeedbraidError, ExternalToolError,
+    ) as exc:
+        raise typer.Exit(code=_print_error(exc))
+
+    typer.echo(f"decoded sha256={digest}")
 
 
 @app.command()

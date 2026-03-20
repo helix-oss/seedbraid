@@ -16,6 +16,8 @@ from seedbraid.errors import DecodeError, ExternalToolError
 from seedbraid.ipfs_chunks import (
     IPFSChunkStorage,
     fetch_chunk,
+    fetch_chunks_parallel,
+    fetch_decode_from_ipfs,
     publish_chunk,
     publish_chunks_from_genome,
 )
@@ -837,3 +839,361 @@ def test_publish_chunks_cli_error_handling(
     )
     assert result.exit_code == 1
     assert "SB_E_IPFS_CHUNK_PUT" in result.output
+
+
+# -- fetch_chunks_parallel tests ----------------------------
+
+
+def _patch_fetch_deps(
+    monkeypatch,
+    chunks: dict[bytes, bytes],
+):  # noqa: ANN001, ANN202
+    """Patch deps for parallel fetch tests."""
+    _patch_ipfs(monkeypatch)
+
+    cid_to_data: dict[str, bytes] = {}
+    for digest, data in chunks.items():
+        cid = sha256_to_cidv1_raw(
+            digest, is_digest=True,
+        )
+        cid_to_data[cid] = data
+
+    def _fake_run(cmd, **kw):  # noqa: ANN001, ANN003, ANN202
+        if "block" in cmd and "get" in cmd:
+            cid = cmd[-1]
+            if cid in cid_to_data:
+                return _Proc(
+                    returncode=0,
+                    stdout=cid_to_data[cid],
+                    stderr=b"",
+                )
+            return _Proc(
+                returncode=1,
+                stdout=b"",
+                stderr=b"not found",
+            )
+        return _Proc(
+            returncode=1,
+            stdout=b"",
+            stderr=b"unknown",
+        )
+
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        _fake_run,
+    )
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.time.sleep",
+        lambda _: None,
+    )
+
+
+def test_fetch_chunks_parallel_basic(
+    monkeypatch,
+) -> None:
+    """Parallel fetch returns correct chunk data."""
+    chunks = {
+        _DIGEST_A: _CHUNK_A,
+        _DIGEST_B: _CHUNK_B,
+    }
+    _patch_fetch_deps(monkeypatch, chunks)
+
+    result = fetch_chunks_parallel(
+        [_DIGEST_A, _DIGEST_B],
+        max_workers=2,
+    )
+    assert result[_DIGEST_A] == _CHUNK_A
+    assert result[_DIGEST_B] == _CHUNK_B
+
+
+def test_fetch_chunks_parallel_dedup(
+    monkeypatch,
+) -> None:
+    """Duplicate digests are fetched only once."""
+    chunks = {_DIGEST_A: _CHUNK_A}
+    _patch_fetch_deps(monkeypatch, chunks)
+
+    calls: list[list[str]] = []
+
+    def _tracking_run(cmd, **kw):  # noqa: ANN001, ANN003, ANN202
+        calls.append(cmd)
+        if "get" in cmd:
+            return _Proc(
+                returncode=0,
+                stdout=_CHUNK_A,
+                stderr=b"",
+            )
+        return _Proc(
+            returncode=0,
+            stdout=b"ok",
+            stderr=b"",
+        )
+
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        _tracking_run,
+    )
+
+    result = fetch_chunks_parallel(
+        [_DIGEST_A, _DIGEST_A, _DIGEST_A],
+        max_workers=1,
+    )
+    assert len(result) == 1
+    assert result[_DIGEST_A] == _CHUNK_A
+    get_calls = [
+        c for c in calls if "get" in c
+    ]
+    assert len(get_calls) == 1
+
+
+# -- fetch_decode_from_ipfs tests ---------------------------
+
+
+def _patch_decode_deps(
+    monkeypatch,
+    chunks: dict[bytes, bytes],
+    *,
+    manifest_sha256: str | None = None,
+):  # noqa: ANN001, ANN202
+    """Patch deps for fetch_decode_from_ipfs tests."""
+    _patch_fetch_deps(monkeypatch, chunks)
+
+    digests = list(chunks.keys())
+    expected_content = b"".join(
+        chunks[d] for d in digests
+    )
+    source_sha = hashlib.sha256(
+        expected_content,
+    ).hexdigest()
+
+    seed = _make_seed(digests)
+    seed.manifest["source_sha256"] = (
+        manifest_sha256
+        if manifest_sha256 is not None
+        else source_sha
+    )
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.read_seed",
+        lambda path, **kw: seed,
+    )
+
+
+def test_fetch_decode_basic(
+    monkeypatch, tmp_path,
+) -> None:
+    """Basic decode: 2 chunks fetched and joined."""
+    chunks = {
+        _DIGEST_A: _CHUNK_A,
+        _DIGEST_B: _CHUNK_B,
+    }
+    _patch_decode_deps(monkeypatch, chunks)
+
+    out = tmp_path / "output.bin"
+    digest = fetch_decode_from_ipfs(
+        seed_path=tmp_path / "test.sbd",
+        out_path=out,
+        max_workers=1,
+        batch_size=100,
+    )
+
+    expected = _CHUNK_A + _CHUNK_B
+    assert out.read_bytes() == expected
+    assert digest == hashlib.sha256(
+        expected,
+    ).hexdigest()
+
+
+def test_fetch_decode_batch_boundary(
+    monkeypatch, tmp_path,
+) -> None:
+    """batch_size=1 processes each op separately."""
+    chunks = {
+        _DIGEST_A: _CHUNK_A,
+        _DIGEST_B: _CHUNK_B,
+    }
+    _patch_decode_deps(monkeypatch, chunks)
+
+    progress: list[tuple[int, int]] = []
+    out = tmp_path / "output.bin"
+    fetch_decode_from_ipfs(
+        seed_path=tmp_path / "test.sbd",
+        out_path=out,
+        max_workers=1,
+        batch_size=1,
+        progress_callback=lambda d, t: (
+            progress.append((d, t))
+        ),
+    )
+    assert out.read_bytes() == _CHUNK_A + _CHUNK_B
+    assert len(progress) == 2
+    assert progress[0] == (1, 2)
+    assert progress[1] == (2, 2)
+
+
+def test_fetch_decode_sha256_mismatch(
+    monkeypatch, tmp_path,
+) -> None:
+    """DecodeError on SHA-256 mismatch."""
+    chunks = {_DIGEST_A: _CHUNK_A}
+    _patch_decode_deps(
+        monkeypatch,
+        chunks,
+        manifest_sha256="ff" * 32,
+    )
+
+    out = tmp_path / "output.bin"
+    with pytest.raises(
+        DecodeError,
+        match="SHA-256 mismatch",
+    ):
+        fetch_decode_from_ipfs(
+            seed_path=tmp_path / "test.sbd",
+            out_path=out,
+            max_workers=1,
+        )
+
+
+def test_fetch_decode_chunk_unavailable(
+    monkeypatch, tmp_path,
+) -> None:
+    """ExternalToolError when chunk not on IPFS."""
+    _patch_ipfs(monkeypatch)
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        lambda *a, **kw: _Proc(
+            returncode=1,
+            stdout=b"",
+            stderr=b"not found",
+        ),
+    )
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.time.sleep",
+        lambda _: None,
+    )
+
+    seed = _make_seed([_DIGEST_A])
+    seed.manifest["source_sha256"] = "aa" * 32
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.read_seed",
+        lambda path, **kw: seed,
+    )
+
+    out = tmp_path / "output.bin"
+    with pytest.raises(ExternalToolError):
+        fetch_decode_from_ipfs(
+            seed_path=tmp_path / "test.sbd",
+            out_path=out,
+            max_workers=1,
+        )
+
+
+def test_fetch_decode_raw_and_ref_mixed(
+    monkeypatch, tmp_path,
+) -> None:
+    """OP_RAW chunks skip IPFS; OP_REF fetched."""
+    raw_chunk = b"inline-raw-data"
+    chunks = {_DIGEST_B: _CHUNK_B}
+    _patch_fetch_deps(monkeypatch, chunks)
+
+    raw_digest = hashlib.sha256(raw_chunk).digest()
+    expected = raw_chunk + _CHUNK_B
+    source_sha = hashlib.sha256(
+        expected,
+    ).hexdigest()
+
+    seed = Seed(
+        manifest={
+            "format": "SBD1",
+            "version": 1,
+            "source_sha256": source_sha,
+        },
+        recipe=Recipe(
+            hash_table=[raw_digest, _DIGEST_B],
+            ops=[
+                RecipeOp(
+                    opcode=OP_REF,
+                    hash_index=0,
+                ),
+                RecipeOp(
+                    opcode=OP_REF,
+                    hash_index=1,
+                ),
+            ],
+        ),
+        raw_payloads={0: raw_chunk},
+        manifest_compression="none",
+        signature=None,
+        signed_payload=None,
+    )
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.read_seed",
+        lambda path, **kw: seed,
+    )
+
+    out = tmp_path / "output.bin"
+    digest = fetch_decode_from_ipfs(
+        seed_path=tmp_path / "test.sbd",
+        out_path=out,
+        max_workers=1,
+    )
+    assert out.read_bytes() == expected
+    assert digest == source_sha
+
+
+# -- fetch-decode CLI tests ---------------------------------
+
+
+def test_fetch_decode_cli_basic(
+    monkeypatch, tmp_path,
+) -> None:
+    """CLI fetch-decode succeeds."""
+    digest = "aa" * 32
+
+    monkeypatch.setattr(
+        "seedbraid.cli.fetch_decode_from_ipfs",
+        lambda **kw: digest,
+    )
+
+    result = _cli_runner.invoke(
+        app,
+        [
+            "fetch-decode",
+            str(tmp_path / "test.sbd"),
+            "--out",
+            str(tmp_path / "out.bin"),
+        ],
+    )
+    assert result.exit_code == 0
+    assert f"decoded sha256={digest}" in (
+        result.output
+    )
+
+
+def _raise_fetch_external(**kw):  # noqa: ANN003, ANN202
+    raise ExternalToolError(
+        "chunk unavailable",
+        code="SB_E_IPFS_CHUNK_GET",
+        next_action="check ipfs",
+    )
+
+
+def test_fetch_decode_cli_error(
+    monkeypatch, tmp_path,
+) -> None:
+    """CLI exits with code 1 on error."""
+    monkeypatch.setattr(
+        "seedbraid.cli.fetch_decode_from_ipfs",
+        _raise_fetch_external,
+    )
+
+    result = _cli_runner.invoke(
+        app,
+        [
+            "fetch-decode",
+            str(tmp_path / "test.sbd"),
+            "--out",
+            str(tmp_path / "out.bin"),
+        ],
+    )
+    assert result.exit_code == 1
+    assert "SB_E_IPFS_CHUNK_GET" in result.output

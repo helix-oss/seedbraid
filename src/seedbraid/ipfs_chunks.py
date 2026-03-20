@@ -30,6 +30,7 @@ from .errors import (
     ACTION_CHECK_GENOME,
     ACTION_CHECK_IPFS_DAEMON,
     ACTION_CHECK_IPFS_NETWORK,
+    ACTION_REFETCH_SEED,
     DecodeError,
     ExternalToolError,
 )
@@ -421,3 +422,202 @@ def fetch_chunk(
             next_action=ACTION_CHECK_IPFS_NETWORK,
         )
     return result
+
+
+def fetch_chunks_parallel(
+    digests: list[bytes],
+    *,
+    max_workers: int = 64,
+    retries: int = 3,
+    backoff_ms: int = 200,
+    gateway: str | None = None,
+    storage: IPFSChunkStorage | None = None,
+) -> dict[bytes, bytes]:
+    """Fetch chunks from IPFS in parallel.
+
+    Deduplicates digests before fetching.
+    Uses ThreadPoolExecutor for concurrency.
+
+    Args:
+        digests: List of 32-byte SHA-256 digests.
+        max_workers: Maximum parallel threads.
+        retries: Per-chunk retry count.
+        backoff_ms: Per-chunk backoff base.
+        gateway: Optional HTTP gateway fallback.
+        storage: Shared IPFSChunkStorage instance.
+            Created internally when omitted.
+
+    Returns:
+        Mapping of digest to chunk bytes.
+
+    Raises:
+        ExternalToolError: If any chunk fails
+            after all retries.
+    """
+    unique = list(dict.fromkeys(digests))
+    if not unique:
+        return {}
+
+    if storage is None:
+        storage = IPFSChunkStorage(
+            gateway=gateway,
+            retries=retries,
+            backoff_ms=backoff_ms,
+        )
+
+    def _fetch_one(
+        digest: bytes,
+    ) -> tuple[bytes, bytes]:
+        result = storage.get_chunk(digest)
+        if result is None:
+            cid = sha256_to_cidv1_raw(
+                digest, is_digest=True,
+            )
+            raise ExternalToolError(
+                f"Chunk {cid} not available"
+                " after all fetch attempts",
+                code="SB_E_IPFS_CHUNK_GET",
+                next_action=(
+                    ACTION_CHECK_IPFS_NETWORK
+                ),
+            )
+        return digest, result
+
+    results: dict[bytes, bytes] = {}
+    with ThreadPoolExecutor(
+        max_workers=max_workers,
+    ) as executor:
+        futures = {
+            executor.submit(_fetch_one, d): d
+            for d in unique
+        }
+        try:
+            for future in as_completed(futures):
+                digest, data = future.result()
+                results[digest] = data
+        except ExternalToolError:
+            for f in futures:
+                f.cancel()
+            raise
+
+    return results
+
+
+def fetch_decode_from_ipfs(
+    seed_path: Path,
+    out_path: Path,
+    *,
+    max_workers: int = 64,
+    batch_size: int = 100,
+    retries: int = 3,
+    backoff_ms: int = 200,
+    gateway: str | None = None,
+    encryption_key: str | None = None,
+    progress_callback: (
+        Callable[[int, int], None] | None
+    ) = None,
+) -> str:
+    """Decode a seed by fetching chunks from IPFS.
+
+    Processes chunks in batches to maintain bounded
+    memory usage per the streaming-first constraint.
+
+    Args:
+        seed_path: Path to the seed file.
+        out_path: Destination for reconstructed file.
+        max_workers: Parallel fetch threads per batch.
+        batch_size: Chunks per parallel batch.
+        retries: Per-chunk retry count.
+        backoff_ms: Per-chunk backoff base.
+        gateway: Optional HTTP gateway fallback.
+        encryption_key: Passphrase for encrypted seeds.
+        progress_callback: Called with
+            (completed_ops, total_ops) per batch.
+
+    Returns:
+        SHA-256 hex digest of the decoded file.
+
+    Raises:
+        ExternalToolError: If chunks are unavailable.
+        DecodeError: If SHA-256 verification fails.
+    """
+    seed = read_seed(
+        seed_path, encryption_key=encryption_key,
+    )
+    ops = seed.recipe.ops
+    hash_table = seed.recipe.hash_table
+    raw_payloads = seed.raw_payloads
+    total_ops = len(ops)
+
+    h = hashlib.sha256()
+    completed = 0
+    shared_storage = IPFSChunkStorage(
+        gateway=gateway,
+        retries=retries,
+        backoff_ms=backoff_ms,
+    )
+
+    with Path(out_path).open("wb") as out:
+        for batch_start in range(
+            0, total_ops, batch_size,
+        ):
+            batch_ops = ops[
+                batch_start
+                : batch_start + batch_size
+            ]
+
+            fetch_digests: list[bytes] = []
+            for op in batch_ops:
+                if op.hash_index in raw_payloads:
+                    continue
+                fetch_digests.append(
+                    hash_table[op.hash_index],
+                )
+
+            fetched: dict[bytes, bytes] = {}
+            if fetch_digests:
+                fetched = fetch_chunks_parallel(
+                    fetch_digests,
+                    max_workers=max_workers,
+                    storage=shared_storage,
+                )
+
+            for op in batch_ops:
+                raw = raw_payloads.get(
+                    op.hash_index,
+                )
+                if raw is not None:
+                    chunk = raw
+                else:
+                    digest = hash_table[
+                        op.hash_index
+                    ]
+                    chunk = fetched.get(digest)
+                    if chunk is None:
+                        raise DecodeError(
+                            "Missing chunk: "
+                            f"{digest.hex()}",
+                            code="SB_E_DECODE",
+                            next_action=(
+                                ACTION_CHECK_IPFS_NETWORK
+                            ),
+                        )
+                out.write(chunk)
+                h.update(chunk)
+
+            completed += len(batch_ops)
+            if progress_callback is not None:
+                progress_callback(
+                    completed, total_ops,
+                )
+
+    actual = h.hexdigest()
+    expected = seed.manifest.get("source_sha256")
+    if expected and expected != actual:
+        raise DecodeError(
+            "Decoded SHA-256 mismatch: "
+            f"expected {expected}, got {actual}.",
+            code="SB_E_DECODE",
+            next_action=ACTION_REFETCH_SEED,
+        )
+    return actual
