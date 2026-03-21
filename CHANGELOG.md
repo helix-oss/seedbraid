@@ -7,6 +7,34 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-22
+
+### Added
+- IPFS distributed chunk storage (SBD-ECO-006):
+  - New CLI command `publish-chunks` for publishing CDC chunks to IPFS as raw blocks
+  - New CLI command `fetch-decode` for reconstructing files from IPFS-hosted chunks
+  - `--genome ipfs://` URI support for hybrid local+IPFS decode
+  - Chunk DAG pinning via IPFS MFS with local/remote pin options
+  - `HybridGenomeStorage` combining local SQLite with IPFS fallback and caching
+  - `IPFSChunkStorage` implementing `GenomeStorage` Protocol over IPFS subprocess calls
+  - CIDv1 (raw codec, base32-lower) deterministic computation from SHA-256 digest
+  - Chunk manifest sidecar format (`.sbd.chunks.json`)
+  - Parallel publish via `ThreadPoolExecutor` (default 16 workers)
+  - Batched parallel fetch (default `batch_size=100`) for streaming-first memory model
+
+### Added (Error Codes)
+- `SB_E_IPFS_CHUNK_PUT` for chunk publish failures
+- `SB_E_IPFS_CHUNK_GET` for chunk fetch failures
+- `SB_E_IPFS_CHUNK_UNAVAILABLE` for missing IPFS chunks
+- `SB_E_CHUNK_MANIFEST_FORMAT` for invalid manifest sidecar
+- `SB_E_IPFS_MFS` for MFS operation failures during DAG construction
+
+### Documentation
+- DESIGN.md updated with full SBD-ECO-006 implementation details
+- README updated with publish-chunks, fetch-decode, and ipfs:// genome examples
+- ERROR_CODES.md updated with IPFS chunk error codes
+- PERFORMANCE.md updated with IPFS chunk fetch baseline metrics
+
 ## [1.1.3] - 2026-03-10
 
 ### Documentation
@@ -120,7 +148,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/aimsise/seedbraid/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/aimsise/seedbraid/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/aimsise/seedbraid/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/aimsise/seedbraid/compare/v1.1.0...v1.1.1

@@ -221,6 +221,40 @@ seedbraid genome snapshot --genome ./genome --out genome.sgs
 seedbraid genome restore genome.sgs --genome ./genome-dr --replace
 ```
 
+#### Publish Chunks to IPFS
+```bash
+seedbraid publish-chunks seed.sbd --genome ./genome
+seedbraid publish-chunks seed.sbd --genome ./genome \
+  --manifest-out chunks.json --workers 32
+seedbraid publish-chunks seed.sbd --genome ./genome \
+  --pin --remote-pin \
+  --remote-endpoint https://pin.example/api/v1 \
+  --remote-token "$SB_PINNING_TOKEN"
+```
+
+`publish-chunks` publishes all CDC chunks referenced by a seed to IPFS as raw blocks, generates a chunk manifest sidecar (`.sbd.chunks.json`), and optionally pins the chunk DAG locally or via a remote pinning provider.
+
+#### Fetch and Decode from IPFS
+```bash
+seedbraid fetch-decode seed.sbd --out recovered.bin
+seedbraid fetch-decode seed.sbd --out recovered.bin \
+  --workers 64 --batch-size 200 --retries 5
+seedbraid fetch-decode seed.sbd --out recovered.bin \
+  --gateway https://ipfs.io/ipfs
+```
+
+`fetch-decode` reads a seed and its chunk manifest, fetches all chunks from IPFS in parallel batches, and reconstructs the original file. Requires the chunk manifest sidecar (`.sbd.chunks.json`) alongside the seed.
+
+#### Decode with IPFS Genome
+```bash
+seedbraid decode seed.sbd --genome ipfs:// --out recovered.bin
+seedbraid decode seed.sbd --genome ipfs:///path/to/cache --out recovered.bin
+seedbraid decode seed.sbd --genome ipfs:// --out recovered.bin \
+  --gateway https://ipfs.io/ipfs
+```
+
+Using `--genome ipfs://` activates hybrid storage: chunks are fetched from IPFS with local SQLite caching. `ipfs://` uses a temporary cache; `ipfs:///path/to/cache` persists fetched chunks for future reuse.
+
 #### Publish to IPFS
 ```bash
 seedbraid publish seed.sbd --no-pin
@@ -322,6 +356,11 @@ If missing, install Kubo and ensure `ipfs` is available on your `PATH`.
 | Remote pin request invalid | `SB_E_REMOTE_PIN_REQUEST` | Check CID/provider options and retry. |
 | Remote pin timeout/failure | `SB_E_REMOTE_PIN_TIMEOUT` / `SB_E_REMOTE_PIN` | Increase retries/timeout or check provider health. |
 | Seed parse/integrity failure | `SB_E_SEED_FORMAT` | Re-fetch/rebuild seed and verify source integrity. |
+| IPFS chunk publish failed | `SB_E_IPFS_CHUNK_PUT` | Check IPFS daemon, retry, verify chunk availability. |
+| IPFS chunk fetch failed | `SB_E_IPFS_CHUNK_GET` | Check daemon/network, retry, use `--gateway` fallback. |
+| IPFS chunk not found | `SB_E_IPFS_CHUNK_UNAVAILABLE` | Re-publish chunks or use `--gateway` for alternate retrieval. |
+| Chunk manifest invalid | `SB_E_CHUNK_MANIFEST_FORMAT` | Regenerate manifest with `publish-chunks`. |
+| IPFS MFS operation failed | `SB_E_IPFS_MFS` | Verify daemon is running with `ipfs files ls /`. |
 
 ---
 
