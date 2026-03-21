@@ -399,6 +399,66 @@ def _resolve_chunk(
     )
 
 
+def decode_file_with_genome(
+    seed_path: str | Path,
+    genome: GenomeStorage,
+    out_path: str | Path,
+    *,
+    encryption_key: str | None = None,
+) -> str:
+    """Reconstruct a file using a pre-opened genome.
+
+    Unlike ``decode_file`` which accepts a path and
+    opens the genome internally, this function takes
+    an already-opened ``GenomeStorage`` instance.
+    This enables hybrid storages (e.g. local + IPFS
+    fallback) to be injected by the caller.
+
+    Args:
+        seed_path: Path to the ``.sbd`` seed file.
+        genome: Pre-opened genome storage instance.
+        out_path: Destination path for the
+            reconstructed file.
+        encryption_key: Passphrase to decrypt the
+            seed if encrypted.
+
+    Returns:
+        Lowercase hex SHA-256 digest of the decoded
+        file.
+
+    Raises:
+        DecodeError: If a required chunk is missing
+            or the reconstructed hash does not match
+            the manifest.
+    """
+    seed = read_seed(
+        seed_path, encryption_key=encryption_key,
+    )
+    out_path = Path(out_path)
+    h = hashlib.sha256()
+
+    with out_path.open("wb") as out:
+        for op in seed.recipe.ops:
+            chunk = _resolve_chunk(
+                op,
+                seed.recipe.hash_table,
+                seed.raw_payloads,
+                genome,
+            )
+            out.write(chunk)
+            h.update(chunk)
+
+    actual = h.hexdigest()
+    expected = seed.manifest.get("source_sha256")
+    if expected and expected != actual:
+        raise DecodeError(
+            "Decoded SHA-256 mismatch: "
+            f"expected {expected}, got {actual}.",
+            next_action=ACTION_REFETCH_SEED,
+        )
+    return actual
+
+
 def decode_file(
     seed_path: str | Path,
     genome_path: str | Path,
@@ -430,33 +490,11 @@ def decode_file(
             or the reconstructed hash does not match
             the manifest.
     """
-    seed = read_seed(
-        seed_path, encryption_key=encryption_key,
-    )
-    out_path = Path(out_path)
-    h = hashlib.sha256()
-
     with open_genome(genome_path) as genome:
-        with out_path.open("wb") as out:
-            for op in seed.recipe.ops:
-                chunk = _resolve_chunk(
-                    op,
-                    seed.recipe.hash_table,
-                    seed.raw_payloads,
-                    genome,
-                )
-                out.write(chunk)
-                h.update(chunk)
-
-    actual = h.hexdigest()
-    expected = seed.manifest.get("source_sha256")
-    if expected and expected != actual:
-        raise DecodeError(
-            "Decoded SHA-256 mismatch: "
-            f"expected {expected}, got {actual}.",
-            next_action=ACTION_REFETCH_SEED,
+        return decode_file_with_genome(
+            seed_path, genome, out_path,
+            encryption_key=encryption_key,
         )
-    return actual
 
 
 def _fail_report(
