@@ -15,6 +15,7 @@ from seedbraid.container import OP_REF, Recipe, RecipeOp, Seed
 from seedbraid.errors import DecodeError, ExternalToolError
 from seedbraid.ipfs_chunks import (
     IPFSChunkStorage,
+    create_chunk_dag,
     fetch_chunk,
     fetch_chunks_parallel,
     fetch_decode_from_ipfs,
@@ -1197,3 +1198,250 @@ def test_fetch_decode_cli_error(
     )
     assert result.exit_code == 1
     assert "SB_E_IPFS_CHUNK_GET" in result.output
+
+
+# -- create_chunk_dag tests ---------------------------------
+
+
+def test_create_chunk_dag_returns_cid(
+    monkeypatch,
+) -> None:
+    """create_chunk_dag returns DAG root CID."""
+    _patch_ipfs(monkeypatch)
+    expected_cid = "QmDagRoot123"
+    calls: list[list[str]] = []
+
+    def _fake_run(cmd, **kw):  # noqa: ANN001, ANN003, ANN202
+        calls.append(cmd)
+        if "stat" in cmd:
+            return _Proc(
+                returncode=0,
+                stdout=expected_cid + "\n",
+                stderr="",
+            )
+        return _Proc(
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        _fake_run,
+    )
+
+    manifest = ChunkManifest(
+        seed_sha256=_SEED_SHA,
+        chunks=(
+            _make_chunk_entry(_DIGEST_A),
+        ),
+    )
+    result = create_chunk_dag(manifest)
+    assert result == expected_cid
+
+
+def test_create_chunk_dag_cleans_up_mfs(
+    monkeypatch,
+) -> None:
+    """MFS entry is cleaned up after stat."""
+    _patch_ipfs(monkeypatch)
+    calls: list[list[str]] = []
+
+    def _fake_run(cmd, **kw):  # noqa: ANN001, ANN003, ANN202
+        calls.append(cmd)
+        if "stat" in cmd:
+            return _Proc(
+                returncode=0,
+                stdout="QmRoot\n",
+                stderr="",
+            )
+        return _Proc(
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        _fake_run,
+    )
+
+    manifest = ChunkManifest(
+        seed_sha256=_SEED_SHA,
+        chunks=(
+            _make_chunk_entry(_DIGEST_A),
+        ),
+    )
+    create_chunk_dag(manifest)
+
+    rm_calls = [
+        c for c in calls if "rm" in c
+    ]
+    assert len(rm_calls) == 1
+    assert "-r" in rm_calls[0]
+
+
+def test_create_chunk_dag_mkdir_failure_raises(
+    monkeypatch,
+) -> None:
+    """ExternalToolError on MFS mkdir failure."""
+    _patch_ipfs(monkeypatch)
+
+    def _fake_run(cmd, **kw):  # noqa: ANN001, ANN003, ANN202
+        if "mkdir" in cmd:
+            return _Proc(
+                returncode=1,
+                stdout="",
+                stderr="permission denied",
+            )
+        return _Proc(
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        "seedbraid.ipfs_chunks.subprocess.run",
+        _fake_run,
+    )
+
+    manifest = ChunkManifest(
+        seed_sha256=_SEED_SHA,
+        chunks=(
+            _make_chunk_entry(_DIGEST_A),
+        ),
+    )
+    with pytest.raises(
+        ExternalToolError,
+        match="MFS directory",
+    ) as exc_info:
+        create_chunk_dag(manifest)
+    assert exc_info.value.code == (
+        "SB_E_IPFS_MFS"
+    )
+
+
+# -- publish-chunks CLI pin tests ---------------------------
+
+
+def test_publish_chunks_cli_with_pin(
+    monkeypatch, tmp_path,
+) -> None:
+    """--pin creates DAG and pins locally."""
+    dag_calls: list[str] = []
+    pin_calls: list[str] = []
+
+    manifest = ChunkManifest(
+        seed_sha256=_SEED_SHA,
+        chunks=(
+            _make_chunk_entry(_DIGEST_A),
+        ),
+    )
+
+    monkeypatch.setattr(
+        "seedbraid.cli.publish_chunks_from_genome",
+        lambda **kw: manifest,
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.create_chunk_dag",
+        lambda m: (
+            dag_calls.append("called")
+            or "QmDagRoot"
+        ),
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.pin_dag_locally",
+        lambda cid: pin_calls.append(cid),
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.write_chunk_manifest",
+        lambda m, p: None,
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.open_genome",
+        lambda p: _MockGenome({}),
+    )
+
+    result = _cli_runner.invoke(
+        app,
+        [
+            "publish-chunks",
+            str(tmp_path / "test.sbd"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--pin",
+        ],
+    )
+    assert result.exit_code == 0
+    assert len(dag_calls) == 1
+    assert pin_calls == ["QmDagRoot"]
+    assert "dag_root=QmDagRoot" in (
+        result.output
+    )
+
+
+def test_publish_chunks_cli_with_remote_pin(
+    monkeypatch, tmp_path,
+) -> None:
+    """--remote-pin creates DAG and remote pins."""
+    from seedbraid.pinning import RemotePinResult
+
+    dag_calls: list[str] = []
+    remote_calls: list[str] = []
+
+    manifest = ChunkManifest(
+        seed_sha256=_SEED_SHA,
+        chunks=(
+            _make_chunk_entry(_DIGEST_A),
+        ),
+    )
+
+    monkeypatch.setattr(
+        "seedbraid.cli.publish_chunks_from_genome",
+        lambda **kw: manifest,
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.create_chunk_dag",
+        lambda m: (
+            dag_calls.append("called")
+            or "QmDagRoot"
+        ),
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.remote_pin_cid",
+        lambda cid, **kw: (
+            remote_calls.append(cid)
+            or RemotePinResult(
+                provider="psa",
+                cid=cid,
+                status="pinned",
+                request_id="req-1",
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.write_chunk_manifest",
+        lambda m, p: None,
+    )
+    monkeypatch.setattr(
+        "seedbraid.cli.open_genome",
+        lambda p: _MockGenome({}),
+    )
+
+    result = _cli_runner.invoke(
+        app,
+        [
+            "publish-chunks",
+            str(tmp_path / "test.sbd"),
+            "--genome",
+            str(tmp_path / "g"),
+            "--remote-pin",
+        ],
+    )
+    assert result.exit_code == 0
+    assert len(dag_calls) == 1
+    assert remote_calls == ["QmDagRoot"]
+    assert "remote_pin" in result.output
+    assert "dag_root=QmDagRoot" in (
+        result.output
+    )

@@ -144,3 +144,8 @@ ACTION_CHECK_IPFS_NETWORK = (
     "Check IPFS network connectivity"
     " or provide --gateway for fallback."
 )
+ACTION_CHECK_IPFS_MFS = (
+    "Verify IPFS daemon is running and"
+    " MFS is accessible with"
+    " `ipfs files ls /`."
+)

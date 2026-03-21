@@ -29,6 +29,7 @@ from .container import read_seed
 from .errors import (
     ACTION_CHECK_GENOME,
     ACTION_CHECK_IPFS_DAEMON,
+    ACTION_CHECK_IPFS_MFS,
     ACTION_CHECK_IPFS_NETWORK,
     ACTION_REFETCH_SEED,
     DecodeError,
@@ -383,6 +384,158 @@ def publish_chunks_from_genome(
         seed_sha256=seed_sha256,
         chunks=entries,
     )
+
+
+def create_chunk_dag(
+    manifest: ChunkManifest,
+) -> str:
+    """Create IPFS MFS directory containing all chunks.
+
+    Uses ``ipfs files mkdir`` and ``ipfs files cp``
+    to build a DAG, then retrieves the directory CID
+    via ``ipfs files stat --hash``.  Cleans up the
+    MFS entry afterward, leaving only the DAG in the
+    IPFS object store.
+
+    Args:
+        manifest: Populated chunk manifest with
+            at least one chunk entry.
+
+    Returns:
+        CID of the MFS directory root.
+
+    Raises:
+        ExternalToolError: If any MFS operation fails
+            (code ``SB_E_IPFS_MFS``).
+    """
+    ipfs = _require_ipfs()
+    ts = int(time.time() * 1000)
+    mfs_dir = f"/seedbraid-chunks-{ts}"
+
+    proc = subprocess.run(
+        [ipfs, "files", "mkdir", mfs_dir],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        msg = (
+            proc.stderr.strip()
+            or proc.stdout.strip()
+            or "ipfs files mkdir failed"
+        )
+        raise ExternalToolError(
+            "Failed to create MFS directory"
+            f" {mfs_dir}: {msg}",
+            code="SB_E_IPFS_MFS",
+            next_action=ACTION_CHECK_IPFS_MFS,
+        )
+
+    try:
+        for entry in manifest.chunks:
+            cp_proc = subprocess.run(
+                [
+                    ipfs, "files", "cp",
+                    f"/ipfs/{entry.cid}",
+                    f"{mfs_dir}/{entry.cid}",
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+            )
+            if cp_proc.returncode != 0:
+                msg = (
+                    cp_proc.stderr.strip()
+                    or cp_proc.stdout.strip()
+                    or "ipfs files cp failed"
+                )
+                raise ExternalToolError(
+                    "Failed to copy chunk"
+                    f" {entry.cid} to MFS:"
+                    f" {msg}",
+                    code="SB_E_IPFS_MFS",
+                    next_action=(
+                        ACTION_CHECK_IPFS_MFS
+                    ),
+                )
+
+        stat_proc = subprocess.run(
+            [
+                ipfs, "files", "stat",
+                "--hash", mfs_dir,
+            ],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+        if stat_proc.returncode != 0:
+            msg = (
+                stat_proc.stderr.strip()
+                or stat_proc.stdout.strip()
+                or "ipfs files stat failed"
+            )
+            raise ExternalToolError(
+                "Failed to stat MFS directory"
+                f" {mfs_dir}: {msg}",
+                code="SB_E_IPFS_MFS",
+                next_action=(
+                    ACTION_CHECK_IPFS_MFS
+                ),
+            )
+
+        dag_root_cid = stat_proc.stdout.strip()
+        if not dag_root_cid:
+            raise ExternalToolError(
+                "ipfs files stat returned"
+                " empty CID",
+                code="SB_E_IPFS_MFS",
+                next_action=(
+                    ACTION_CHECK_IPFS_MFS
+                ),
+            )
+    finally:
+        subprocess.run(
+            [ipfs, "files", "rm", "-r", mfs_dir],
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+
+    return dag_root_cid
+
+
+def pin_dag_locally(cid: str) -> None:
+    """Pin a DAG root CID locally via ipfs pin add.
+
+    Args:
+        cid: CID to pin locally.
+
+    Raises:
+        ExternalToolError: If pin operation fails.
+    """
+    ipfs = _require_ipfs()
+    proc = subprocess.run(
+        [ipfs, "pin", "add", cid],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if proc.returncode != 0:
+        msg = (
+            proc.stderr.strip()
+            or proc.stdout.strip()
+            or "ipfs pin add failed"
+        )
+        raise ExternalToolError(
+            f"Failed to pin DAG root"
+            f" {cid}: {msg}",
+            code="SB_E_IPFS_PUBLISH",
+            next_action=(
+                f"Run `ipfs pin add {cid}`"
+                " manually and verify"
+                " node health."
+            ),
+        )
 
 
 def fetch_chunk(

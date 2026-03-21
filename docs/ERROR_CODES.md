@@ -30,6 +30,9 @@ This document defines operator-facing error codes emitted by the Seedbraid CLI.
   - `ipfs block put --cid-codec raw` chunk publish operation failed.
 - `SB_E_IPFS_CHUNK_GET`
   - `ipfs block get` chunk fetch operation failed after retries.
+- `SB_E_IPFS_MFS`
+  - IPFS MFS (Mutable File System) operation failed during DAG construction
+    for chunk pinning (`ipfs files mkdir/cp/stat/rm`).
 - `SB_E_IPFS_CHUNK_UNAVAILABLE`
   - Requested chunk is not available on the IPFS network (not found or
     all retries exhausted).

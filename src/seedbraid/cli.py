@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import re
 import secrets
+from dataclasses import replace
 from pathlib import Path
 
 import typer
@@ -35,7 +36,9 @@ from .diagnostics import run_doctor
 from .errors import ExternalToolError, SeedbraidError
 from .ipfs import fetch_seed, pin_health_status, publish_seed, remote_pin_cid
 from .ipfs_chunks import (
+    create_chunk_dag,
     fetch_decode_from_ipfs,
+    pin_dag_locally,
     publish_chunks_from_genome,
 )
 from .storage import open_genome
@@ -474,6 +477,77 @@ def publish_chunks_cmd(
             " Defaults to <seed>.sbd.chunks.json"
         ),
     ),
+    pin: bool = typer.Option(
+        False, "--pin/--no-pin",
+        help=(
+            "Pin DAG root locally after"
+            " publishing chunks."
+        ),
+    ),
+    remote_pin: bool = typer.Option(
+        False,
+        "--remote-pin/--no-remote-pin",
+        help=(
+            "Register DAG root with remote"
+            " pinning provider."
+        ),
+    ),
+    remote_provider: str = typer.Option(
+        "psa",
+        "--remote-provider",
+        help=(
+            "Remote pin provider key"
+            " (currently: psa)."
+        ),
+    ),
+    remote_endpoint: str | None = typer.Option(
+        None,
+        "--remote-endpoint",
+        help=(
+            "Remote pin API endpoint."
+            " Defaults to SB_PINNING_ENDPOINT."
+        ),
+    ),
+    remote_token: str | None = typer.Option(
+        None,
+        "--remote-token",
+        help=(
+            "Remote pin API bearer token."
+            " Defaults to SB_PINNING_TOKEN."
+        ),
+    ),
+    remote_name: str | None = typer.Option(
+        None,
+        "--remote-name",
+        help=(
+            "Optional remote pin name."
+            " Defaults to seed filename."
+        ),
+    ),
+    remote_timeout_ms: int = typer.Option(
+        10_000,
+        "--remote-timeout-ms",
+        min=1,
+        help=(
+            "Remote pin request timeout"
+            " in milliseconds."
+        ),
+    ),
+    remote_retries: int = typer.Option(
+        3,
+        "--remote-retries",
+        min=1,
+        help="Remote pin retry attempts.",
+    ),
+    remote_backoff_ms: int = typer.Option(
+        200,
+        "--remote-backoff-ms",
+        min=0,
+        help=(
+            "Remote pin exponential backoff"
+            " base in milliseconds."
+        ),
+    ),
 ) -> None:
     """Publish all seed chunks to IPFS."""
     typer.echo(
@@ -505,15 +579,85 @@ def publish_chunks_cmd(
     ) as exc:
         raise typer.Exit(code=_print_error(exc))
 
+    if pin or remote_pin:
+        try:
+            manifest = replace(
+                manifest,
+                dag_root_cid=create_chunk_dag(
+                    manifest,
+                ),
+            )
+        except (
+            SeedbraidError, ExternalToolError,
+        ) as exc:
+            raise typer.Exit(
+                code=_print_error(exc),
+            )
+
+        if pin:
+            try:
+                pin_dag_locally(
+                    manifest.dag_root_cid,
+                )
+            except (
+                SeedbraidError,
+                ExternalToolError,
+            ) as exc:
+                raise typer.Exit(
+                    code=_print_error(exc),
+                )
+
+        if remote_pin:
+            try:
+                report = remote_pin_cid(
+                    manifest.dag_root_cid,
+                    provider=remote_provider,
+                    endpoint=remote_endpoint,
+                    token=remote_token,
+                    name=(
+                        remote_name
+                        or seed.name
+                    ),
+                    timeout_ms=(
+                        remote_timeout_ms
+                    ),
+                    retries=remote_retries,
+                    backoff_ms=(
+                        remote_backoff_ms
+                    ),
+                )
+            except (
+                SeedbraidError,
+                ExternalToolError,
+            ) as exc:
+                raise typer.Exit(
+                    code=_print_error(exc),
+                )
+            typer.echo(
+                "remote_pin "
+                f"provider={report.provider} "
+                f"cid={report.cid} "
+                f"status={report.status} "
+                f"request_id="
+                f"{report.request_id or 'none'}"
+            )
+
     out_path = (
         manifest_out
         if manifest_out is not None
         else manifest_path_for_seed(seed)
     )
     write_chunk_manifest(manifest, out_path)
+
+    dag_info = ""
+    if manifest.dag_root_cid:
+        dag_info = (
+            f" dag_root={manifest.dag_root_cid}"
+        )
     typer.echo(
         f"published {len(manifest.chunks)} chunks"
         f" manifest={out_path}"
+        f"{dag_info}"
     )
 
 
