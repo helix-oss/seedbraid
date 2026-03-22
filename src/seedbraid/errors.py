@@ -137,8 +137,16 @@ ACTION_REGENERATE_MANIFEST = (
     " `seedbraid publish-chunks`."
 )
 ACTION_CHECK_IPFS_DAEMON = (
-    "Ensure IPFS daemon is running"
-    " and retry."
+    "Ensure kubo daemon is running"
+    " (`ipfs daemon`) and the API"
+    " endpoint is accessible."
+    " Check with `seedbraid doctor`."
+)
+ACTION_CHECK_KUBO_API = (
+    "Ensure kubo daemon is running"
+    " (`ipfs daemon`) and SB_KUBO_API"
+    " points to the correct endpoint."
+    " Default: http://127.0.0.1:5001/api/v0."
 )
 ACTION_CHECK_IPFS_NETWORK = (
     "Check IPFS network connectivity"
