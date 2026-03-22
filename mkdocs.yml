@@ -72,10 +72,14 @@ nav:
           - seedbraid.container: api/container.md
           - seedbraid.chunking: api/chunking.md
           - seedbraid.storage: api/storage.md
+          - seedbraid.hybrid_storage: api/hybrid_storage.md
       - CLI:
           - seedbraid.cli: api/cli.md
       - Transport:
           - seedbraid.ipfs: api/ipfs.md
+          - seedbraid.ipfs_chunks: api/ipfs_chunks.md
+          - seedbraid.chunk_manifest: api/chunk_manifest.md
+          - seedbraid.cid: api/cid.md
           - seedbraid.pinning: api/pinning.md
           - seedbraid.oci: api/oci.md
       - Integrations:

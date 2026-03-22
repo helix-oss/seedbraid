@@ -7,6 +7,17 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-03-22
+
+### Changed
+- Version bumped to 2.0.0: IPFS distributed chunk storage as major architectural expansion
+
+### Documentation
+- CLAUDE.md: updated module list (16 modules), CLI commands (19 commands), crypto extra, ERROR_CODES.md ref
+- README.md: added `[crypto]` optional extra installation instructions
+- API reference: added docs for ipfs_chunks, chunk_manifest, hybrid_storage, cid modules
+- mkdocs.yml: nav updated with 4 new API reference entries
+
 ## [1.2.0] - 2026-03-22
 
 ### Added
@@ -148,7 +159,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/aimsise/seedbraid/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/aimsise/seedbraid/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/aimsise/seedbraid/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/aimsise/seedbraid/compare/v1.1.1...v1.1.2

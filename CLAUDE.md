@@ -5,14 +5,14 @@ Reference-based file reconstruction with CDC chunking, binary SBD1 seed format, 
 ## Tech Stack
 - Python >=3.12, Typer (CLI), SQLite (genome storage)
 - uv (package manager), ruff (linter), pytest (tests)
-- Optional: zstandard (zstd compression), ipfs CLI (publish/fetch)
+- Optional: zstandard (zstd compression), cryptography (encryption/signing), ipfs CLI (publish/fetch)
 
 ## Commands
 - `uv sync --no-editable --extra dev` — install dev dependencies
 - `uv sync --no-editable --extra dev --extra zstd` — install with zstd support
 - `PYTHONPATH=src uv run --no-editable python -m pytest` — run tests
 - `UV_CACHE_DIR=.uv-cache uv run --no-editable ruff check .` — lint
-- `uv run seedbraid <command>` — run CLI (encode, decode, verify, publish, fetch, doctor)
+- `uv run seedbraid <command>` — run CLI (encode, decode, verify, prime, publish, publish-chunks, fetch-decode, fetch, pin-health, doctor, gen-encryption-key, sign, export-genes, import-genes; sub: genome snapshot/restore, pin remote-add)
 - `PYTHONPATH=src uv run python scripts/bench_gate.py` — performance benchmark gate (CI)
 - `PYTHONPATH=src uv run python scripts/gen_compat_fixtures.py` — regenerate compat fixtures
 
@@ -21,10 +21,10 @@ CDC anchors chunk boundaries on rolling hash fingerprints for byte-shift-resilie
 SQLite genome stores chunks for portability over peak throughput. SBD1 binary TLV format
 enables forward-compatible section growth. Design details in `docs/DESIGN.md`.
 
-- `src/seedbraid/` — all source: cli, codec, chunking, container, storage, ipfs, oci, mlhooks
+- `src/seedbraid/` — all source: cli, codec, chunking, container, storage, hybrid_storage, ipfs, ipfs_chunks, chunk_manifest, cid, pinning, oci, mlhooks, perf, diagnostics, errors
 - `tests/` — pytest suite; IPFS tests auto-skip when `ipfs` CLI unavailable
 - `scripts/` — bench_gate, compat fixture generation, ML/OCI bridge utilities
-- `docs/` — FORMAT.md (binary spec), DESIGN.md, THREAT_MODEL.md, PERFORMANCE.md
+- `docs/` — FORMAT.md (binary spec), DESIGN.md, THREAT_MODEL.md, PERFORMANCE.md, ERROR_CODES.md
 - `examples/` — integration examples: dvc/, oci/, ml/
 
 ## Constraints

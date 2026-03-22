@@ -61,12 +61,15 @@ uvx seedbraid doctor
 ```bash
 # pip
 pip install "seedbraid[zstd]"
+pip install "seedbraid[crypto]"    # encryption / signing support
 
 # pipx
 pipx install "seedbraid[zstd]"
+pipx install "seedbraid[crypto]"
 
 # uvx
 uvx --from "seedbraid[zstd]" seedbraid doctor
+uvx --from "seedbraid[crypto]" seedbraid doctor
 ```
 
 ## Quick Start
