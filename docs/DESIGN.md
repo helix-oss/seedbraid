@@ -24,9 +24,10 @@ Migration policy:
 - `storage.py`: pluggable storage interface, SQLite implementation for genome.
 - `container.py`: SBD1 binary TLV serialization/parsing + integrity checks.
 - `codec.py`: encode/decode/verify/prime workflows and genome snapshot/restore.
-- `ipfs.py`: subprocess wrapper for `ipfs add/cat/pin`.
+- `ipfs.py`: kubo HTTP RPC client for IPFS add/cat/pin operations.
+- `ipfs_http.py`: thin kubo HTTP RPC wrapper over urllib.request.
 - `cli.py`: Typer command surface.
-- `ipfs_chunks.py`: individual chunk publish/fetch via `ipfs block put/get`.
+- `ipfs_chunks.py`: individual chunk publish/fetch via kubo HTTP block API.
 - `chunk_manifest.py`: chunk CID sidecar (`.sbd.chunks.json`) management.
 - `hybrid_storage.py`: combined local SQLite + IPFS fallback storage.
 - `cid.py`: CIDv1 deterministic computation from SHA-256 digest.
@@ -154,8 +155,8 @@ Migration policy:
 - Chunk CID metadata is stored in a JSON sidecar (`.sbd.chunks.json`);
   SBD1/SBE1 wire format is unchanged.
 - `IPFSChunkStorage` implements the `GenomeStorage` Protocol backed by
-  `ipfs block put/get/stat` subprocess calls with retry and exponential
-  backoff.
+  kubo HTTP RPC API calls (`/api/v0/block/put`, `/get`, `/stat`) with
+  retry and exponential backoff.
 - Parallel publish uses `ThreadPoolExecutor` (default 16 workers);
   parallel fetch is batched (default `batch_size=100`) to respect the
   streaming-first memory model.
@@ -176,11 +177,17 @@ Migration policy:
   via `ipfs files stat --hash`, and removes the MFS entry in a
   `finally` block.  The DAG remains in the IPFS object store,
   pinnable via local `ipfs pin add` or remote PSA pin.
-- Out of scope for this iteration: asyncio fetch, chunk-level encryption,
-  IPFS HTTP API direct calls (subprocess baseline maintained).
+- IPFS operations use kubo HTTP RPC API (`/api/v0/`) via stdlib
+  `urllib.request`; subprocess CLI calls are removed.  The API
+  endpoint defaults to `http://127.0.0.1:5001/api/v0` and is
+  configurable via `SB_KUBO_API` environment variable.
+- `seedbraid doctor` checks kubo API reachability via
+  `POST /api/v0/version` instead of `ipfs --version` CLI probe.
+- Out of scope for this iteration: asyncio fetch, chunk-level encryption.
 
 ## Assumptions
-- `ipfs` CLI installed/configured when publish/fetch is used.
+- kubo daemon running (HTTP RPC API accessible at `SB_KUBO_API`,
+  default `http://127.0.0.1:5001/api/v0`) when publish/fetch is used.
 - Genome path points to writable location.
 - Single-process access for SQLite baseline (no aggressive concurrency tuning).
 

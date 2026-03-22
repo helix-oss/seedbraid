@@ -35,6 +35,19 @@
 - A tampered `.sbd.chunks.json` sidecar could map hashes to wrong CIDs,
   causing fetch of incorrect or malicious chunk payloads.
 
+8. Kubo API endpoint exposure
+- Default kubo API listens on 127.0.0.1:5001 (localhost only).
+  Misconfigured nodes exposing the API to public networks allow
+  unauthorized content injection, retrieval, and node control via
+  the full kubo RPC API surface (not limited to seedbraid operations).
+
+9. SB_KUBO_API endpoint override
+- The `SB_KUBO_API` environment variable allows pointing seedbraid
+  to an arbitrary HTTP endpoint. A compromised or malicious endpoint
+  could return tampered block data; however, chunk content is
+  SHA-256-verified post-fetch so data integrity is preserved.
+  An attacker could deny service by returning errors.
+
 ## Current Mitigations
 - Integrity section validates manifest, recipe, and full payload CRC32.
 - Verify/decode enforce expected output SHA-256.
@@ -47,6 +60,10 @@
 - DAG pinning via MFS root CID reduces GC exposure for published chunks.
 - `seedbraid publish-chunks` displays a warning when publishing to a
   public IPFS network without encryption.
+- kubo API defaults to localhost-only endpoint (127.0.0.1:5001);
+  seedbraid does not modify kubo listener configuration.
+- `SB_KUBO_API` override is documented as operator responsibility;
+  fetched chunk bytes are SHA-256-verified regardless of endpoint.
 
 ## KDF Cost Parameters
 - SBE1 v2/v3 embed scrypt parameters (n, r, p) in the header; default is n=32768, r=8, p=1.

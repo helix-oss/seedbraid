@@ -19,7 +19,7 @@ This document defines operator-facing error codes emitted by the Seedbraid CLI.
 
 ## Operational Codes
 - `SB_E_IPFS_NOT_FOUND`
-  - `ipfs` CLI was not found on `PATH`.
+  - kubo HTTP API is unreachable (daemon not running or wrong endpoint).
 - `SB_E_IPFS_PUBLISH`
   - `ipfs add` or pin operation failed.
 - `SB_E_IPFS_FETCH`
@@ -27,12 +27,16 @@ This document defines operator-facing error codes emitted by the Seedbraid CLI.
 - `SB_E_IPFS_PIN_STATUS`
   - Pin status query failed unexpectedly.
 - `SB_E_IPFS_CHUNK_PUT`
-  - `ipfs block put --cid-codec raw` chunk publish operation failed.
+  - kubo HTTP `/api/v0/block/put` chunk publish operation failed.
 - `SB_E_IPFS_CHUNK_GET`
-  - `ipfs block get` chunk fetch operation failed after retries.
+  - kubo HTTP `/api/v0/block/get` chunk fetch operation failed after retries.
 - `SB_E_IPFS_MFS`
-  - IPFS MFS (Mutable File System) operation failed during DAG construction
-    for chunk pinning (`ipfs files mkdir/cp/stat/rm`).
+  - IPFS MFS operation failed during DAG construction for chunk pinning
+    (`/api/v0/files/mkdir`, `/cp`, `/stat`, `/rm`).
+- `SB_E_KUBO_API_UNREACHABLE`
+  - kubo HTTP API did not respond. Ensure `ipfs daemon` is running
+    and the endpoint configured in `SB_KUBO_API` (default
+    `http://127.0.0.1:5001/api/v0`) is reachable.
 - `SB_E_CHUNK_MANIFEST_FORMAT`
   - Chunk manifest sidecar (`.sbd.chunks.json`) has invalid format,
     unknown version, or missing required fields.
