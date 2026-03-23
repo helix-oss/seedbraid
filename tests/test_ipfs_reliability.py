@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from seedbraid.cli import app
 from seedbraid.container import OP_RAW, Recipe, RecipeOp, serialize_seed
+from seedbraid.errors import ExternalToolError
 from seedbraid.ipfs import fetch_seed, pin_health_status
-
-
-@dataclass
-class _Proc:
-    returncode: int
-    stdout: bytes | str
-    stderr: bytes | str
 
 
 def _minimal_seed_bytes() -> bytes:
@@ -41,21 +34,20 @@ def test_fetch_retries_and_succeeds_on_second_attempt(
 ) -> None:
     out = tmp_path / "fetched.sbd"
     seed_blob = _minimal_seed_bytes()
-    calls: list[list[str]] = []
+    call_count = [0]
     sleeps: list[float] = []
 
-    def _fake_run(cmd, check=False, capture_output=False, text=False):  # noqa: ANN001, ANN202
-        calls.append(cmd)
-        if len(calls) == 1:
-            return _Proc(
-                returncode=1, stdout=b"", stderr=b"temporary ipfs failure"
+    def _fake_post_raw(path, **params):  # noqa: ANN001, ANN003, ANN202
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise ExternalToolError(
+                "temporary ipfs failure",
+                code="SB_E_KUBO_API_ERROR",
+                next_action="retry",
             )
-        return _Proc(returncode=0, stdout=seed_blob, stderr=b"")
+        return seed_blob
 
-    monkeypatch.setattr(
-        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
-    )
-    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr("seedbraid.ipfs_http.post_raw", _fake_post_raw)
     monkeypatch.setattr(
         "seedbraid.ipfs.time.sleep",
         lambda s: sleeps.append(s),
@@ -74,8 +66,11 @@ def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
     seed_blob = _minimal_seed_bytes()
     requested_urls: list[str] = []
 
-    def _fake_run(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
-        return _Proc(returncode=1, stdout=b"", stderr=b"offline")
+    def _always_fail(path, **params):  # noqa: ANN001, ANN003, ANN202
+        raise ExternalToolError(
+            "offline",
+            code="SB_E_KUBO_API_ERROR",
+        )
 
     class _Resp:
         def __init__(self, data: bytes) -> None:
@@ -95,10 +90,7 @@ def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
         assert timeout == 30
         return _Resp(seed_blob)
 
-    monkeypatch.setattr(
-        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
-    )
-    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr("seedbraid.ipfs_http.post_raw", _always_fail)
     monkeypatch.setattr("seedbraid.ipfs.urllib.request.urlopen", _fake_urlopen)
 
     fetch_seed(
@@ -113,20 +105,29 @@ def test_fetch_uses_gateway_fallback_after_retry_exhaustion(
 
 
 def test_pin_health_status_reports_ok_and_not_ok(monkeypatch) -> None:
-    queued = [
-        _Proc(returncode=0, stdout="bafy-ok recursive\n", stderr=""),
-        _Proc(returncode=0, stdout="Key: bafy-ok\nSize: 1024\n", stderr=""),
-        _Proc(returncode=1, stdout="", stderr="bafy-miss is not pinned"),
-        _Proc(returncode=1, stdout="", stderr="block not found"),
-    ]
+    def _fake_post_json(path, **params):  # noqa: ANN001, ANN003, ANN202
+        cid = params.get("arg", "")
+        if path == "/pin/ls":
+            if cid == "bafy-ok":
+                return {
+                    "Keys": {
+                        "bafy-ok": {"Type": "recursive"},
+                    }
+                }
+            raise ExternalToolError(
+                "bafy-miss is not pinned",
+                code="SB_E_KUBO_API_ERROR",
+            )
+        if path == "/block/stat":
+            if cid == "bafy-ok":
+                return {"Key": cid, "Size": 1024}
+            raise ExternalToolError(
+                "block not found",
+                code="SB_E_KUBO_API_ERROR",
+            )
+        return {}
 
-    def _fake_run(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
-        return queued.pop(0)
-
-    monkeypatch.setattr(
-        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
-    )
-    monkeypatch.setattr("seedbraid.ipfs.subprocess.run", _fake_run)
+    monkeypatch.setattr("seedbraid.ipfs_http.post_json", _fake_post_json)
 
     ok_report = pin_health_status("bafy-ok")
     miss_report = pin_health_status("bafy-miss")

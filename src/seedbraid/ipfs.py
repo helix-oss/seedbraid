@@ -1,19 +1,19 @@
 """IPFS transport: publish, fetch, pin-health, and remote pinning.
 
-Wraps the ``ipfs`` CLI for seed distribution and provides HTTP
-gateway fallback for fetch operations.
+Routes through the ``ipfs_http`` module (kubo HTTP RPC API)
+for seed distribution. Provides HTTP gateway fallback for
+fetch operations.
 """
 
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
 
+from . import ipfs_http
 from .container import (
     is_encrypted_seed_data,
     read_seed,
@@ -26,22 +26,10 @@ from .pinning import (
 )
 
 
-def _require_ipfs() -> str:
-    ipfs = shutil.which("ipfs")
-    if ipfs is None:
-        raise ExternalToolError(
-            "ipfs CLI not found. Install IPFS and ensure `ipfs` is on PATH. "
-            "Check with: `ipfs --version`.",
-            code="SB_E_IPFS_NOT_FOUND",
-            next_action="Install Kubo and verify with `ipfs --version`.",
-        )
-    return ipfs
-
-
 def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
     """Publish a seed file to IPFS and return its CID.
 
-    Adds the seed via ``ipfs add`` and optionally
+    Adds the seed via kubo ``/add`` API and optionally
     pins it locally.
 
     Args:
@@ -53,11 +41,9 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
         IPFS.
 
     Raises:
-        ExternalToolError: If the ``ipfs`` CLI is
-            missing, the daemon is unreachable, or
-            the pin operation fails.
+        ExternalToolError: If the kubo API is
+            unreachable, or the pin operation fails.
     """
-    ipfs = _require_ipfs()
     seed_path = Path(seed_path)
     if not seed_path.exists():
         raise ExternalToolError(
@@ -69,21 +55,10 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
             ),
         )
 
-    proc = subprocess.run(
-        [ipfs, "add", "-Q", str(seed_path)],
-        check=False,
-        text=True,
-        capture_output=True,
+    result = ipfs_http.post_multipart_file_json(
+        "/add", seed_path, quieter="true",
     )
-    if proc.returncode != 0:
-        msg = proc.stderr.strip() or proc.stdout.strip() or "ipfs add failed"
-        raise ExternalToolError(
-            f"Failed to publish seed to IPFS: {msg}",
-            code="SB_E_IPFS_PUBLISH",
-            next_action="Ensure IPFS daemon is running and retry publish.",
-        )
-
-    cid = proc.stdout.strip()
+    cid = result.get("Hash", "")
     if not cid:
         raise ExternalToolError(
             "IPFS publish did not return CID.",
@@ -95,28 +70,19 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
         )
 
     if pin:
-        pin_proc = subprocess.run(
-            [ipfs, "pin", "add", cid],
-            check=False,
-            text=True,
-            capture_output=True,
-        )
-        if pin_proc.returncode != 0:
-            msg = (
-                pin_proc.stderr.strip()
-                or pin_proc.stdout.strip()
-                or "ipfs pin add failed"
-            )
+        try:
+            ipfs_http.post_json("/pin/add", arg=cid)
+        except ExternalToolError as exc:
             raise ExternalToolError(
                 f"Published CID {cid},"
-                f" but pin failed: {msg}",
+                f" but pin failed: {exc}",
                 code="SB_E_IPFS_PUBLISH",
                 next_action=(
                     "Run `ipfs pin add <cid>`"
                     " manually and verify"
                     " node health."
                 ),
-            )
+            ) from exc
 
     return cid
 
@@ -173,7 +139,7 @@ def fetch_seed(
 ) -> None:
     """Fetch a seed from IPFS by CID and write it to disk.
 
-    Retries ``ipfs cat`` with exponential backoff.
+    Retries kubo ``/cat`` API with exponential backoff.
     Falls back to an HTTP gateway when provided.
     Validates the fetched seed before returning.
 
@@ -181,8 +147,7 @@ def fetch_seed(
         cid: IPFS content identifier to fetch.
         out_path: Destination file path for the
             downloaded seed.
-        retries: Maximum number of ``ipfs cat``
-            attempts.
+        retries: Maximum number of fetch attempts.
         backoff_ms: Initial backoff in milliseconds,
             doubled on each retry.
         gateway: Optional HTTP gateway URL for
@@ -193,7 +158,6 @@ def fetch_seed(
         ExternalToolError: If all fetch attempts fail
             or the fetched data is not a valid seed.
     """
-    ipfs = _require_ipfs()
     out_path = Path(out_path)
     if retries < 1:
         raise ExternalToolError(
@@ -210,18 +174,12 @@ def fetch_seed(
 
     last_err = "ipfs cat failed"
     for attempt in range(1, retries + 1):
-        proc = subprocess.run(
-            [ipfs, "cat", cid],
-            check=False,
-            capture_output=True,
-        )
-        if proc.returncode == 0:
-            _validate_fetched_seed_blob(cid, out_path, proc.stdout)
+        try:
+            blob = ipfs_http.post_raw("/cat", arg=cid)
+            _validate_fetched_seed_blob(cid, out_path, blob)
             return
-        last_err = (
-            proc.stderr.decode("utf-8", errors="replace")
-            .strip() or "ipfs cat failed"
-        )
+        except ExternalToolError as exc:
+            last_err = str(exc)
         if attempt < retries and backoff_ms > 0:
             time.sleep((backoff_ms * (2 ** (attempt - 1))) / 1000)
 
@@ -276,60 +234,32 @@ def pin_health_status(cid: str) -> dict[str, str | bool | None]:
             unreachable or the pin query fails
             unexpectedly.
     """
-    ipfs = _require_ipfs()
-
-    pin_proc = subprocess.run(
-        [ipfs, "pin", "ls", cid],
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    if pin_proc.returncode == 0:
-        pinned = True
-        pin_type = None
-        pin_line = pin_proc.stdout.strip().splitlines()
-        if pin_line:
-            parts = pin_line[0].split()
-            if len(parts) >= 2:
-                pin_type = parts[-1]
-        pin_reason = None
-    else:
-        pin_msg = (
-            pin_proc.stderr.strip()
-            or pin_proc.stdout.strip()
-            or "pin status check failed"
+    try:
+        pin_result = ipfs_http.post_json(
+            "/pin/ls", arg=cid,
         )
-        lowered = pin_msg.lower()
-        if "not pinned" in lowered or "is not pinned" in lowered:
+        pinned = True
+        keys = pin_result.get("Keys", {})
+        pin_type = None
+        if cid in keys:
+            pin_type = keys[cid].get("Type")
+        pin_reason = None
+    except ExternalToolError as exc:
+        msg = str(exc).lower()
+        if "not pinned" in msg or "is not pinned" in msg:
             pinned = False
             pin_type = None
-            pin_reason = pin_msg
+            pin_reason = str(exc)
         else:
-            raise ExternalToolError(
-                "Failed to query pin status"
-                f" for CID {cid}: {pin_msg}",
-                code="SB_E_IPFS_PIN_STATUS",
-                next_action=(
-                    "Verify IPFS daemon is running"
-                    " and retry"
-                    " `seedbraid pin-health <cid>`."
-                ),
-            )
+            raise
 
-    block_proc = subprocess.run(
-        [ipfs, "block", "stat", cid],
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    block_available = block_proc.returncode == 0
-    block_reason = None
-    if not block_available:
-        block_reason = (
-            block_proc.stderr.strip()
-            or block_proc.stdout.strip()
-            or "block availability check failed"
-        )
+    try:
+        ipfs_http.post_json("/block/stat", arg=cid)
+        block_available = True
+        block_reason = None
+    except ExternalToolError as exc:
+        block_available = False
+        block_reason = str(exc)
 
     reason = pin_reason or block_reason
     if pin_reason and block_reason:

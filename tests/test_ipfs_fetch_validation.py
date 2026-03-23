@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -14,13 +13,6 @@ from seedbraid.container import (
 )
 from seedbraid.errors import ExternalToolError
 from seedbraid.ipfs import fetch_seed
-
-
-@dataclass
-class _Proc:
-    returncode: int
-    stdout: bytes
-    stderr: bytes
 
 
 def _minimal_seed_bytes() -> bytes:
@@ -49,13 +41,8 @@ def test_fetch_accepts_encrypted_seed_without_key(
     out = tmp_path / "fetched.sbd"
 
     monkeypatch.setattr(
-        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
-    )
-    monkeypatch.setattr(
-        "seedbraid.ipfs.subprocess.run",
-        lambda *_args, **_kwargs: _Proc(
-            returncode=0, stdout=encrypted, stderr=b""
-        ),
+        "seedbraid.ipfs_http.post_raw",
+        lambda path, **params: encrypted,
     )
 
     fetch_seed("bafy-test-cid", out)
@@ -69,13 +56,8 @@ def test_fetch_rejects_malformed_encrypted_seed(
     malformed = b"SBE1" + b"\x00" * 8
 
     monkeypatch.setattr(
-        "seedbraid.ipfs.shutil.which", lambda _name: "/usr/bin/ipfs"
-    )
-    monkeypatch.setattr(
-        "seedbraid.ipfs.subprocess.run",
-        lambda *_args, **_kwargs: _Proc(
-            returncode=0, stdout=malformed, stderr=b""
-        ),
+        "seedbraid.ipfs_http.post_raw",
+        lambda path, **params: malformed,
     )
 
     with pytest.raises(
