@@ -211,7 +211,7 @@ seedbraid doctor --genome ./genome
 `doctor` checks:
 
 - Python runtime compatibility (`>=3.12`)
-- IPFS CLI availability and version
+- kubo API reachability (`SB_KUBO_API`)
 - `IPFS_PATH` state
 - genome path writability
 - compression support (`zlib`, optional `zstd`)
@@ -281,7 +281,7 @@ seedbraid fetch <cid> --out fetched.sbd --retries 5 --backoff-ms 300
 seedbraid fetch <cid> --out fetched.sbd --gateway https://ipfs.io/ipfs
 ```
 
-`fetch` retries `ipfs cat` with exponential backoff and can fall back to an HTTP gateway.
+`fetch` retries with exponential backoff via the kubo HTTP API and can fall back to an HTTP gateway.
 
 #### Pin Health
 ```bash
@@ -329,18 +329,26 @@ eval "$(seedbraid gen-encryption-key --shell)"
 
 ## IPFS Setup
 
-Check whether the IPFS CLI is available:
+Start the kubo daemon:
 
 ```bash
-ipfs --version
+ipfs daemon
 ```
 
-If missing, install Kubo and ensure `ipfs` is available on your `PATH`.
+By default, seedbraid connects to the kubo HTTP API at
+`http://127.0.0.1:5001/api/v0`.  Override with the `SB_KUBO_API`
+environment variable:
+
+```bash
+export SB_KUBO_API=http://127.0.0.1:5001/api/v0
+```
+
+Run `seedbraid doctor` to verify connectivity.
 
 ## Common Failures
 
-- `ipfs CLI not found`
-  - Install IPFS and confirm with `ipfs --version`
+- `kubo daemon not reachable`
+  - Install Kubo, start the daemon with `ipfs daemon`, and verify with `seedbraid doctor`
 - `Missing required chunk` on decode or verify
   - Provide the correct `--genome`, or re-encode with `--portable`
 - `zstd` compression error
@@ -352,7 +360,7 @@ If missing, install Kubo and ensure `ipfs` is available on your `PATH`.
 |---|---|---|
 | Encryption requested but key missing | `SB_E_ENCRYPTION_KEY_MISSING` | Pass `--encryption-key` or set `SB_ENCRYPTION_KEY`. |
 | Signing requested but key missing | `SB_E_SIGNING_KEY_MISSING` | Export signing key env var and retry `seedbraid sign`. |
-| IPFS CLI missing | `SB_E_IPFS_NOT_FOUND` | Install Kubo and confirm `ipfs --version`. |
+| Kubo daemon unreachable | `SB_E_IPFS_NOT_FOUND` | Install Kubo, run `ipfs daemon`, set `SB_KUBO_API` if non-default endpoint. |
 | IPFS fetch/publish failure | `SB_E_IPFS_FETCH` / `SB_E_IPFS_PUBLISH` | Check daemon/network, retry, use gateway fallback if needed. |
 | Remote pin configuration missing | `SB_E_REMOTE_PIN_CONFIG` | Set endpoint/token env vars or pass options. |
 | Remote pin auth failed | `SB_E_REMOTE_PIN_AUTH` | Verify provider token permissions and retry. |
@@ -362,7 +370,7 @@ If missing, install Kubo and ensure `ipfs` is available on your `PATH`.
 | IPFS chunk publish failed | `SB_E_IPFS_CHUNK_PUT` | Check IPFS daemon, retry, verify chunk availability. |
 | IPFS chunk fetch failed | `SB_E_IPFS_CHUNK_GET` | Check daemon/network, retry, use `--gateway` fallback. |
 | Chunk manifest invalid | `SB_E_CHUNK_MANIFEST_FORMAT` | Regenerate manifest with `publish-chunks`. |
-| IPFS MFS operation failed | `SB_E_IPFS_MFS` | Verify daemon is running with `ipfs files ls /`. |
+| IPFS MFS operation failed | `SB_E_IPFS_MFS` | Verify daemon is running with `seedbraid doctor`. |
 
 ---
 
@@ -396,7 +404,7 @@ PYTHONPATH=src uv run --no-editable python -m pytest
 PYTHONPATH=src uv run --no-editable python -m pytest tests/test_compat_fixtures.py
 ```
 
-IPFS tests auto-skip when `ipfs` is not installed.
+IPFS tests auto-skip when the kubo daemon is not reachable.
 
 Compatibility fixtures are stored in `tests/fixtures/compat/v1/` and validated by `tests/test_compat_fixtures.py`.
 

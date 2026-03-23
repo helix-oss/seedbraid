@@ -738,7 +738,10 @@ def fetch(
         3,
         "--retries",
         min=1,
-        help="Number of ipfs cat attempts before failing or gateway fallback.",
+        help=(
+            "Number of kubo API cat attempts"
+            " before failing or gateway fallback."
+        ),
     ),
     backoff_ms: int = typer.Option(
         200,
@@ -859,7 +862,11 @@ def pin_remote_add(
 def doctor(
     genome: Path = typer.Option(Path("./genome"), "--genome"),
 ) -> None:
-    """Run environment and dependency diagnostics."""
+    """Run environment and dependency diagnostics.
+
+    Checks: Python version, kubo API reachability (SB_KUBO_API),
+    IPFS_PATH, genome path writability, compression libraries.
+    """
     try:
         report = run_doctor(genome)
     except (SeedbraidError, ExternalToolError) as exc:

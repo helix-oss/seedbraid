@@ -1,22 +1,18 @@
 """IPFS distributed chunks E2E integration tests.
 
-Tests are skipped automatically when the ``ipfs``
-CLI is not installed or cannot be initialized.
-Requires a local Kubo node (daemon not needed --
-``ipfs block put/get`` operates on the local
-blockstore directly).
+Tests are skipped automatically when the kubo daemon
+is not reachable via HTTP API.  Start a local daemon
+with ``ipfs daemon`` before running these tests.
 """
 
 from __future__ import annotations
 
 import hashlib
-import os
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from seedbraid import ipfs_http
 from seedbraid.chunk_manifest import (
     manifest_path_for_seed,
     read_chunk_manifest,
@@ -74,51 +70,15 @@ def _encode(
 
 
 @pytest.fixture(scope="module")
-def ipfs_repo(tmp_path_factory):
-    """Initialize an isolated IPFS repo.
-
-    Skips the entire module when ``ipfs`` CLI is
-    not installed, ``ipfs init`` fails, or the
-    kubo daemon is not reachable via HTTP API.
-    """
-    if shutil.which("ipfs") is None:
-        pytest.skip("ipfs CLI not installed")
-    repo = tmp_path_factory.mktemp("ipfs-repo")
-    result = subprocess.run(
-        ["ipfs", "init"],
-        env={**os.environ, "IPFS_PATH": str(repo)},
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        pytest.skip(
-            "ipfs init failed:"
-            f" {result.stderr.strip()}"
-        )
-    from seedbraid.ipfs_http import check_daemon
-    if not check_daemon():
-        pytest.skip(
-            "kubo daemon not reachable"
-            " via HTTP API"
-        )
-    return repo
-
-
-@pytest.fixture(autouse=True)
-def _set_ipfs_env(
-    ipfs_repo: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Point IPFS_PATH to the isolated repo."""
-    monkeypatch.setenv(
-        "IPFS_PATH", str(ipfs_repo),
-    )
+def _require_kubo() -> None:
+    """Skip module when kubo daemon is not reachable."""
+    if not ipfs_http.check_daemon():
+        pytest.skip("kubo daemon not reachable via HTTP API")
 
 
 def test_publish_fetch_roundtrip_small(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """E2E: encode -> publish -> fetch-decode
     produces bit-perfect output."""
@@ -161,7 +121,7 @@ def test_publish_fetch_roundtrip_small(
 
 def test_publish_fetch_roundtrip_with_dedup(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """Duplicate chunks are deduped on publish while
     roundtrip stays bit-perfect."""
@@ -202,7 +162,7 @@ def test_publish_fetch_roundtrip_with_dedup(
 
 def test_manifest_sidecar_roundtrip(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """Manifest written by publish matches when
     read back from disk."""
@@ -238,7 +198,7 @@ def test_manifest_sidecar_roundtrip(
 
 def test_fetch_decode_sha256_verification(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """Returned SHA-256 from fetch_decode matches
     sha256_file on the reconstructed output."""
@@ -274,7 +234,7 @@ def test_fetch_decode_sha256_verification(
 
 def test_e2e_with_batch_size_1(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """batch_size=1 forces every op into its own
     batch, exercising all boundary conditions."""
@@ -312,7 +272,7 @@ def test_e2e_with_batch_size_1(
 
 def test_progress_callback_invoked(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
     """Progress callbacks fire for both publish
     and fetch-decode phases."""
@@ -356,21 +316,18 @@ def test_progress_callback_invoked(
 
 def test_cid_matches_ipfs_block_put(
     tmp_path: Path,
-    ipfs_repo: Path,
+    _require_kubo: None,
 ) -> None:
-    """Python-computed CID matches ipfs block put
-    output for raw codec blocks."""
+    """Python-computed CID matches kubo HTTP API
+    block put output for raw codec blocks."""
     data = b"cid verification test payload"
     expected_cid = sha256_to_cidv1_raw(data)
 
-    proc = subprocess.run(
-        [
-            "ipfs", "block", "put",
-            "--cid-codec", "raw",
-        ],
-        input=data,
-        check=True,
-        capture_output=True,
+    result = ipfs_http.post_multipart_json(
+        "/block/put",
+        "data",
+        data,
+        **{"cid-codec": "raw", "mhtype": "sha2-256"},
     )
-    actual_cid = proc.stdout.decode().strip()
+    actual_cid = result.get("Key", "")
     assert actual_cid == expected_cid

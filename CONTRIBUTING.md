@@ -7,6 +7,7 @@ Thanks for contributing.
 ## Prerequisites
 - Python 3.12+
 - `uv`
+- kubo daemon (for IPFS E2E tests): `ipfs daemon`
 
 ## Setup
 ```bash

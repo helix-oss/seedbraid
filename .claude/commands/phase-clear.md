@@ -11,8 +11,6 @@ Current state:
 !`git log --oneline -5`
 
 ## Instructions
-
-## Instructions
 0. If $ARGUMENTS is empty, list available phases and ask user to choose:
    investigate / plan / implement / test / review / commit
 1. Summarize current work state briefly

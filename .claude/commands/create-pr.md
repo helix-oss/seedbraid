@@ -13,14 +13,14 @@ Target branch is $ARGUMENTS if provided, otherwise default to main.
 
 - Current branch: !`git branch --show-current`
 - Target branch: $ARGUMENTS (default: main)
-- Commits ahead of target: !`git log origin/main..HEAD --oneline`
-- Diff stats: !`git diff origin/main --stat`
+- Commits ahead of target (vs main): !`git log origin/main..HEAD --oneline`
+- Diff stats (vs main): !`git diff origin/main --stat`
 
 ## Steps
 
 1. Run `gh auth status` to verify authentication. If not authenticated, tell the user to run `gh auth login` and stop immediately.
 
-2. Determine the target branch. If $ARGUMENTS is provided, use it. Otherwise use main.
+2. Determine the target branch. If $ARGUMENTS is provided, use it. Otherwise use main. If the target is not main, re-run `git log` and `git diff` against the actual target branch (the pre-computed context above is always against main).
 
 3. If there are no commits ahead of the target branch, print "No changes to create PR for." and stop.
 

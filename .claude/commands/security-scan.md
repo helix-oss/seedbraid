@@ -9,6 +9,10 @@ Security-sensitive modules:
 - `src/seedbraid/container.py` — SBD1 binary format parsing
 - `src/seedbraid/codec.py` — encoding/decoding
 - `src/seedbraid/ipfs.py` — IPFS transport
+- `src/seedbraid/ipfs_http.py` — kubo HTTP RPC client
+- `src/seedbraid/ipfs_chunks.py` — IPFS distributed chunk operations
+- `src/seedbraid/cid.py` — CID validation and computation
+- `src/seedbraid/chunk_manifest.py` — chunk manifest integrity
 - `src/seedbraid/pinning.py` — IPFS pinning services
 
 ## Instructions

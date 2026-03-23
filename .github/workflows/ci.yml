@@ -49,8 +49,26 @@ jobs:
         uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --no-editable --extra dev
+      - name: Install Kubo
+        uses: ipfs/download-ipfs-distribution-action@v1
+        with:
+          name: kubo
+          version: v0.32.1
+      - name: Start kubo daemon
+        run: |
+          ipfs init
+          ipfs daemon --offline &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:5001/api/v0/version > /dev/null && break
+            sleep 0.5
+          done
+        env:
+          IPFS_PATH: /tmp/ipfs-ci
       - name: Pytest with coverage gate
         run: PYTHONPATH=src uv run --no-sync --no-editable python -m pytest --cov-fail-under=80
+        env:
+          IPFS_PATH: /tmp/ipfs-ci
+          SB_KUBO_API: http://127.0.0.1:5001/api/v0
 
   compat:
     runs-on: ubuntu-latest

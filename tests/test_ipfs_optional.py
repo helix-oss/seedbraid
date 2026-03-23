@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -12,21 +10,8 @@ from seedbraid.ipfs import fetch_seed, publish_seed
 
 
 def test_publish_fetch_if_ipfs_installed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
-    if shutil.which("ipfs") is None:
-        pytest.skip("ipfs CLI not installed")
-
-    ipfs_repo = tmp_path / "ipfs-repo"
-    monkeypatch.setenv("IPFS_PATH", str(ipfs_repo))
-    init = subprocess.run(
-        ["ipfs", "init"], check=False, capture_output=True, text=True
-    )
-    if init.returncode != 0:
-        pytest.skip(
-            f"ipfs init failed in test environment: {init.stderr.strip()}"
-        )
-
     from seedbraid.ipfs_http import check_daemon
 
     if not check_daemon():

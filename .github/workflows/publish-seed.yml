@@ -279,6 +279,17 @@ jobs:
           install -m 0755 /tmp/kubo/ipfs "${HOME}/.local/bin/ipfs"
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
           "${HOME}/.local/bin/ipfs" --version
+      - name: Start kubo daemon
+        if: ${{ !inputs.dry_run }}
+        run: |
+          ipfs init
+          ipfs daemon &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:5001/api/v0/version > /dev/null && break
+            sleep 0.5
+          done
+        env:
+          IPFS_PATH: /tmp/ipfs-publish
       - name: Dry-run publish command
         if: ${{ inputs.dry_run }}
         run: |
@@ -295,12 +306,6 @@ jobs:
         id: publish
         if: ${{ !inputs.dry_run }}
         run: |
-          if ! command -v ipfs >/dev/null 2>&1; then
-            echo "::error::ipfs CLI not found after Kubo install step."
-            echo "next_action: check install logs, or rerun with dry_run=true."
-            exit 1
-          fi
-
           pin_flag="--no-pin"
           if [ "${{ inputs.pin }}" = "true" ]; then
             pin_flag="--pin"
@@ -308,6 +313,9 @@ jobs:
 
           cid="$(uv run --no-sync --no-editable seedbraid publish "${{ steps.prep.outputs.seed_path }}" ${pin_flag})"
           echo "cid=${cid}" >> "$GITHUB_OUTPUT"
+        env:
+          IPFS_PATH: /tmp/ipfs-publish
+          SB_KUBO_API: http://127.0.0.1:5001/api/v0
       - name: Publish result
         if: ${{ !inputs.dry_run }}
         run: |
