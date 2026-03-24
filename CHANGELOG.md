@@ -7,22 +7,34 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-03-22
+## [2.0.0] - 2026-03-25
 
 ### Changed
 - Version bumped to 2.0.0: IPFS distributed chunk storage as major architectural expansion
+- All IPFS operations migrated from subprocess CLI calls to kubo HTTP RPC API (`/api/v0/`) via stdlib `urllib.request`
+- `SB_KUBO_API` environment variable for configurable kubo API endpoint (default `http://127.0.0.1:5001/api/v0`)
+- CI: kubo daemon startup with health check polling for IPFS E2E tests
+- IPFS tests now skip based on kubo daemon reachability instead of `ipfs` CLI presence
+
+### Added
+- `ipfs_http.py`: kubo HTTP RPC client module (thin wrapper over urllib)
+- `SB_E_KUBO_API_ERROR` and `SB_E_KUBO_API_UNREACHABLE` error codes
 
 ### Documentation
 - CLAUDE.md: updated module list (16 modules), CLI commands (17 commands), crypto extra, ERROR_CODES.md ref
-- README.md: added `[crypto]` optional extra installation instructions
+- README.md: IPFS Setup section rewritten for kubo daemon prerequisites; added `SB_KUBO_API` documentation
+- CONTRIBUTING.md: added kubo daemon as prerequisite for IPFS E2E tests
 - API reference: added docs for ipfs_chunks, chunk_manifest, hybrid_storage, cid modules
 - mkdocs.yml: nav updated with 4 new API reference entries
-- DESIGN.md: Architecture module list updated with 4 new modules; `cache_fetched` CLI behavior clarified
+- DESIGN.md: Architecture module list updated with 4 new modules; kubo HTTP API migration documented
+- THREAT_MODEL.md: added kubo HTTP API transport security considerations
+- ERROR_CODES.md: added kubo API error codes
 - index.md: added IPFS distributed chunks to feature overview
 - PERFORMANCE.md: updated deferred benchmark integration note
 
 ### Removed
 - `SB_E_IPFS_CHUNK_UNAVAILABLE` error code (never implemented; chunk fetch failures use `SB_E_IPFS_CHUNK_GET`)
+- All `subprocess` calls for IPFS operations in source and test files
 
 ## [1.2.0] - 2026-03-22
 
