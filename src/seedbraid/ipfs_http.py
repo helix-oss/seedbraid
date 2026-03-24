@@ -88,7 +88,8 @@ def _execute(req: Request) -> bytes:
     """Send request, return raw response bytes."""
     try:
         with urlopen(req, timeout=_timeout()) as resp:
-            return resp.read()
+            data: bytes = resp.read()
+            return data
     except urllib.error.URLError as exc:
         _handle_error(exc)
 
@@ -99,7 +100,8 @@ def post_json(
 ) -> dict:
     """POST to kubo API, parse JSON response."""
     req = Request(_build_url(path, **params), method="POST")
-    return json.loads(_execute(req))
+    result: dict = json.loads(_execute(req))
+    return result
 
 
 def post_raw(
@@ -154,7 +156,8 @@ def post_multipart_json(
             ),
         },
     )
-    return json.loads(_execute(req))
+    result: dict = json.loads(_execute(req))
+    return result
 
 
 def post_multipart_file_json(

@@ -58,7 +58,7 @@ def publish_seed(seed_path: str | Path, pin: bool = False) -> str:
     result = ipfs_http.post_multipart_file_json(
         "/add", seed_path, quieter="true",
     )
-    cid = result.get("Hash", "")
+    cid: str = result.get("Hash", "")
     if not cid:
         raise ExternalToolError(
             "IPFS publish did not return CID.",

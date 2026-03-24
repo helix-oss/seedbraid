@@ -438,7 +438,7 @@ def create_chunk_dag(
                 ),
             ) from exc
 
-        dag_root_cid = stat_result.get(
+        dag_root_cid: str = stat_result.get(
             "Hash", "",
         )
         if not dag_root_cid:
@@ -696,8 +696,8 @@ def fetch_decode_from_ipfs(
                     digest = hash_table[
                         op.hash_index
                     ]
-                    chunk = fetched.get(digest)
-                    if chunk is None:
+                    maybe = fetched.get(digest)
+                    if maybe is None:
                         raise DecodeError(
                             "Missing chunk: "
                             f"{digest.hex()}",
@@ -706,6 +706,7 @@ def fetch_decode_from_ipfs(
                                 ACTION_CHECK_IPFS_NETWORK
                             ),
                         )
+                    chunk = maybe
                 out.write(chunk)
                 h.update(chunk)
 

@@ -199,6 +199,7 @@ def _decode_with_ipfs_genome(
     cache_path_str = genome_uri[len(_IPFS_SCHEME):]
     persist = bool(cache_path_str)
 
+    cache_dir: contextlib.AbstractContextManager[str]
     if persist:
         cache_dir = contextlib.nullcontext(
             cache_path_str,
@@ -581,11 +582,9 @@ def publish_chunks_cmd(
 
     if pin or remote_pin:
         try:
+            dag_cid = create_chunk_dag(manifest)
             manifest = replace(
-                manifest,
-                dag_root_cid=create_chunk_dag(
-                    manifest,
-                ),
+                manifest, dag_root_cid=dag_cid,
             )
         except (
             SeedbraidError, ExternalToolError,
@@ -596,9 +595,7 @@ def publish_chunks_cmd(
 
         if pin:
             try:
-                pin_dag_locally(
-                    manifest.dag_root_cid,
-                )
+                pin_dag_locally(dag_cid)
             except (
                 SeedbraidError,
                 ExternalToolError,
@@ -610,7 +607,7 @@ def publish_chunks_cmd(
         if remote_pin:
             try:
                 report = remote_pin_cid(
-                    manifest.dag_root_cid,
+                    dag_cid,
                     provider=remote_provider,
                     endpoint=remote_endpoint,
                     token=remote_token,
