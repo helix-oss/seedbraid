@@ -354,6 +354,46 @@ Run `seedbraid doctor` to verify connectivity.
 - `zstd` compression error
   - Install optional dependency `zstandard`, or use `--compression zlib`
 
+## Data Recovery Guide
+
+Reconstructing a file requires **two things**: a **seed** (the recipe describing chunk order) and the **chunks** themselves (the actual data). If either is missing, recovery is impossible.
+
+### When Recovery Succeeds
+
+| Scenario | Why It Works |
+|---|---|
+| Seed on hand + local genome available | Recipe and ingredients are both local |
+| Seed on hand + own IPFS node running with chunks pinned | Recipe is local; ingredients are in your node's storage |
+| Seed on hand + chunks held by a pinning service (Pinata, etc.) | Recipe is local; ingredients are in a paid storage provider |
+| Seed on hand + teammate's IPFS node holds the chunks | Recipe is local; ingredients are on a peer's node |
+| Seed created with `--portable` (chunks embedded in seed) | Recipe and ingredients are bundled together in one file |
+| Seed on hand + genome snapshot (`.sgs` backup) exists | Recipe is local; ingredients are in a backup archive |
+
+### When Recovery Fails
+
+| Scenario | Why It Fails |
+|---|---|
+| **Seed file lost** | Without the recipe, there is no way to know which chunks to fetch or how to reassemble them |
+| Seed exists, but genome deleted and chunks never published to IPFS | Recipe exists, but all ingredients have been discarded |
+| Seed exists, but IPFS node stopped and no other node holds the chunks | Recipe exists, but the only store that had the ingredients is offline |
+| Seed exists, but IPFS pin removed and garbage collection ran | Recipe exists, but automatic cleanup deleted the ingredients |
+| Seed exists, but pinning service subscription expired | Recipe exists, but the storage provider disposed of the ingredients |
+| Seed exists, but **even one chunk** is missing from all sources | Partial recovery is not supported; every chunk is required |
+| Seed is encrypted and the **encryption key is lost** | The recipe is unreadable without the key |
+
+### Protecting Against Data Loss
+
+| Action | Risk Mitigated |
+|---|---|
+| Back up seed files | Prevents seed loss |
+| Use `--pin` when publishing chunks | Prevents IPFS garbage collection |
+| Use a pinning service (`--remote-pin`) | Survives local node shutdown |
+| Encode with `--portable` | Self-contained seed; no external chunk source needed (seed size increases) |
+| Keep encryption keys in a secret manager | Prevents key loss for encrypted seeds |
+| Take genome snapshots (`genome snapshot`) | Preserves local chunk data independently of IPFS |
+
+> **Safest option:** `--portable` embeds all chunks in the seed, making it fully self-contained. The trade-off is that the seed grows to roughly the size of the original file, reducing the benefit of IPFS distribution.
+
 ## Troubleshooting Matrix
 
 | Symptom | Error Code | Next Action |
