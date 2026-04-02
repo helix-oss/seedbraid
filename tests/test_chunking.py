@@ -8,6 +8,7 @@ from seedbraid.chunking import (
     ChunkerConfig,
     chunk_bytes,
     iter_cdc_buzhash,
+    iter_cdc_rabin,
 )
 
 _CFG_SHIFT = ChunkerConfig(
@@ -49,6 +50,16 @@ def _make_data() -> bytes:
     )
 
 
+@functools.lru_cache(maxsize=1)
+def _make_shifted() -> bytes:
+    data = _make_data()
+    return (
+        data[:_INSERT_OFFSET]
+        + b"\xff"
+        + data[_INSERT_OFFSET:]
+    )
+
+
 def _chunks_before_offset(
     chunks: list[bytes], offset: int
 ) -> list[bytes]:
@@ -63,22 +74,23 @@ def _chunks_before_offset(
     return result
 
 
-def test_cdc_buzhash_shift_resilient_prefix() -> None:
+def _assert_prefix_invariant(chunker_fn) -> None:
+    """Chunks before the 1-byte insert point stay identical."""
     data = _make_data()
-    shifted = (
-        data[:_INSERT_OFFSET]
-        + b"\xff"
-        + data[_INSERT_OFFSET:]
-    )
+    shifted = _make_shifted()
 
-    orig = list(iter_cdc_buzhash(io.BytesIO(data), _CFG_SHIFT))
+    orig = list(
+        chunker_fn(io.BytesIO(data), _CFG_SHIFT)
+    )
     shifted_chunks = list(
-        iter_cdc_buzhash(io.BytesIO(shifted), _CFG_SHIFT)
+        chunker_fn(io.BytesIO(shifted), _CFG_SHIFT)
     )
 
     assert len(orig) >= 2, "Not enough chunks to test"
 
-    pre_orig = _chunks_before_offset(orig, _INSERT_OFFSET)
+    pre_orig = _chunks_before_offset(
+        orig, _INSERT_OFFSET
+    )
     pre_shifted = _chunks_before_offset(
         shifted_chunks, _INSERT_OFFSET
     )
@@ -87,5 +99,39 @@ def test_cdc_buzhash_shift_resilient_prefix() -> None:
         "No chunks before insert point"
     )
     assert pre_orig == pre_shifted, (
-        "Chunks before insert point changed after insertion"
+        "Chunks before insert point changed"
+        " after insertion"
+    )
+
+
+def test_cdc_buzhash_shift_resilient_prefix() -> None:
+    _assert_prefix_invariant(iter_cdc_buzhash)
+
+
+def test_cdc_rabin_shift_resilient_prefix() -> None:
+    _assert_prefix_invariant(iter_cdc_rabin)
+
+
+def test_cdc_buzhash_shift_resilient_suffix_reuse() -> None:
+    """BuzHash: most chunks are reused after 1-byte insert."""
+    data = _make_data()
+    shifted = _make_shifted()
+
+    orig = list(
+        iter_cdc_buzhash(io.BytesIO(data), _CFG_SHIFT)
+    )
+    shifted_chunks = list(
+        iter_cdc_buzhash(io.BytesIO(shifted), _CFG_SHIFT)
+    )
+
+    orig_set = set(orig)
+    reuse_count = len(orig_set & set(shifted_chunks))
+    total = len(orig_set)
+
+    assert total >= 2, "Not enough unique chunks"
+    # Allow up to 3 chunks to differ: 1-byte insertion
+    # affects only the chunk straddling the insert point
+    # plus at most 2 neighbours before CDC re-converges.
+    assert reuse_count >= total - 3, (
+        f"Too few reused chunks: {reuse_count}/{total}"
     )
