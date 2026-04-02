@@ -6,7 +6,7 @@ description: >-
   explicitly asks to commit or finalize changes.
 disable-model-invocation: true
 model: haiku
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*)
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*), Bash(git log:*)
 argument-hint: "[commit message hint (optional)]"
 ---
 

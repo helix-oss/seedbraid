@@ -4,9 +4,7 @@ description: >-
   Switch work phase with context preservation guidance. Supports
   investigate/plan/implement/test/review/commit phases.
 allowed-tools:
-  - "Bash(git status:*)"
-  - "Bash(git branch:*)"
-  - "Bash(git log:*)"
+  - "Bash(git:*)"
   - Read
   - Glob
 argument-hint: "<next phase: investigate|plan|implement|test|review|commit>"
