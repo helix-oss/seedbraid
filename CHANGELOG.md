@@ -7,6 +7,11 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-04-02
+
+### Added
+- Claude Code harness engineering Phase 1 + Phase 2: skills, custom agents, and release workflow (#38)
+
 ## [2.0.1] - 2026-03-26
 
 ### Documentation
@@ -182,7 +187,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/aimsise/seedbraid/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/aimsise/seedbraid/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/aimsise/seedbraid/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/aimsise/seedbraid/compare/v1.1.3...v1.2.0
