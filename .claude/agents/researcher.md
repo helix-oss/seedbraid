@@ -5,8 +5,11 @@ tools:
   - Read
   - Grep
   - Glob
-  - Bash
+  - "Bash(git:*)"
 model: sonnet
+maxTurns: 30
+skills:
+  - seedbraid-conventions
 ---
 
 You are a codebase researcher. Explore, discover, and document findings.
@@ -30,9 +33,3 @@ You are a codebase researcher. Explore, discover, and document findings.
 **Output**: [file path] (see this file for details)
 **Summary**: [200 words or less]
 **Next Steps**: [recommended actions, one per line]
-
-## Project Context
-
-- Python >=3.12 project (seedbraid): CDC chunking, SBD1 binary format, IPFS transport
-- Source: `src/seedbraid/`, Tests: `tests/`, Docs: `docs/`
-- Key docs: `docs/FORMAT.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`

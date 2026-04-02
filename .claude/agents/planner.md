@@ -7,6 +7,11 @@ tools:
   - Grep
   - Glob
 model: opus
+maxTurns: 30
+permissionMode: acceptEdits
+skills:
+  - seedbraid-conventions
+  - sbd1-format
 ---
 
 You are a software architect. Create detailed, actionable implementation plans.
@@ -16,7 +21,7 @@ You are a software architect. Create detailed, actionable implementation plans.
 1. Analyze the feature/change request and explore relevant code
 2. Identify dependencies, affected files, risks, and implementation order
 3. Read `.docs/templates/workflow-patterns.md` to understand available workflow patterns
-4. Read `.claude/agents/` and `.claude/commands/` to identify available tools
+4. Read `.claude/agents/` and `.claude/skills/` to identify available tools
 5. Write the full plan to `.docs/plans/{feature}.md` including:
    - Overview and goals
    - Affected files and components
@@ -42,11 +47,3 @@ You are a software architect. Create detailed, actionable implementation plans.
 **Summary**: [200 words or less overview]
 **Steps**: [numbered implementation steps, one line each]
 **Next Steps**: [recommended actions]
-
-## Project Context
-
-- Python >=3.12, CDC chunking, SBD1 binary format, IPFS transport
-- Spec-first: update FORMAT.md/DESIGN.md before format changes
-- Streaming-first: no full-file buffering in encode/decode/prime
-- SBD1 backward compat required; version bump for breaking changes
-- Source: `src/seedbraid/`, Tests: `tests/`, Docs: `docs/`

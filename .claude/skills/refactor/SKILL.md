@@ -1,5 +1,21 @@
 ---
-description: "Plan and execute a refactoring with safety checks"
+name: refactor
+description: >-
+  Plan and execute a refactoring with safety checks. Uses planner agent, then
+  implements incrementally with test/lint verification. Use only when the user
+  explicitly asks to refactor code.
+disable-model-invocation: true
+allowed-tools:
+  - Agent
+  - Read
+  - Glob
+  - Grep
+  - Write
+  - Edit
+  - "Bash(PYTHONPATH=src uv run:*)"
+  - "Bash(UV_CACHE_DIR=.uv-cache uv run:*)"
+  - "Bash(git status:*)"
+  - "Bash(git diff:*)"
 argument-hint: "<refactoring target and goal>"
 ---
 

@@ -1,12 +1,16 @@
 ---
-description: "Create a PR and merge it into target branch (default: main) (need gh command)"
+name: create-pr
+description: >-
+  Create a PR to merge current branch into target branch. Requires gh command.
+  Use only when the user explicitly asks to create a pull request.
+disable-model-invocation: true
 allowed-tools:
   - "Bash(gh:*)"
   - "Bash(git:*)"
 argument-hint: "[target-branch]"
 ---
 
-Create a pull request from the current branch to the target branch, then squash-merge it.
+Create a pull request from the current branch to the target branch.
 Target branch is $ARGUMENTS if provided, otherwise default to main.
 
 ## Context
@@ -32,20 +36,9 @@ Target branch is $ARGUMENTS if provided, otherwise default to main.
 
 7. Run `gh pr create --base <target-branch> --head <current-branch> --title "<title>" --body "<body>"` and print the created PR URL.
 
-8. Squash-merge the PR and delete the remote branch by running `gh pr merge <pr-url> --squash --delete-branch`. If CI checks are pending, ask the user:
-   - **Wait**: Run `gh pr checks <pr-url> --watch` and then retry the merge.
-   - **Abort**: Stop without merging. Keep the PR open.
-
-9. After successful merge, run `git checkout <target-branch> && git pull origin <target-branch>` to sync the local branch.
-
-10. Print merge result summary: merged PR URL, deleted branch name, and current local state.
-
 ## Error Handling
 
 - **Existing PR**: Show the PR URL and stop (not an error).
 - **No diff**: Inform the user there are no changes and stop.
 - **Push failure**: Show the error message and stop.
 - **gh auth failure**: Print `gh auth login` instructions and stop.
-- **CI checks pending**: Ask user whether to wait or abort.
-- **Merge conflict**: Print conflict details, tell the user to resolve manually. Keep the PR open.
-- **Merge failure (any reason)**: Keep the PR open (NEVER delete it on error). Print the PR URL for manual follow-up.

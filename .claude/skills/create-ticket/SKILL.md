@@ -1,6 +1,18 @@
 ---
-allowed-tools: Agent, Read, Glob, Grep, Write, Edit, AskUserQuestion
-description: "Create a new refactoring ticket with Claude Code workflow recommendations"
+name: create-ticket
+description: >-
+  Create a structured refactoring ticket with scope analysis, acceptance
+  criteria, and Claude Code workflow recommendations. Use when defining
+  new work items or breaking down features into tickets.
+allowed-tools:
+  - Agent
+  - Read
+  - Glob
+  - Grep
+  - Write
+  - Edit
+  - AskUserQuestion
+argument-hint: "<ticket description>"
 ---
 
 # /create-ticket
@@ -31,62 +43,21 @@ Use the planner agent to design:
 
 ### Phase 3: Ticket output
 
-Generate the ticket in the following format and present it to the user:
-
-```markdown
-## T-NNN: [Title]
-
-| Field | Value |
-|-------|-------|
-| Priority | **P?** |
-| Category | [Category] |
-| Size | [S/M/L/XL] |
-| Dependencies | [Dependent tickets or —] |
-
-### Background
-
-[Problem description and rationale]
-
-### Scope
-
-| File | Lines | Change |
-|------|-------|--------|
-| ... | ... | ... |
-
-### Acceptance Criteria
-
-1. ...
-2. ...
-
-### Implementation Notes
-
-- ...
-
-### Claude Code Workflow
-
-| Phase | Command / Agent | Purpose |
-|-------|----------------|---------|
-| 1. ... | ... | ... |
-
-**Example execution**:
-```
-[Command flow]
-```
-```
+Read `references/ticket-template.md` for the output format.
 
 ### Workflow selection guide
 
-Read available commands and agents from `.claude/commands/` and `.claude/agents/`,
+Read available skills and agents from `.claude/skills/` and `.claude/agents/`,
 and reference patterns in `.docs/templates/workflow-patterns.md` to design the workflow.
 
 **Category-specific guidelines**:
 - **Security**: Wrap with `/security-scan` before and after. Spec-first with documentation leading.
-- **CodeQuality**: Use `/refactor` command. Guarantee no behavior changes.
+- **CodeQuality**: Use `/refactor` skill. Guarantee no behavior changes.
 - **Doc**: Use doc-writer agent.
-- **DevOps**: CI/CD configs are hard to test; design carefully with `/plan`.
+- **DevOps**: CI/CD configs are hard to test; design carefully with `/plan2doc`.
 - **Community**: Reference industry-standard templates.
 
 **Size-specific guidelines**:
-- **S**: `/plan` optional. Direct implementation.
-- **M**: `/plan` recommended.
-- **L/XL**: `/plan` required. Incremental implementation recommended.
+- **S**: `/plan2doc` optional. Direct implementation.
+- **M**: `/plan2doc` recommended.
+- **L/XL**: `/plan2doc` required. Incremental implementation recommended.

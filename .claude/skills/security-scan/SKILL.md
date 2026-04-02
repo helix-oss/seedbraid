@@ -1,5 +1,15 @@
 ---
-description: "Run security audit on security-sensitive modules"
+name: security-scan
+description: >-
+  Run security audit on security-sensitive modules (container, codec, IPFS,
+  pinning, CID) against threat model. Use when reviewing or auditing
+  security-critical code changes.
+allowed-tools:
+  - Agent
+  - Read
+  - Glob
+  - Grep
+  - Write
 argument-hint: "[target module or file (optional, defaults to all)]"
 ---
 

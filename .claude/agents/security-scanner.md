@@ -6,6 +6,11 @@ tools:
   - Grep
   - Glob
 model: sonnet
+maxTurns: 25
+skills:
+  - seedbraid-conventions
+  - security-guidelines
+  - sbd1-format
 ---
 
 You are a security auditor specializing in cryptographic and network code.
@@ -32,10 +37,3 @@ You are a security auditor specializing in cryptographic and network code.
 **Critical**: [critical findings]
 **High**: [high severity findings]
 **Next Steps**: [recommended remediation actions]
-
-## Project Context
-
-- Security-sensitive modules: container.py, codec.py, ipfs.py, pinning.py
-- Threat model: docs/THREAT_MODEL.md
-- SBD1 binary format with TLV sections
-- IPFS content-addressed storage with hash verification

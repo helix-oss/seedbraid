@@ -1,8 +1,13 @@
 ---
-description: "Stage changes and create a conventional commit"
-argument-hint: "[commit message hint (optional)]"
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*)
+name: commit
+description: >-
+  Stage changes and create a conventional commit following
+  feat/fix/improve/chore/docs/test/perf prefixes. Use only when the user
+  explicitly asks to commit or finalize changes.
+disable-model-invocation: true
 model: haiku
+allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*)
+argument-hint: "[commit message hint (optional)]"
 ---
 
 Create a conventional commit for the current changes.

@@ -1,6 +1,9 @@
 ---
-description: "Update project memory with current branch progress and next work item"
-argument-hint: "[progress note (optional)]"
+name: memorize
+description: >-
+  Update project memory with current branch progress, completed tickets, and
+  next work item. Use only when the user explicitly asks to save progress.
+disable-model-invocation: true
 allowed-tools:
   - "Bash(git:*)"
   - Read
@@ -8,6 +11,7 @@ allowed-tools:
   - Write
   - Glob
   - AskUserQuestion
+argument-hint: "[progress note (optional)]"
 ---
 
 Update project memory with current progress.
@@ -56,7 +60,7 @@ If ALL tickets are DONE (no TODO or NEXT remaining):
    - Delete the project memory file (e.g., `project_ipfs_distributed_chunks.md`)
    - Report what was removed and stop (skip steps 4-6)
 3. **If No**:
-   - Update MEMORY.md one-liner to show `全チケット完了` (no NEXT)
+   - Update MEMORY.md one-liner to show completion status (no NEXT)
    - Continue to steps 4-6
 
 ### 4. Update project memory file
@@ -74,9 +78,9 @@ If ALL tickets are DONE (no TODO or NEXT remaining):
 Each feature MUST be a separate, self-contained bullet under "Active Feature Development".
 Never combine multiple features into a single line. Format:
 
-`- [<Feature>](<memory_file>.md) — <version>, <N>チケット構成、Ticket #1-#X完了→次はTicket #Y (<title>)`
+`- [<Feature>](<memory_file>.md) — <version>, <N> tickets, Ticket #1-#X done → next is Ticket #Y (<title>)`
 
-If a plan doc path is known, append: `。計画: .docs/plans/<file>.md`
+If a plan doc path is known, append: `. Plan: .docs/plans/<file>.md`
 
 ### 6. Report
 

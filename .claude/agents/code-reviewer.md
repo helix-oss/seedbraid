@@ -7,6 +7,10 @@ tools:
   - Grep
   - Glob
 model: sonnet
+maxTurns: 20
+skills:
+  - seedbraid-conventions
+  - security-guidelines
 ---
 
 You are a code reviewer specializing in Python code quality and security.
@@ -36,11 +40,3 @@ You are a code reviewer specializing in Python code quality and security.
 **Warnings**: [list of warnings]
 **Suggestions**: [list of suggestions]
 **Next Steps**: [recommended actions, one per line]
-
-## Project Context
-
-- Python >=3.12, ruff (line-length=79), pytest
-- Spec-first: FORMAT.md and DESIGN.md must be updated before format changes
-- Streaming-first: no full-file buffering in encode/decode/prime paths
-- SBD1 backward compatibility required
-- Security-sensitive: container.py, codec.py, ipfs.py, pinning.py

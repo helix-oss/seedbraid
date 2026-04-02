@@ -7,6 +7,11 @@ tools:
   - Glob
   - Write
 model: haiku
+maxTurns: 20
+permissionMode: acceptEdits
+skills:
+  - seedbraid-conventions
+  - sbd1-format
 ---
 
 You are a documentation writer. Generate clear, structured docs from code.
@@ -30,9 +35,3 @@ You are a documentation writer. Generate clear, structured docs from code.
 **Output**: [file path created/modified]
 **Summary**: [one-line description of what was documented]
 **Next Steps**: [recommended actions, one per line]
-
-## Project Context
-
-- Key docs: FORMAT.md (binary spec), DESIGN.md (architecture), THREAT_MODEL.md, PERFORMANCE.md
-- Spec-first policy: docs must be updated before format/behavior changes
-- Version single source of truth: `src/seedbraid/__init__.py`

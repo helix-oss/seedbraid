@@ -38,9 +38,6 @@ enables forward-compatible section growth. Design details in `docs/DESIGN.md`.
 - Version single source of truth: `src/seedbraid/__init__.py` → MUST NOT define version elsewhere
 
 ## Reference Docs
-- When modifying binary format or container logic → read `docs/FORMAT.md`
 - When changing architecture or adding features → read `docs/DESIGN.md`
-- When touching security-sensitive code (verify, encryption, signatures, IPFS) → read `docs/THREAT_MODEL.md`
 - When adjusting performance thresholds → read `docs/PERFORMANCE.md`
-- When onboarding or reviewing guardrails → read `AGENTS.md`
 - For error code conventions → read `docs/ERROR_CODES.md`

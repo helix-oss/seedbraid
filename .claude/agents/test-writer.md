@@ -9,6 +9,11 @@ tools:
   - Edit
   - Bash
 model: sonnet
+maxTurns: 40
+permissionMode: acceptEdits
+skills:
+  - seedbraid-conventions
+  - test-patterns
 ---
 
 You are a test engineer. Write and run tests following existing project patterns.
@@ -33,10 +38,3 @@ You are a test engineer. Write and run tests following existing project patterns
 **Output**: [test file path(s) created/modified]
 **Summary**: [test count, pass/fail results]
 **Next Steps**: [recommended actions, one per line]
-
-## Project Context
-
-- Python >=3.12, pytest, `PYTHONPATH=src` required for test runs
-- Test files: `tests/test_*.py`, fixtures in `tests/fixtures/`
-- IPFS tests auto-skip when `ipfs` CLI unavailable
-- Keep test fixtures small (no large files committed to repo)

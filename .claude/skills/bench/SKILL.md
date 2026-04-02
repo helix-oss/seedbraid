@@ -1,5 +1,16 @@
 ---
-description: "Run performance benchmarks and compare results"
+name: bench
+description: >-
+  Run performance benchmarks via bench_gate.py and compare results. Reports
+  throughput and threshold violations. Use only when the user explicitly asks
+  to run benchmarks.
+disable-model-invocation: true
+allowed-tools:
+  - "Bash(PYTHONPATH=src uv run:*)"
+  - "Bash(git:*)"
+  - Read
+  - Glob
+  - Grep
 argument-hint: "[benchmark target or comparison ref (optional)]"
 ---
 

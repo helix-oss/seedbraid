@@ -1,5 +1,14 @@
 ---
-description: "Analyze current branch state and recover working context"
+name: catchup
+description: >-
+  Analyze current branch state and recover working context. Summarizes what
+  has been done and what to do next. Use at session start to resume work.
+allowed-tools:
+  - Agent
+  - Read
+  - Glob
+  - Grep
+  - "Bash(git:*)"
 ---
 
 Recover context for the current working session.
