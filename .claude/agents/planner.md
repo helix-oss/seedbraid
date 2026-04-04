@@ -7,7 +7,10 @@ tools:
   - Edit
   - Grep
   - Glob
-  - "Bash(git:*)"
+  - "Bash(git log:*)"
+  - "Bash(git diff:*)"
+  - "Bash(git status:*)"
+  - "Bash(git branch:*)"
 model: opus
 maxTurns: 30
 permissionMode: acceptEdits

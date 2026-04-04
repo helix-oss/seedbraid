@@ -18,7 +18,7 @@ Existing research (if any):
 
 ## Instructions
 
-1. If existing research files are listed above, read them to build on prior findings
+1. If arguments contain `(research: <path>)`, read that specific file first. Otherwise, if research files are listed above, read them to build on prior findings
 2. Identify dependencies, affected files, risks, and implementation order
 3. Read `.docs/templates/workflow-patterns.md` if it exists (skip if missing)
 4. Scan `.claude/agents/` and `.claude/skills/` frontmatter only (not full file contents) to identify available tools

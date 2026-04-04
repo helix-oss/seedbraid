@@ -18,5 +18,6 @@ Current repo state:
 
 1. Investigate this topic thoroughly
 2. Use Grep/Glob to find relevant code, then Read to understand it
-3. Write ALL detailed findings to `.docs/research/`
-4. Return a brief executive summary with the output file path
+3. If investigating a ticket, include the ticket's Size (S/M/L/XL) in the research file header
+4. Write ALL detailed findings to `.docs/research/`
+5. Return a brief executive summary with the output file path
