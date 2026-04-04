@@ -39,7 +39,7 @@ Use the planner agent to design:
 
 1. Ticket structure (Background, Scope, Acceptance Criteria, Implementation Notes)
 2. Appropriate category (Security / CodeQuality / Doc / DevOps / Community) and size (S/M/L/XL)
-3. Workflow recommendations based on category x size, referencing `.docs/templates/workflow-patterns.md`
+3. Workflow recommendations based on category x size, referencing `references/workflow-patterns.md`
 
 ### Phase 3: Ticket output
 
@@ -48,7 +48,7 @@ Read `references/ticket-template.md` for the output format.
 ### Workflow selection guide
 
 Read available skills and agents from `.claude/skills/` and `.claude/agents/`,
-and reference patterns in `.docs/templates/workflow-patterns.md` to design the workflow.
+and reference patterns in `references/workflow-patterns.md` to design the workflow.
 
 **Category-specific guidelines**:
 - **Security**: Wrap with `/security-scan` before and after. Spec-first with documentation leading.
