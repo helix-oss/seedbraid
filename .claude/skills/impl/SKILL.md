@@ -65,25 +65,36 @@ Current state:
 13. If tests fail, fix the issues and re-run. Repeat up to 3 attempts.
 14. If tests still fail after 3 attempts, report failures and stop.
 
+## Phase 4.5: Security Scan (Security category only)
+
+15. Check the plan file's Category field (already read in Step 2 — look for `| Category |` table row in the header).
+    - If Category is **Security** (case-insensitive match): proceed to step 16.
+    - If Category is absent or any other value: print "Skipped security-scan (Category != Security)" and go to Phase 5.
+16. Print "Security category detected — running /security-scan automatically".
+17. Call `/security-scan` via the Skill tool (no arguments — audits all security-sensitive modules).
+18. Display the security-scan result summary.
+    - If Critical or High findings are reported: warn the user and recommend fixing before shipping.
+    - Regardless of findings, continue the implementation flow (security-scan is advisory).
+
 ## Phase 5: Simplify
 
-15. Check the plan file's Size field (already read in Step 2 — look for `| Size |` table row in the header).
+19. Check the plan file's Size field (already read in Step 2 — look for `| Size |` table row in the header).
     - If Size is **S**: skip simplify — print "Skipped simplify (Size=S)" and go to Phase 7.
     - Otherwise (M/L/XL or not found → treat as M): call `/simplify` via the Skill tool.
-16. Print the simplify result summary (or the skip message).
+20. Print the simplify result summary (or the skip message).
 
 ## Phase 6: Post-simplify Verification
 
-17. Check `git diff --stat` to see if simplify made changes.
-18. If changes were made, re-run lint + tests:
+21. Check `git diff --stat` to see if simplify made changes.
+22. If changes were made, re-run lint + tests:
     - `UV_CACHE_DIR=.uv-cache uv run --no-editable ruff check .`
     - `PYTHONPATH=src uv run --no-editable python -m pytest -q`
-19. If post-simplify tests fail, fix once and re-run. If still failing, report to the user for manual resolution.
+23. If post-simplify tests fail, fix once and re-run. If still failing, report to the user for manual resolution.
 
 ## Phase 7: Summary
 
-20. Run `git status -s` and display the output.
-21. Print a summary including:
+24. Run `git status -s` and display the output.
+25. Print a summary including:
     - Plan file executed
     - Files changed or created
     - Test results (pass/fail count)
@@ -98,3 +109,4 @@ Current state:
 - **Test 3x failure**: Print failures and stop. Code remains in place.
 - **Simplify failure**: Print warning and continue (implementation + tests are already complete).
 - **Post-simplify test failure**: Report to user for manual resolution.
+- **Security-scan failure**: Print warning and continue (implementation + tests are already complete). Recommend manual `/security-scan` after fixing reported issues.
