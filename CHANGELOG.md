@@ -7,6 +7,13 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-04-04
+
+### Fixed
+- Remediate security audit findings across 8 modules (T-035): chunk hash verification on decode, size limits on IPFS fetches, scrypt parameter validation, MIME header injection prevention, CID match verification in PSA responses (#46)
+- Allow `git reset --hard origin/<branch>` in pre-bash safety hook (#47)
+- Use sed-strip approach for origin reset exception in safety hook (#48)
+
 ## [2.0.4] - 2026-04-04
 
 ### Fixed
@@ -209,7 +216,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/aimsise/seedbraid/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/aimsise/seedbraid/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/aimsise/seedbraid/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/aimsise/seedbraid/compare/v2.0.1...v2.0.2
