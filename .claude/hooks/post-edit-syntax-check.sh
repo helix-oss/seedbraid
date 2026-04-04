@@ -4,13 +4,14 @@ INPUT=$(cat)
 FILE=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [[ "$FILE" == *.py ]] || exit 0
 
-RESULT=$(python3 -c "
-import ast, sys
+RESULT=$(FILE="$FILE" python3 -c "
+import ast, sys, os
+filepath = os.environ['FILE']
 try:
-    with open('$FILE') as f:
+    with open(filepath) as f:
         ast.parse(f.read())
 except SyntaxError as e:
-    print(f'SyntaxError in $FILE: {e.msg} (line {e.lineno})')
+    print(f'SyntaxError in {filepath}: {e.msg} (line {e.lineno})')
     sys.exit(1)
 " 2>&1) || true
 

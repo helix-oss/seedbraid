@@ -82,7 +82,7 @@ Commits ahead of main:
 14. Attempt `gh pr merge <pr-url> --squash --delete-branch`.
 15. If merge fails due to pending CI checks, ask the user to choose one of:
     - **Wait**: Run `gh pr checks <pr-number> --watch`, then retry the merge.
-    - **Force**: Run `gh pr merge <pr-url> --squash --delete-branch --admin` to bypass checks. Note: requires admin permissions on the repository — if this fails, inform the user and keep the PR open.
+    - **Force**: Run `gh pr merge <pr-url> --squash --delete-branch --admin` to bypass checks. **WARNING: This bypasses CI checks and risks merging untested code into main. Confirm with the user before proceeding.** Note: requires admin permissions on the repository — if this fails, inform the user and keep the PR open.
     - **Skip**: Stop without merging. Print the PR URL for manual follow-up.
 16. After successful merge, sync local: `git checkout <target-branch> && git pull origin <target-branch>`.
 17. Print summary: merged PR URL, deleted branch name, current local state.

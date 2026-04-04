@@ -7,9 +7,12 @@ tools:
   - Glob
   - Write
   - Edit
-  - Bash
+  - "Bash(PYTHONPATH=src uv run:*)"
+  - "Bash(UV_CACHE_DIR=.uv-cache uv run:*)"
+  - "Bash(mkdir:*)"
+  - "Bash(ls:*)"
 model: sonnet
-maxTurns: 40
+maxTurns: 25
 permissionMode: acceptEdits
 skills:
   - seedbraid-conventions

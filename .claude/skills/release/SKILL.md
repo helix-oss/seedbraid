@@ -5,7 +5,18 @@ description: >-
   Requires gh command. Use only when the user explicitly requests a release.
 disable-model-invocation: true
 allowed-tools:
-  - "Bash(git:*)"
+  - "Bash(git tag:*)"
+  - "Bash(git log:*)"
+  - "Bash(git diff:*)"
+  - "Bash(git checkout:*)"
+  - "Bash(git push origin:*)"
+  - "Bash(git pull:*)"
+  - "Bash(git status:*)"
+  - "Bash(git describe:*)"
+  - "Bash(git branch:*)"
+  - "Bash(git rev-parse:*)"
+  - "Bash(git add:*)"
+  - "Bash(git commit:*)"
   - "Bash(gh:*)"
   - "Bash(PYTHONPATH=src uv run:*)"
   - "Bash(UV_CACHE_DIR=.uv-cache uv run:*)"
