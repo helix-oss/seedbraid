@@ -9,14 +9,12 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # --force-with-lease intentionally blocked per T-029 requirements
 DESTRUCTIVE='(^|[|;&])\s*(env\s+|command\s+)?(rm\s+-[a-z]*r[a-z]*f|rm\s+-[a-z]*f[a-z]*r|git\s+push\s+(--force|--force-with-lease|-f)\b|git\s+reset\s+--hard|git\s+clean\s+-[a-z]*f|DROP\s+(TABLE|DATABASE))'
 
-if echo "$COMMAND" | grep -qE "$DESTRUCTIVE"; then
-  # Allow git reset --hard origin/<branch> (safe remote sync)
-  if echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard\s+origin/[A-Za-z0-9._/-]+\s*($|[;&|])'; then
-    : # permitted — resetting to a remote tracking ref
-  else
-    echo "Blocked: destructive command not allowed: $COMMAND" >&2
-    exit 2
-  fi
+# Strip allowed pattern before checking: git reset --hard origin/<branch>
+CHECKED=$(echo "$COMMAND" | sed -E 's/git +reset +--hard +origin\/[A-Za-z0-9._/-]+//g')
+
+if echo "$CHECKED" | grep -qE "$DESTRUCTIVE"; then
+  echo "Blocked: destructive command not allowed: $COMMAND" >&2
+  exit 2
 fi
 
 # --- Sensitive file staging patterns (T-029 S-4) ---
