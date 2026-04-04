@@ -7,6 +7,23 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-04-04
+
+### Added
+- `/scout` skill: orchestrator chaining `/investigate` (sonnet) + `/plan2doc` (opus) for cost-optimized research+planning (#42)
+- `/impl` skill: plan execution with lint/test loop, `/simplify` review, and post-simplify verification (#42)
+- `/ship` skill: combined commit + PR creation + optional squash-merge workflow (#41)
+
+### Changed
+- `plan2doc` skill: restored to planning-only focus, added error handling and existing research context (#42)
+- `planner` agent: simplified to caller-delegated instructions, added Edit and Bash(git:*) tools (#42)
+
+### Fixed
+- CI: replaced unreliable `ipfs/download-ipfs-distribution-action` with direct GitHub Releases download, bumped kubo v0.32.1 → v0.34.1 (#41)
+
+### Tests
+- CDC shift-resilient chunking: added Rabin prefix invariance and BuzHash suffix reuse tests (T-028b/c) (#40)
+
 ## [2.0.2] - 2026-04-02
 
 ### Added
@@ -187,7 +204,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/aimsise/seedbraid/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/aimsise/seedbraid/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/aimsise/seedbraid/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/aimsise/seedbraid/compare/v1.2.0...v2.0.0
