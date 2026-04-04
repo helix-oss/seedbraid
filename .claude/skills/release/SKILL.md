@@ -4,7 +4,6 @@ description: >-
   Create a release: version bump, changelog, PR, tag, and GitHub Release.
   Requires gh command. Use only when the user explicitly requests a release.
 disable-model-invocation: true
-model: sonnet
 allowed-tools:
   - "Bash(git:*)"
   - "Bash(gh:*)"
