@@ -7,6 +7,11 @@ Version numbers follow [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.4] - 2026-04-04
+
+### Fixed
+- Remove `model: sonnet` override from `/release` skill to avoid spurious rate limit errors on Opus → Sonnet inline model switch (#44)
+
 ## [2.0.3] - 2026-04-04
 
 ### Added
@@ -204,7 +209,8 @@ Initial OSS public release.
 - CI benchmark gates for dedup ratio and throughput
 - Compatibility fixture regression coverage
 
-[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.3...HEAD
+[Unreleased]: https://github.com/aimsise/seedbraid/compare/v2.0.4...HEAD
+[2.0.4]: https://github.com/aimsise/seedbraid/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/aimsise/seedbraid/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/aimsise/seedbraid/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/aimsise/seedbraid/compare/v2.0.0...v2.0.1
