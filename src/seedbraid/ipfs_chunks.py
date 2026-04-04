@@ -115,11 +115,30 @@ class IPFSChunkStorage:
         )
         for attempt in range(1, self._retries + 1):
             try:
-                return ipfs_http.post_raw(
+                data = ipfs_http.post_raw(
                     "/block/get", arg=cid,
                 )
-            except ExternalToolError:
-                pass
+                actual = hashlib.sha256(data).digest()
+                if actual != chunk_hash:
+                    raise ExternalToolError(
+                        "IPFS chunk hash mismatch"
+                        f" for CID {cid}:"
+                        f" expected"
+                        f" {chunk_hash.hex()},"
+                        f" got {actual.hex()}",
+                        code=(
+                            "SB_E_IPFS_CID_MISMATCH"
+                        ),
+                        next_action=(
+                            ACTION_CHECK_IPFS_DAEMON
+                        ),
+                    )
+                return data
+            except ExternalToolError as exc:
+                if exc.code == (
+                    "SB_E_IPFS_CID_MISMATCH"
+                ):
+                    raise
             if (
                 attempt < self._retries
                 and self._backoff_ms > 0
@@ -134,11 +153,32 @@ class IPFSChunkStorage:
 
         if self._gateway:
             try:
-                return _fetch_chunk_from_gateway(
+                data = _fetch_chunk_from_gateway(
                     cid, self._gateway,
                 )
-            except ExternalToolError:
-                pass
+                actual = hashlib.sha256(
+                    data,
+                ).digest()
+                if actual != chunk_hash:
+                    raise ExternalToolError(
+                        "Gateway chunk hash"
+                        " mismatch for CID"
+                        f" {cid}: expected"
+                        f" {chunk_hash.hex()},"
+                        f" got {actual.hex()}",
+                        code=(
+                            "SB_E_IPFS_CID_MISMATCH"
+                        ),
+                        next_action=(
+                            ACTION_CHECK_IPFS_DAEMON
+                        ),
+                    )
+                return data
+            except ExternalToolError as exc:
+                if exc.code == (
+                    "SB_E_IPFS_CID_MISMATCH"
+                ):
+                    raise
 
         return None
 

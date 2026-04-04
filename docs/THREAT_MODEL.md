@@ -51,6 +51,9 @@
 ## Current Mitigations
 - Integrity section validates manifest, recipe, and full payload CRC32.
 - Verify/decode enforce expected output SHA-256.
+- Per-chunk SHA-256 verification is performed at decode time for
+  genome-sourced and IPFS-fetched chunks; any mismatch raises an
+  immediate error.
 - Portable mode is opt-in and defaults off.
 - Optional encrypted wrapper (`SBE1`) protects seed confidentiality at rest/in transit when passphrase is provided.
 - Optional private-manifest mode (`--manifest-private`) reduces exposed metadata fields.

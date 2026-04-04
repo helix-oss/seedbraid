@@ -30,6 +30,9 @@ This document defines operator-facing error codes emitted by the Seedbraid CLI.
   - kubo HTTP `/api/v0/block/put` chunk publish operation failed.
 - `SB_E_IPFS_CHUNK_GET`
   - kubo HTTP `/api/v0/block/get` chunk fetch operation failed after retries.
+- `SB_E_IPFS_CID_MISMATCH`
+  - CID or SHA-256 hash mismatch after IPFS block put or get operation.
+    The returned data does not match the expected content hash.
 - `SB_E_IPFS_MFS`
   - IPFS MFS operation failed during DAG construction for chunk pinning
     (`/api/v0/files/mkdir`, `/cp`, `/stat`, `/rm`).
