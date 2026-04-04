@@ -4,6 +4,7 @@ description: >-
   Implement the latest plan with optional additional instructions.
   Runs implementation, lint, test loop, and simplify review.
   Use after /scout or /plan2doc to execute the plan.
+  Optionally accepts a plan file path as the first argument.
 disable-model-invocation: true
 allowed-tools:
   - Read
@@ -18,11 +19,11 @@ allowed-tools:
   - "Bash(mkdir:*)"
   - "Bash(ls:*)"
   - Skill
-argument-hint: "[additional instructions (optional)]"
+argument-hint: "[plan file path or additional instructions]"
 ---
 
 Implement the latest plan.
-Additional instructions from user: $ARGUMENTS
+User arguments: $ARGUMENTS
 
 ## Pre-computed Context
 
@@ -35,15 +36,15 @@ Latest research:
 Current state:
 !`git status --short`
 
-Current branch:
-!`git branch --show-current`
-
 ## Phase 1: Plan Loading
 
-1. If no plan file is listed above, print "No plan found in .docs/plans/. Run /scout or /plan2doc first." and stop.
-2. Read the latest plan file content.
+1. Determine the plan file:
+   - If `$ARGUMENTS` starts with `.docs/plans/` → use it as the plan file path. Remaining text is additional instructions.
+   - Otherwise → use the latest plan file shown above. `$ARGUMENTS` is treated as additional instructions.
+   - If no plan file exists, print "No plan found in .docs/plans/. Run /scout or /plan2doc first." and stop.
+2. Read the plan file content.
 3. If a related research file exists in `.docs/research/`, read it for additional context.
-4. If `$ARGUMENTS` contains additional instructions, integrate them with the plan (additional instructions take priority on conflicts).
+4. If additional instructions are provided, integrate them with the plan (additional instructions take priority on conflicts).
 5. If the working tree has uncommitted changes unrelated to the plan, warn the user before proceeding.
 
 ## Phase 2: Implementation
@@ -66,8 +67,10 @@ Current branch:
 
 ## Phase 5: Simplify
 
-15. Call `/simplify` via the Skill tool to review the changes.
-16. Print the simplify result summary.
+15. Check the plan file's Size field (already read in Step 2 — look for `| Size |` table row in the header).
+    - If Size is **S**: skip simplify — print "Skipped simplify (Size=S)" and go to Phase 7.
+    - Otherwise (M/L/XL or not found → treat as M): call `/simplify` via the Skill tool.
+16. Print the simplify result summary (or the skip message).
 
 ## Phase 6: Post-simplify Verification
 
@@ -79,12 +82,13 @@ Current branch:
 
 ## Phase 7: Summary
 
-20. Print a summary including:
+20. Run `git status -s` and display the output.
+21. Print a summary including:
     - Plan file executed
-    - Files changed or created (`git diff --stat`)
+    - Files changed or created
     - Test results (pass/fail count)
     - Simplify review outcome
-    - Recommended next step: `/ship` to commit and create PR
+    - "Review the changes above, then run `/ship` to commit and create PR"
 
 ## Error Handling
 
